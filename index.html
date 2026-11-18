@@ -1,0 +1,1843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NWAOS — No Way An Object Show</title>
+<meta name="description" content="The official fan site for NWAOS (No Way An Object Show): episodes, news, voting, fan theories and games.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Space+Mono:wght@400;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+/* =========================================================
+   NWAOS FAN SITE — STYLES
+   Colors live here. Change them to re-theme the whole site.
+   ========================================================= */
+:root{
+  --paper:#fffdf3;
+  --paper-line:#dfe8ff;
+  --ink:#111111;
+  --yellow:#ffd400;
+  --red:#ff3b30;
+  --blue:#2f6bff;
+  --green:#18b84a;
+  --pink:#ff6fb5;
+  --muted:#555;
+  --card:#ffffff;
+  --sketch:255px 12px 225px 14px / 14px 225px 12px 255px; /* wobbly hand-drawn corners */
+  --shadow:5px 5px 0 var(--ink);
+  --font-title:'Orbitron', 'Arial Black', sans-serif;
+  --font-body:'Space Mono', ui-monospace, monospace;
+  --font-hand:'Patrick Hand', 'Comic Sans MS', cursive;
+}
+*{box-sizing:border-box}
+.yt-link{font-size:.85rem;font-weight:700}
+/* Orbitron (closest match to Eli's Floating Text font) runs smaller than the old pixel font, so bump it up */
+h1,h2,h3,.btn,.tab,.logo-mark,.badge,.chip,.vote-card .name,.ep-num,.ep-len,.now-playing,.player-empty,.poll-closed,.locked-banner,.counter,.char-body h4,.soon-tag,.admin-bar{font-weight:900;font-size-adjust:.62}
+.facts dt,label,.char-status{font-family:var(--font-title);font-weight:700}
+#scene{position:fixed;inset:0;z-index:-1;background:center/cover no-repeat;opacity:.2;pointer-events:none;transition:opacity .3s}
+[hidden]{display:none !important}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-size:16px;
+  line-height:1.55;
+  /* notebook paper background */
+  background-color:var(--paper);
+  background-image:
+    linear-gradient(90deg, transparent 54px, #ffb3b3 54px, #ffb3b3 56px, transparent 56px),
+    repeating-linear-gradient(var(--paper) 0 31px, var(--paper-line) 31px 32px);
+}
+img,svg,iframe{max-width:100%}
+a{color:var(--blue)}
+h1,h2,h3{font-family:var(--font-title);line-height:1.35;margin:0 0 .6em;letter-spacing:.02em}
+h2{font-size:clamp(1rem,3.4vw,1.5rem)}
+h3{font-size:.85rem}
+p{margin:0 0 1em}
+
+/* ---------- reusable sketchy box ---------- */
+.box{
+  background:var(--card);
+  border:3px solid var(--ink);
+  border-radius:var(--sketch);
+  box-shadow:var(--shadow);
+  padding:20px;
+}
+.tilt-l{transform:rotate(-1deg)}
+.tilt-r{transform:rotate(1deg)}
+
+/* ---------- buttons ---------- */
+.btn{
+  font-family:var(--font-title);
+  font-size:.7rem;
+  line-height:1.4;
+  display:inline-flex;align-items:center;gap:8px;
+  padding:12px 16px;
+  background:var(--yellow);
+  color:var(--ink);
+  border:3px solid var(--ink);
+  border-radius:var(--sketch);
+  box-shadow:4px 4px 0 var(--ink);
+  cursor:pointer;
+  text-decoration:none;
+  transition:transform .08s, box-shadow .08s;
+}
+.btn:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink)}
+.btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.btn:focus-visible,.tab:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px dashed var(--blue);outline-offset:3px}
+.btn.red{background:var(--red);color:#fff}
+.btn.blue{background:var(--blue);color:#fff}
+.btn.green{background:var(--green);color:#fff}
+.btn.white{background:#fff}
+.btn.small{font-size:.55rem;padding:8px 10px}
+.btn[disabled]{opacity:.5;cursor:not-allowed;transform:none;box-shadow:2px 2px 0 var(--ink)}
+
+/* ---------- header / nav ---------- */
+.site-header{
+  position:sticky;top:0;z-index:50;
+  background:var(--ink);
+  color:#fff;
+  border-bottom:4px solid var(--yellow);
+}
+.header-inner{
+  max-width:1100px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:12px 16px;
+}
+.logo{display:flex;align-items:center;gap:12px;color:#fff;text-decoration:none}
+.logo-mark{
+  font-family:var(--font-title);font-size:1.15rem;
+  background:var(--yellow);color:var(--ink);
+  padding:8px 10px;border:3px solid #fff;border-radius:var(--sketch);
+  transform:rotate(-3deg);
+}
+.logo-sub{font-family:var(--font-hand);font-size:1.15rem;line-height:1.1}
+.nav{display:flex;flex-wrap:wrap;gap:6px}
+.tab{
+  font-family:var(--font-title);font-size:.6rem;
+  background:transparent;color:#fff;
+  border:2px solid transparent;border-radius:var(--sketch);
+  padding:10px 10px;cursor:pointer;
+}
+.tab:hover{border-color:#fff}
+.tab[aria-current="page"]{background:var(--yellow);color:var(--ink);border-color:var(--yellow)}
+.menu-btn{display:none;background:var(--yellow);border:3px solid #fff;border-radius:8px;padding:8px 10px;font-family:var(--font-title);font-size:.6rem;cursor:pointer}
+
+@media (max-width:820px){
+  .menu-btn{display:block}
+  .nav{
+    display:none;position:absolute;left:0;right:0;top:100%;
+    flex-direction:column;background:var(--ink);padding:10px 16px 16px;
+    border-bottom:4px solid var(--yellow);
+  }
+  .nav.open{display:flex}
+  .tab{text-align:left;font-size:.7rem;padding:14px 10px}
+}
+
+/* ---------- layout ---------- */
+main{max-width:1100px;margin:0 auto;padding:28px 16px 60px}
+.page{display:none;animation:pop .25s ease-out}
+.page.active{display:block}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.section-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
+.section-head h2{margin:0;background:var(--yellow);padding:10px 14px;border:3px solid var(--ink);border-radius:var(--sketch);box-shadow:var(--shadow);transform:rotate(-1deg)}
+.hand{font-family:var(--font-hand);font-size:1.25rem;line-height:1.3}
+.muted{color:var(--muted)}
+.grid{display:grid;gap:22px}
+.grid-2{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
+.grid-3{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+
+/* ---------- home ---------- */
+.hero{display:grid;grid-template-columns:1.3fr 1fr;gap:28px;align-items:center;margin-bottom:34px}
+.hero h1{font-size:clamp(1.6rem,6vw,3.2rem);margin-bottom:.3em}
+.hero h1 span{display:inline-block;background:var(--ink);color:var(--yellow);padding:4px 10px;transform:rotate(-2deg);margin-top:8px}
+.hero .tagline{font-family:var(--font-hand);font-size:1.6rem;margin-bottom:18px}
+.hero-actions{display:flex;flex-wrap:wrap;gap:12px}
+.hero-art{background:#fff;padding:10px}
+.hero-art svg{display:block;width:100%;height:auto}
+@media (max-width:760px){.hero{grid-template-columns:1fr}}
+.sticky-note{background:#fff7a8;transform:rotate(1.5deg)}
+.sticky-note.blue{background:#d7e6ff;transform:rotate(-1.5deg)}
+
+/* ---------- episodes ---------- */
+.player-wrap{margin-bottom:28px}
+.player{position:relative;aspect-ratio:16/9;background:var(--ink);border:3px solid var(--ink);border-radius:12px;overflow:hidden}
+.player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.player-empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#fff;padding:20px;font-family:var(--font-title);font-size:.75rem;line-height:1.8}
+.now-playing{font-family:var(--font-title);font-size:.65rem;margin:12px 0 0}
+.ep-card{display:flex;flex-direction:column;padding:0;overflow:hidden}
+.ep-thumb{border-bottom:3px solid var(--ink);background:#fff}
+.ep-thumb svg,.ep-thumb img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover}
+.ep-thumb{position:relative}
+.ep-len{position:absolute;right:8px;bottom:8px;background:var(--ink);color:#fff;font-family:var(--font-title);font-size:.55rem;padding:5px 7px;border-radius:4px}
+.ep-num{font-family:var(--font-title);font-size:.55rem;color:var(--muted)}
+
+/* locked tab */
+.tab.locked{opacity:.55;cursor:not-allowed;display:inline-flex;align-items:center;gap:6px}
+.tab.locked:hover{border-color:transparent}
+.soon-tag{font-size:.4rem;background:var(--red);color:#fff;padding:3px 5px;border-radius:4px;transform:rotate(-6deg)}
+
+/* locked poll */
+.locked-banner{text-align:center;background:var(--ink);color:var(--yellow);border:3px solid var(--ink);border-radius:var(--sketch);padding:16px;margin:0 0 18px;font-family:var(--font-title);font-size:.75rem;line-height:1.8;transform:rotate(-1deg)}
+.vote-card{color:var(--ink)}
+.poll-options.locked .vote-card{opacity:1}
+.poll-options.locked .vote-card img{filter:none}
+
+/* music */
+.song{display:flex;flex-direction:column;gap:12px}
+.song .player{aspect-ratio:16/9}
+.song-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.song-head h3{margin:0}
+.ep-body{padding:16px;display:flex;flex-direction:column;gap:10px;flex:1}
+.ep-body h3{margin:0}
+.ep-body p{margin:0;flex:1}
+.ep-card.playing{outline:4px dashed var(--red);outline-offset:4px}
+.marathon-banner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;background:var(--red);color:#fff;margin-bottom:28px}
+.marathon-banner h3{margin:0 0 6px}
+
+/* ---------- news ---------- */
+.post{margin-bottom:24px}
+.post-meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:.85rem;margin-bottom:8px}
+.badge{font-family:var(--font-title);font-size:.5rem;padding:5px 8px;border:2px solid var(--ink);border-radius:6px;background:var(--yellow)}
+.badge.teaser{background:var(--pink)}
+.badge.announcement{background:var(--blue);color:#fff}
+.badge.update{background:var(--green);color:#fff}
+.post h3{font-size:1rem}
+.post-body{white-space:pre-wrap;word-wrap:break-word}
+
+/* ---------- forms ---------- */
+label{display:block;font-weight:700;margin:0 0 6px;font-size:.9rem}
+input,textarea,select{
+  width:100%;font:inherit;padding:10px 12px;
+  background:#fff;border:3px solid var(--ink);border-radius:10px;
+}
+textarea{min-height:110px;resize:vertical}
+.field{margin-bottom:14px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.row > .field{flex:1 1 160px}
+.form-note{font-size:.8rem;color:var(--muted)}
+.msg{font-family:var(--font-hand);font-size:1.15rem;min-height:1.4em;margin-top:8px}
+.msg.err{color:var(--red)}
+.msg.ok{color:var(--green)}
+
+/* ---------- poll ---------- */
+.poll-options{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));margin:18px 0}
+.vote-card{
+  text-align:center;cursor:pointer;padding:16px 12px;
+  background:#fff;border:3px solid var(--ink);border-radius:var(--sketch);box-shadow:var(--shadow);
+  font:inherit;transition:transform .1s;
+}
+.vote-card:hover:not([disabled]){transform:rotate(-2deg) scale(1.03)}
+.vote-card[disabled]{cursor:default}
+.vote-card.picked{background:var(--yellow)}
+.vote-card svg{width:110px;height:110px;display:block;margin:0 auto 8px}
+.vote-card img{width:100%;max-width:220px;aspect-ratio:1;object-fit:cover;display:block;margin:0 auto 10px;border:3px solid var(--ink);border-radius:8px}
+.post-img{display:block;width:100%;max-width:640px;border:3px solid var(--ink);border-radius:8px;margin:4px 0 14px}
+.hero-art img{display:block;width:100%;height:auto;padding:30px 10px}
+.snail-toy img{width:220px;height:auto;display:block;transition:transform .15s}
+.snail-toy button:active img{transform:scale(.9) rotate(-6deg)}
+.vote-card .name{font-family:var(--font-title);font-size:.7rem}
+.results{display:grid;gap:14px}
+.bar-row .bar-label{display:flex;justify-content:space-between;font-weight:700;margin-bottom:4px;gap:8px}
+.bar-track{height:30px;border:3px solid var(--ink);border-radius:8px;background:#fff;overflow:hidden}
+.bar-fill{height:100%;width:0;transition:width .6s cubic-bezier(.2,.9,.3,1.2);background-image:repeating-linear-gradient(45deg,rgba(0,0,0,.12) 0 6px,transparent 6px 12px)}
+.poll-closed{font-family:var(--font-title);font-size:.65rem;background:var(--ink);color:var(--yellow);padding:10px;display:inline-block;border-radius:6px}
+
+/* ---------- comments ---------- */
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.chip{font-family:var(--font-title);font-size:.55rem;padding:8px 10px;border:2px solid var(--ink);background:#fff;border-radius:20px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--yellow)}
+.comment{margin-bottom:16px;padding:14px 16px}
+.comment:nth-child(odd){transform:rotate(-.4deg)}
+.comment:nth-child(even){transform:rotate(.4deg)}
+.comment-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:6px}
+.comment-name{font-weight:700}
+.comment-time{font-size:.8rem;color:var(--muted)}
+.comment-text{white-space:pre-wrap;word-wrap:break-word;margin:0 0 8px;font-family:var(--font-hand);font-size:1.2rem;line-height:1.35}
+.comment-actions{display:flex;gap:8px;align-items:center}
+.like-btn{font:inherit;font-size:.85rem;background:#fff;border:2px solid var(--ink);border-radius:20px;padding:3px 10px;cursor:pointer}
+.like-btn.liked{background:var(--pink)}
+.like-btn{display:inline-flex;align-items:center;gap:6px}
+.like-btn img{width:24px;height:24px;object-fit:contain;transition:transform .15s}
+.like-btn:not(.liked) img{filter:grayscale(1) opacity(.6)}
+.like-btn.liked img{transform:scale(1.15) rotate(-8deg)}
+.badge.creator{background:var(--yellow);margin-left:2px}
+.emo{height:1.6em;width:auto;vertical-align:middle;margin:0 1px}
+.emoji-toggle{margin-top:8px;display:inline-flex;align-items:center;gap:6px;font-family:var(--font-title);font-weight:700;font-size:.7rem;background:#fff;border:2px solid var(--ink);border-radius:20px;padding:4px 10px;cursor:pointer}
+.emoji-toggle img{width:26px;height:auto}
+.emoji-picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;margin-top:8px;padding:8px;border:2px dashed var(--ink);border-radius:12px;background:#fff}
+.emoji-picker[hidden]{display:none}
+.emoji-picker button{background:none;border:0;cursor:pointer;padding:4px;border-radius:8px;text-align:center}
+.emoji-picker button:hover{background:#fff7a8}
+.emoji-picker img{height:34px;width:auto;max-width:60px;object-fit:contain;display:block;margin:0 auto}
+.emoji-picker span{font-size:.62rem;color:var(--muted)}
+.snail-toy .babies{display:flex;justify-content:center;gap:110px;margin-top:6px}
+.snail-toy .babies img{width:56px !important;height:auto}
+.empty{text-align:center;padding:30px;font-family:var(--font-hand);font-size:1.3rem}
+
+/* ---------- games ---------- */
+.game-card{text-align:center;position:relative;overflow:hidden}
+.game-card svg{width:100%;max-width:220px;height:auto}
+.lock{position:absolute;top:14px;right:-38px;transform:rotate(35deg);background:var(--red);color:#fff;font-family:var(--font-title);font-size:.5rem;padding:6px 44px;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)}
+.snail-toy{text-align:center}
+.snail-toy button{background:none;border:0;cursor:pointer;padding:0}
+.snail-toy svg{width:160px;height:auto;transition:transform .15s}
+.snail-toy button:active svg{transform:scale(.9) rotate(-6deg)}
+.counter{font-family:var(--font-title);font-size:1.4rem;margin:8px 0}
+
+/* ---------- characters ---------- */
+.char-intro{margin:-6px 0 22px}
+.char-group{margin:34px 0 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.char-group h3{margin:0;background:var(--ink);color:var(--yellow);padding:10px 12px;border-radius:6px;transform:rotate(-1deg)}
+.char-group .hand{margin:0}
+.char-grid{display:grid;gap:24px;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));align-items:start}
+.char-card{padding:0;overflow:hidden;display:flex;flex-direction:column}
+.char-card:nth-child(3n+1){transform:rotate(-.6deg)}
+.char-card:nth-child(3n+2){transform:rotate(.5deg)}
+.char-pic{aspect-ratio:4/3;background:#fbfaf4;border-bottom:3px solid var(--ink);display:grid;place-items:center;overflow:hidden}
+.char-pic img{width:100%;height:100%;object-fit:contain;padding:10px}
+.char-pic .mystery{font-family:var(--font-title);font-size:3rem;color:#bbb}
+.char-body{padding:16px 18px 18px}
+.char-body h4{font-family:var(--font-title);font-size:.8rem;line-height:1.5;margin:0 0 4px}
+.char-aka{font-family:var(--font-hand);font-size:1.1rem;color:var(--muted);margin:0 0 10px}
+.char-status{display:inline-block;margin-bottom:12px}
+.badge.in{background:var(--green);color:#fff}
+.badge.out{background:var(--red);color:#fff}
+.badge.host{background:var(--yellow)}
+.badge.other{background:#ddd}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0 0 12px;font-size:.85rem}
+.facts dt{font-weight:700}
+.facts dd{margin:0}
+.char-desc{font-size:.92rem;margin:0 0 10px}
+.char-fun{background:#fff7a8;border:2px dashed var(--ink);border-radius:8px;padding:8px 10px;font-family:var(--font-hand);font-size:1.1rem;line-height:1.3;margin:0 0 10px}
+.char-fun::before{content:'★ fun fact: ';font-weight:700}
+.char-quote{font-family:var(--font-hand);font-size:1.2rem;border-left:4px solid var(--ink);padding-left:10px;margin:0 0 10px}
+
+/* ---------- admin ---------- */
+.admin-only{display:none !important}
+body.is-admin .admin-only{display:block !important}
+body.is-admin .admin-only.flex{display:flex !important}
+.admin-panel{background:#ffe9e7;border-style:dashed;margin-top:26px}
+.admin-panel h3::before{content:'🔒 '}
+.admin-bar{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:60;background:var(--red);color:#fff;padding:8px 14px;border:3px solid var(--ink);border-radius:30px;font-family:var(--font-title);font-size:.55rem;align-items:center;gap:10px;box-shadow:var(--shadow)}
+.admin-bar button{font:inherit;background:#fff;border:2px solid var(--ink);border-radius:20px;padding:5px 8px;cursor:pointer}
+dialog{border:3px solid var(--ink);border-radius:var(--sketch);box-shadow:8px 8px 0 var(--ink);padding:24px;width:min(92vw,420px);background:var(--paper)}
+dialog::backdrop{background:rgba(0,0,0,.55)}
+
+/* ---------- footer ---------- */
+footer{background:var(--ink);color:#fff;text-align:center;padding:26px 16px 70px;border-top:4px solid var(--yellow)}
+footer p{margin:.3em 0}
+footer .linkish{background:none;border:0;color:#aaa;font:inherit;font-size:.8rem;text-decoration:underline;cursor:pointer}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* =========================================================
+   HAND-DRAWN LOOK (Eli: "make it feel more like NWAOS")
+   Plain show paper, wobbly marker outlines, no heavy shadows.
+   Each outlined thing draws its fill (::before) and its marker
+   line (::after) through the #wobble SVG filter.
+   ========================================================= */
+:root{--paper:#fcfcfa;--shadow:none}
+body{background:var(--paper) url("images/paper.jpg") center/cover fixed}
+
+.box,.btn,.section-head h2,.vote-card,.chip,.char-group h3,.locked-banner,.logo-mark,.hero h1 span{
+  position:relative;isolation:isolate;background:transparent !important;border-color:transparent !important;box-shadow:none !important;
+  --fill:#fff;--line:var(--ink);--lw:3px
+}
+.box::before,.btn::before,.section-head h2::before,.vote-card::before,.chip::before,.char-group h3::before,.locked-banner::before,.logo-mark::before,.hero h1 span::before,
+.box::after,.hero h1 span::after,.btn::after,.section-head h2::after,.vote-card::after,.chip::after,.char-group h3::after,.locked-banner::after,.logo-mark::after{
+  content:'';position:absolute;inset:1px;border-radius:var(--sketch);pointer-events:none;filter:url(#wobble)
+}
+.box::before,.btn::before,.section-head h2::before,.vote-card::before,.chip::before,.char-group h3::before,.locked-banner::before,.logo-mark::before,.hero h1 span::before{
+  z-index:-1;background:var(--fill)
+}
+.box::after,.btn::after,.section-head h2::after,.vote-card::after,.chip::after,.char-group h3::after,.locked-banner::after,.logo-mark::after,.hero h1 span::after{
+  z-index:2;border:var(--lw) solid var(--line)
+}
+.box{overflow:visible !important}
+.ep-card .ep-thumb,.char-card .char-pic{border-radius:14px 10px 0 0;overflow:hidden;margin:4px 4px 0}
+
+/* fills */
+.sticky-note{--fill:#fff7a8}
+.sticky-note.blue{--fill:#d7e6ff}
+.marathon-banner{--fill:var(--red)}
+.admin-panel{--fill:#ffe9e7}
+.admin-panel::after{border-style:dashed}
+.section-head h2,.btn{--fill:var(--yellow)}
+.btn.red{--fill:var(--red)} .btn.blue{--fill:var(--blue)} .btn.green{--fill:var(--green)} .btn.white{--fill:#fff}
+.vote-card.picked{--fill:var(--yellow)}
+.chip{--fill:#fff;--lw:2px}
+.chip[aria-pressed="true"]{--fill:var(--ink);color:var(--yellow)}
+.char-group h3,.locked-banner{--fill:var(--ink)}
+.logo-mark{--fill:var(--yellow);--line:var(--ink);color:var(--ink)}
+.hero h1 span{--fill:var(--ink)}
+html,body{overflow-x:clip}
+.page{scroll-margin-top:200px}
+
+/* buttons: no drop shadow, just a little wiggle */
+.btn:hover{transform:rotate(-2deg) scale(1.04);box-shadow:none}
+.btn:active{transform:rotate(1deg) scale(.97)}
+.btn[disabled]{transform:none}
+
+/* header + footer on paper with a marker line */
+.site-header{background:var(--paper);color:var(--ink);border-bottom:0}
+.site-header::after{content:'';position:absolute;left:0;right:0;bottom:-3px;height:4px;background:var(--ink);filter:url(#wobble)}
+.logo{color:var(--ink)}
+.tab{color:var(--ink);font-weight:900}
+.tab:hover{border-color:transparent;text-decoration:underline wavy}
+.tab[aria-current="page"]{background:linear-gradient(transparent 20%, var(--yellow) 20%, var(--yellow) 85%, transparent 85%);border-color:transparent;border-radius:4px}
+.menu-btn{border-color:var(--ink)}
+@media (max-width:820px){ .nav{background:var(--paper);border-bottom:3px solid var(--ink)} }
+footer{background:transparent;color:var(--ink);border-top:0;position:relative}
+footer::before{content:'';position:absolute;left:0;right:0;top:0;height:4px;background:var(--ink);filter:url(#wobble)}
+footer .linkish{color:var(--muted)}
+
+/* form fields look sketched too */
+input,textarea,select{border-radius:14px 6px 12px 8px / 8px 12px 6px 14px}
+
+/* =========================================================
+   PASSWORD SCREEN
+   ========================================================= */
+#gate{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:16px;background:var(--paper) url("images/paper.jpg") center/cover}
+#gate[hidden]{display:none}
+#gate .box{width:min(100%,420px);text-align:center;transform:rotate(-1deg)}
+#gate .logo-mark{display:inline-block;font-size:1.6rem;margin-bottom:12px}
+#gate img{width:180px;height:auto;display:block;margin:0 auto 8px}
+body.gated{overflow:hidden}
+
+/* ---------- find the characters ---------- */
+.find-board{--fill:#fff}
+.find-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.find-head h3{margin:0}
+.find-count{font-family:var(--font-title);font-weight:900;font-size:1.1rem;background:var(--yellow);padding:4px 10px;border-radius:var(--sketch)}
+.find-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:14px 10px;margin-top:6px}
+.find-slot{text-align:center}
+.find-slot img{width:76px;height:76px;object-fit:contain;display:block;margin:0 auto 4px;filter:brightness(0) opacity(.25)}
+.find-slot.found img{filter:none;animation:popin .45s ease-out}
+.find-slot span{display:block;font-family:var(--font-title);font-weight:700;font-size:.62rem;line-height:1.3;color:var(--muted)}
+.find-slot.found span{color:var(--ink)}
+.find-win{font-family:var(--font-title);font-weight:900;text-align:center;background:var(--green);color:#fff;padding:12px;border-radius:var(--sketch);margin:6px 0 14px;transform:rotate(-1deg)}
+.find-reset{display:block;margin:16px auto 0;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;font-size:.8rem}
+@keyframes popin{0%{transform:scale(.3) rotate(-20deg)}70%{transform:scale(1.2) rotate(6deg)}100%{transform:none}}
+.hider{position:absolute;z-index:6;width:46px;padding:0;margin:0;border:0;background:none;cursor:pointer;transform:rotate(var(--r,0deg));line-height:0}
+.hider img{width:100%;height:auto;display:block}
+.hider.got{animation:poof .5s forwards;pointer-events:none}
+@keyframes poof{to{transform:scale(2.4) rotate(25deg);opacity:0}}
+#toast{position:fixed;left:50%;bottom:22px;z-index:150;transform:translate(-50%,140%);background:var(--ink);color:var(--yellow);font-family:var(--font-title);font-weight:900;font-size:.85rem;padding:12px 16px;border-radius:var(--sketch);transition:transform .3s;max-width:calc(100% - 32px);text-align:center}
+#toast.show{transform:translate(-50%,0)}
+.snail-toy.won #snailBtn img{width:300px;max-width:100%}
+.pending-pic{border:2px dashed var(--ink);border-radius:12px;padding:10px;margin:0 0 10px;background:#fff7a8}
+.pending-pic .post-img{max-width:320px;opacity:.85}
+
+/* ---------- creator's picks, replies, fan art ---------- */
+.comment.starred{--fill:#fff7a8;--lw:4px}
+.pick-ribbon{display:inline-block;font-family:var(--font-title);font-weight:900;font-size:.65rem;background:var(--yellow);border:2px solid var(--ink);padding:3px 8px;border-radius:6px;margin:0 0 8px;transform:rotate(-2deg)}
+.comment-actions{flex-wrap:wrap}
+.reply-btn{font-family:var(--font-title);font-weight:700;font-size:.7rem;background:#fff;border:2px solid var(--ink);border-radius:20px;padding:5px 10px;cursor:pointer}
+.replies{margin:12px 0 0 18px;border-left:3px solid var(--ink);padding-left:12px;display:grid;gap:8px}
+.reply .comment-text{font-size:1.1rem;margin:2px 0 0}
+.reply-del{background:none;border:0;color:var(--red);text-decoration:underline;cursor:pointer;font-size:.75rem}
+.reply-form{margin:12px 0 0 18px;display:grid;gap:8px}
+.reply-form[hidden]{display:none}
+.reply-form textarea{min-height:70px}
+.reply-form .btn{justify-self:start}
+.fanart-grid{display:grid;gap:24px;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));align-items:start}
+.fanart-card{margin:0;padding:12px}
+.fanart-card img{width:100%;height:auto;display:block;border:3px solid var(--ink);border-radius:8px;background:#fff}
+.fanart-card figcaption{margin:10px 2px 6px;display:grid;gap:2px}
+.fanart-card figcaption strong{font-family:var(--font-title);font-size:.85rem}
+.fanart-card figcaption span{font-family:var(--font-hand);font-size:1.15rem;line-height:1.3}
+
+/* ---------- Christmas mode ---------- */
+.xmas-banner{--fill:#fde8e8;display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:28px}
+.xmas-banner[hidden]{display:none}
+.xmas-banner img{width:150px;height:auto}
+.xmas-banner > div{flex:1 1 220px}
+.xmas-banner h3{margin:0 0 4px;color:#c8102e}
+.snow{position:fixed;inset:0;pointer-events:none;z-index:40;overflow:hidden}
+.snow i{position:absolute;top:-14px;left:var(--x);width:var(--s);height:var(--s);background:#fff;border-radius:50%;box-shadow:0 0 0 1.5px rgba(17,17,17,.45);animation:snowfall var(--d) linear var(--delay) infinite}
+@keyframes snowfall{to{transform:translate(var(--drift),110vh)}}
+body.xmas .site-header::after{background:repeating-linear-gradient(90deg,#c8102e 0 24px,#1e7a3c 24px 48px)}
+@media (prefers-reduced-motion:reduce){.snow{display:none}}
+
+/* Santa hats (Christmas only) */
+.hatwrap{position:relative;display:inline-block;line-height:0;vertical-align:bottom}
+.hatwrap > img:first-child{display:block}
+img.hat{position:absolute;left:50%;top:0;width:44%;max-width:84px;min-width:16px;height:auto;transform:translate(-55%,-62%) rotate(-14deg);pointer-events:none;filter:none}
+.char-pic:has(.hatwrap){padding:34px 12px 10px}
+.char-pic .hatwrap img.cut{width:auto;height:auto;max-width:100%;max-height:170px;padding:0;object-fit:contain}
+.find-slot .hatwrap{margin:16px auto 4px}
+.find-slot .hatwrap > img:first-child{margin:0}
+.find-slot img.hat{width:42%;height:auto;margin:0}
+.find-slot:not(.found) img.hat{filter:brightness(0) opacity(.25)}
+.find-slot.found img.hat{animation:none}
+.hider img.hat{width:62%;max-width:none}
+.snail-toy .hatwrap img.hat{width:22%;left:30%}
+</style>
+</head>
+<body class="gated">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="wobble" x="-5%" y="-5%" width="110%" height="110%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7" result="noise"/>
+    <feDisplacementMap in="SourceGraphic" in2="noise" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
+<div id="gate">
+  <form class="box" id="gateForm">
+    <span class="logo-mark">NWAOS</span>
+    <img src="images/giant-snail.png" alt="">
+    <h2>NO WAY AN OBJECT SHOW</h2>
+    <p class="hand">This site is secret! Type the password to get in.</p>
+    <div class="field"><label for="gateCode">Password</label><input id="gateCode" type="password" autocomplete="current-password" required></div>
+    <button class="btn red" type="submit">LET ME IN</button>
+    <p class="msg err" id="gateMsg" role="status"></p>
+  </form>
+</div>
+
+<div id="scene" aria-hidden="true"></div>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="logo" href="#home" data-link="home">
+      <span class="logo-mark">NWAOS</span>
+      <span class="logo-sub">No Way An<br>Object Show</span>
+    </a>
+    <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="nav">MENU</button>
+    <nav class="nav" id="nav" aria-label="Main">
+      <button class="tab" data-tab="home">HOME</button>
+      <button class="tab" data-tab="episodes">EPISODES</button>
+      <button class="tab" data-tab="characters">CHARACTERS</button>
+      <button class="tab" data-tab="news">NEWS</button>
+      <button class="tab" data-tab="vote">VOTE!</button>
+      <button class="tab" data-tab="theories">THEORIES</button>
+      <button class="tab" data-tab="fanart">FAN ART</button>
+      <button class="tab" data-tab="music">MUSIC</button>
+      <button class="tab locked" disabled aria-disabled="true" title="Games are coming soon!">GAMES <span class="soon-tag">SOON</span></button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- ================= HOME ================= -->
+  <section class="page" id="home" aria-labelledby="home-title">
+    <div class="box xmas-banner" id="xmasBanner" hidden>
+      <img src="images/xmas/snail-santa.png" alt="Giant Snail in a Santa hat">
+      <div>
+        <h3>MERRY CHRISTMAS FROM NWAOS!</h3>
+        <p class="hand" id="xmasText"></p>
+      </div>
+      <button class="btn red" data-link="episodes">🎄 WATCH IT</button>
+    </div>
+    <div class="hero">
+      <div>
+        <h1 id="home-title">NO WAY<br><span>AN OBJECT SHOW</span></h1>
+        <p class="tagline">Objects. Chaos. One giant snail. Absolutely no way.</p>
+        <div class="hero-actions">
+          <button class="btn red" data-link="episodes">▶ WATCH NOW</button>
+          <button class="btn" data-link="vote" id="heroVoteBtn">★ VOTE</button>
+          <button class="btn white" data-link="theories">✎ THEORIES</button>
+        </div>
+      </div>
+      <div class="box hero-art tilt-r" id="heroArt"></div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="box sticky-note">
+        <h3>LATEST NEWS</h3>
+        <div id="homeNews"></div>
+        <button class="btn small" data-link="news">READ ALL →</button>
+      </div>
+      <div class="box sticky-note blue">
+        <h3 id="homePollTitle">VOTING</h3>
+        <p class="hand" id="homePoll"></p>
+        <button class="btn small blue" data-link="vote" id="homePollBtn">SEE THE VOTE →</button>
+      </div>
+    </div>
+
+    <div class="box snail-toy" style="margin-top:28px">
+      <h3>POKE THE SNAIL</h3>
+      <button id="snailBtn" aria-label="Poke the snail"></button>
+      <p class="counter" id="snailCount">0</p>
+      <p class="hand muted" id="snailSays">he's waiting.</p>
+    </div>
+
+    <div class="box find-board" style="margin-top:28px">
+      <div class="find-head">
+        <h3>FIND THE CHARACTERS</h3>
+        <span class="find-count" id="findCount">0 / 0</span>
+      </div>
+      <p class="hand">Everyone's hiding somewhere on this website! Look on every page, and tap them when you spot them.</p>
+      <div class="find-win" id="findWin" hidden>YOU FOUND EVERYONE! Go check the snail up there ↑</div>
+      <div class="find-grid" id="findGrid"></div>
+      <button class="linkish find-reset" id="findReset" type="button">start over</button>
+    </div>
+  </section>
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <!-- ================= EPISODES ================= -->
+  <section class="page" id="episodes" aria-labelledby="ep-title">
+    <div class="section-head">
+      <h2 id="ep-title">EPISODES</h2>
+      <span class="hand">grab a snack. or a snail.</span>
+    </div>
+
+    <div class="player-wrap" id="playerWrap">
+      <div class="player" id="player">
+        <div class="player-empty" id="playerEmpty">PICK AN EPISODE<br>OR START THE MARATHON ▼</div>
+      </div>
+      <p class="now-playing" id="nowPlaying"></p>
+    </div>
+
+    <div class="box marathon-banner">
+      <div>
+        <h3>FULL MARATHON</h3>
+        <p style="margin:0">Every episode back to back, PLUS bonus content! (Okay, you can skip.)</p>
+      </div>
+      <button class="btn" id="marathonBtn">▶▶ START MARATHON</button>
+    </div>
+
+    <div class="grid grid-3" id="episodeGrid"></div>
+  </section>
+
+  <!-- ================= CHARACTERS ================= -->
+  <section class="page" id="characters" aria-labelledby="chars-title">
+    <div class="section-head">
+      <h2 id="chars-title">CHARACTERS</h2>
+      <span class="hand">meet the cast (and the snail)</span>
+    </div>
+    <p class="hand char-intro">Fun fact: NWAOS characters don't have genders, so everyone here is "they."</p>
+    <div id="charList"></div>
+  </section>
+
+  <!-- ================= NEWS ================= -->
+  <section class="page" id="news" aria-labelledby="news-title">
+    <div class="section-head">
+      <h2 id="news-title">CREATOR NEWS</h2>
+      <span class="hand">straight from Eli's desk</span>
+    </div>
+
+    <div class="box admin-panel admin-only" style="margin:0 0 26px">
+      <h3>NEW POST</h3>
+      <form id="postForm">
+        <div class="row">
+          <div class="field"><label for="postTitle">Title</label><input id="postTitle" maxlength="90" required></div>
+          <div class="field" style="flex:0 1 180px"><label for="postType">Type</label>
+            <select id="postType"><option value="update">Update</option><option value="teaser">Teaser</option><option value="announcement">Announcement</option></select>
+          </div>
+        </div>
+        <div class="field"><label for="postBody">Post</label><textarea id="postBody" maxlength="3000" required></textarea></div>
+        <div class="field"><label for="postImage">Picture (optional)</label><input id="postImage" type="file" accept="image/*"></div>
+        <img id="postImagePreview" class="post-img" alt="" hidden>
+        <button class="btn green" type="submit">PUBLISH</button>
+        <p class="msg" id="postMsg" role="status"></p>
+      </form>
+    </div>
+
+    <div id="newsList"></div>
+  </section>
+
+  <!-- ================= VOTE ================= -->
+  <section class="page" id="vote" aria-labelledby="vote-title">
+    <div class="section-head">
+      <h2 id="vote-title">ELIMINATION VOTE</h2>
+      <span class="hand" id="pollTag"></span>
+    </div>
+
+    <div class="box">
+      <div class="locked-banner" id="lockedBanner" hidden></div>
+      <h3 id="pollQuestion"></h3>
+      <p id="pollNote" class="muted"></p>
+      <div class="poll-options" id="pollOptions"></div>
+      <p class="msg" id="voteMsg" role="status"></p>
+    </div>
+
+    <div class="box" style="margin-top:26px" id="resultsBox">
+      <h3>RESULTS</h3>
+      <div class="results" id="pollResults"></div>
+      <p class="form-note" id="pollTotal" style="margin-top:12px"></p>
+    </div>
+
+    <div class="box admin-panel admin-only">
+      <h3>ADD OFFLINE / EXTERNAL VOTES</h3>
+      <p class="form-note">For votes from YouTube comments, Discord, school, etc. Use negative numbers to fix mistakes.</p>
+      <form id="offlineForm">
+        <div class="row">
+          <div class="field"><label for="offlineWho">Contestant</label><select id="offlineWho"></select></div>
+          <div class="field"><label for="offlineCount">Votes</label><input id="offlineCount" type="number" value="1" step="1" required></div>
+          <div class="field"><label for="offlineSource">Source (optional)</label><input id="offlineSource" maxlength="40" placeholder="e.g. YouTube comments"></div>
+        </div>
+        <button class="btn green" type="submit">ADD VOTES</button>
+        <button class="btn white" type="button" id="togglePollBtn">CLOSE POLL</button>
+        <p class="form-note">To lock/unlock the whole vote for everyone, change <code>status</code> in CONFIG.poll.</p>
+        <button class="btn red" type="button" id="resetPollBtn">RESET ALL VOTES</button>
+        <p class="msg" id="offlineMsg" role="status"></p>
+      </form>
+      <div id="offlineLog" class="form-note"></div>
+    </div>
+  </section>
+
+  <!-- ================= THEORIES ================= -->
+  <section class="page" id="theories" aria-labelledby="th-title">
+    <div class="section-head">
+      <h2 id="th-title">FAN THEORIES</h2>
+      <span class="hand">who's going next? discuss.</span>
+    </div>
+
+    <div class="box" style="margin-bottom:26px">
+      <form id="commentForm">
+        <div class="row">
+          <div class="field"><label for="cName">Nickname</label><input id="cName" maxlength="24" placeholder="SnailFan99" required></div>
+          <div class="field" style="flex:0 1 180px"><label for="cTag">Type</label>
+            <select id="cTag"><option value="theory">Theory</option><option value="chat">Chat</option><option value="fanart">Fan idea</option></select>
+          </div>
+        </div>
+        <div class="field"><label for="cText">Your theory / comment</label><textarea id="cText" maxlength="500" placeholder="I think Sweater is secretly... :sweater:" required></textarea>
+          <button type="button" class="emoji-toggle" id="emojiToggle" aria-expanded="false"><img src="images/find/giant-snail.png" alt=""> EMOJIS</button>
+          <div class="emoji-picker" id="emojiPicker" hidden></div>
+        </div>
+        <div class="field"><label for="cImage">Add a picture (optional, like fan art!)</label><input id="cImage" type="file" accept="image/*">
+          <img id="cImagePreview" class="post-img" alt="" hidden>
+          <p class="form-note">Pictures show up after Eli approves them.</p>
+        </div>
+        <button class="btn blue" type="submit">POST IT</button>
+        <p class="form-note" style="margin-top:10px">Keep it friendly! Use a nickname — never post your real name, address, school or contact info.</p>
+        <p class="msg" id="commentMsg" role="status"></p>
+      </form>
+    </div>
+
+    <div class="filters" id="commentFilters" role="group" aria-label="Filter comments">
+      <button class="chip" data-filter="all" aria-pressed="true">ALL</button>
+      <button class="chip" data-filter="theory" aria-pressed="false">THEORIES</button>
+      <button class="chip" data-filter="chat" aria-pressed="false">CHAT</button>
+      <button class="chip" data-filter="fanart" aria-pressed="false">FAN IDEAS</button>
+      <button class="chip" data-filter="top" aria-pressed="false">♥ TOP</button>
+    </div>
+    <div id="commentList"></div>
+  </section>
+
+  <!-- ================= FAN ART ================= -->
+  <section class="page" id="fanart" aria-labelledby="fanart-title">
+    <div class="section-head">
+      <h2 id="fanart-title">FAN ART</h2>
+      <span class="hand">hand-picked by Eli from the Theories board</span>
+    </div>
+    <div class="fanart-grid" id="fanartGrid"></div>
+  </section>
+
+  <!-- ================= MUSIC ================= -->
+  <section class="page" id="music" aria-labelledby="music-title">
+    <div class="section-head">
+      <h2 id="music-title">MUSIC</h2>
+      <span class="hand">the NWAOS soundtrack, on loop forever</span>
+    </div>
+    <div class="grid grid-2" id="musicGrid"></div>
+  </section>
+
+</main>
+
+<footer>
+  <p style="font-family:var(--font-title);font-size:.7rem">NWAOS © <span id="year"></span> Eli</p>
+  <p class="hand">Made with markers, stick figures, and one real garden snail.</p>
+  <button class="linkish" id="adminOpen">creator login</button>
+</footer>
+
+<div class="admin-bar admin-only flex">
+  ADMIN MODE <button id="xmasPreview" type="button">🎄 PREVIEW CHRISTMAS</button> <button id="adminExit">LOG OUT</button>
+</div>
+
+<dialog id="askDialog">
+  <form method="dialog">
+    <h3 id="askText">Are you sure?</h3>
+    <div class="row">
+      <button class="btn red" value="yes">YES</button>
+      <button class="btn white" value="no">NO</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="adminDialog">
+  <form id="adminForm" method="dialog">
+    <h3>CREATOR LOGIN</h3>
+    <div class="field"><label for="adminCode">Passcode</label><input id="adminCode" type="password" autocomplete="off"></div>
+    <div class="row">
+      <button class="btn green" type="submit" value="ok">ENTER</button>
+      <button class="btn white" type="button" id="adminCancel">CANCEL</button>
+    </div>
+    <p class="msg err" id="adminMsg" role="status"></p>
+  </form>
+</dialog>
+
+<script>
+/* =========================================================
+   NWAOS FAN SITE — SETTINGS
+   ★ Eli: this CONFIG block is the only part you normally edit. ★
+   ========================================================= */
+const CONFIG = {
+  // Creator passcode, stored scrambled (SHA-256) so it isn't readable here.
+  // To change it, ask Claude, or put a new SHA-256 hash of your passcode here.
+  // Password everyone needs to get into the site (stored scrambled, SHA-256).
+  sitePasswordHash: '172adbc85daa71564f9538595eb518f88b499525e563056aa3efb4fbdd5e313f',
+
+  adminCodeHash: '2cd6dc065ddd9c3a07caebe24fdefe3c019d61a203988cc130291888be6de1b8',
+
+  // Paste the YouTube video ID for each episode (the part after "watch?v=").
+  // Example: https://www.youtube.com/watch?v=dQw4w9WgXcQ  ->  'dQw4w9WgXcQ'
+  // thumb = picture file in the "images" folder (leave '' to use a doodle). length = "m:ss".
+  episodes: [
+    { num: 1, title: 'Hi Spi-iky',                youtubeId: 'zL4T2aDb5MY', thumb: 'images/ep1-hi-spiiky.jpg',         length: '', desc: 'Where it all begins.' },
+    { num: 2, title: 'The Win Token',             youtubeId: 'NKA1iarEjYU', thumb: 'images/ep2-the-win-token.jpg',     length: '', desc: 'Who will grab the Win Token?' },
+    { num: 3, title: 'The Pool',                  youtubeId: 'eC8_-KiJAMs', thumb: 'images/ep3-the-pool.jpg',          length: '', desc: 'Where am I?' },
+    { num: 4, title: 'To The Top',                youtubeId: 'tfZxPC38oF0', thumb: 'images/ep4-to-the-top.jpg',        length: '', desc: 'How high is it?' },
+    { num: 5, title: 'Can You Find All The Gems', youtubeId: 'H6UU-ikH-MA', thumb: 'images/ep5-find-all-the-gems.jpg', length: '', desc: "Don't press it." },
+  ],
+
+  // Marathon: Eli's full marathon video (with bonus content!). Paste its YouTube ID here.
+  // If blank, it falls back to a playlist ID, then to playing the episodes above in order.
+  marathonVideoId: '-MkjO0gdNG0',
+  marathonPlaylistId: '',
+
+  // Music tab: each song video loops forever. Paste YouTube IDs.
+  music: [
+    { title: 'NWAOS Intro', youtubeId: '9hmscGjTReg' },
+    { title: 'Debut Song', youtubeId: 'QdvFKeK_23c' },
+    { title: 'Elimination Time', youtubeId: 'BD2K5KGDGX4' },
+  ],
+
+  // The current vote. Change "id" for each new vote so everyone can vote again.
+  //   status: 'locked' (shown but can't vote) | 'open' | 'closed'
+  //   mode:   'eliminate' | 'save' | 'favorite'
+  poll: {
+    id: 'nwaos6-vote',
+    status: 'locked',
+    mode: 'favorite',
+    tag: 'for NWAOS 6',
+    lockedText: 'VOTING OPENS WHEN<br>NWAOS 6 COMES OUT!',
+    note: 'One vote per person!',
+    options: [
+      { id: 'piece2',  name: 'Piece 2',     color: '#1e88ff', img: 'images/vote-piece2.jpg' },
+      { id: 'snail',   name: 'Giant Snail', color: '#8a6a3d', img: 'images/vote-snail.jpg' },
+      { id: 'sweater', name: 'Sweater',     color: '#222222', img: 'images/vote-sweater.jpg' },
+    ],
+  },
+
+  // Posts that are built into the site (always shown). Eli can add more from admin mode.
+  starterPosts: [
+    {
+      id: 'starter-1', date: '2026-11-04', type: 'announcement',
+      title: 'Welcome to the official NWAOS site!',
+      body: 'You can now watch every episode, vote in eliminations, and post your wildest theories all in one place.\n\nThanks for watching!'
+    },
+    {
+      id: 'starter-2', date: '2026-11-04', type: 'teaser',
+      title: 'NWAOS 6: Bring Them Back — coming soon!',
+      image: 'images/nwaos6-bring-them-back.jpg',
+      body: 'Piece 2. Giant Snail. Sweater.\n\nVoting opens when NWAOS 6 comes out. Stay tuned!'
+    },
+  ],
+
+  // ★ CHARACTERS ★  Edit these any time. Every card automatically shows "Gender: None".
+  //   status kinds: 'in' (still in the game), 'out' (eliminated), 'host', 'other'
+  characterGroups: [
+    { id: 'contestants', title: 'CONTESTANTS', note: 'the ones competing (or trying to get back in)' },
+    { id: 'hosts',       title: 'HOSTS & POTENTIAL DEBUTERS', note: 'running the show, or auditioning to join it' },
+    { id: 'other',       title: 'OTHER CHARACTERS', note: 'never joined, but definitely showed up' },
+  ],
+  characters: [
+    { group: 'contestants', name: 'Giant Snail', img: 'images/giant-snail.png',
+      status: ['in', 'Still in the game'],
+      facts: { 'Team': 'Team Grimm (until the merge in NWAOS 4)', 'Voice': "Doesn't talk", 'Limbs': 'None', 'Favorite food': 'Lettuce', 'Up for elimination': '2 times', 'Realistic look': 'Looks the same everywhere' },
+      desc: "A giant snail with strange powers that nobody understands. Giant Snail can climb walls, and in NWAOS 2 was even seen flying! Giant Snail mysteriously disappeared between NWAOS 3 and NWAOS 4 (to have a baby: Baby Giant Snail!) and is in an alliance with Sweater.",
+      fun: "Giant Snail's picture is Eli's real pet snail, Spud!" },
+
+    { group: 'contestants', name: 'Sweater', img: 'images/characters/sweater.jpg',
+      status: ['in', 'Still in the game'],
+      facts: { 'Team': 'Team Grimm (until the merge in NWAOS 4)', 'Voice': 'Eli', 'Limbs': 'Arms and legs', 'Favorite food': 'Candy', 'Up for elimination': '2 times', 'Realistic look': 'Looks the same everywhere' },
+      desc: "Very, very happy. Sweater is friends with Spikester, in an alliance with Giant Snail, and doesn't really have any enemies. Sweater also loves Win Tokens.",
+      fun: "The design on Sweater comes from the Jackbox game TKO 2." },
+
+    { group: 'contestants', name: 'Piece 2', img: 'images/characters/piece2.jpg',
+      status: ['out', 'Eliminated in NWAOS 5 · up for rejoin'],
+      facts: { 'Team': 'Team Piece (until the merge in NWAOS 4)', 'Voice': 'Eli', 'Limbs': 'Arms only', 'Favorite food': 'Candy', 'Up for elimination': '2 times', 'Realistic look': 'Turns BLUE' },
+      desc: "Fast-paced and really happy. Piece 2 is best friends with Piece 1, enemies with BBA, and really, really loves Win Tokens. Piece 2 turns blue in realistic dimensions, like high up the pole or in the PDOL.",
+      fun: "Piece 2 and Piece 1 fit together to make a square!" },
+
+    { group: 'contestants', name: 'Piece 1', img: 'images/characters/piece1.jpg',
+      status: ['in', 'Still in the game'],
+      facts: { 'Team': 'Team Piece (until the merge in NWAOS 4)', 'Voice': "Doesn't talk", 'Favorite food': 'Unknown', 'Up for elimination': 'NWAOS 2 and NWAOS 5', 'Realistic look': 'Turns RED' },
+      desc: "A total mystery. Piece 1 is almost always hanging out with Piece 2, but nobody really knows their personality. Piece 1 has weird powers, like randomly sinking into the ground or dropping down from the sky.",
+      fun: "Sometimes, for just ONE frame, Piece 1 gets drawn with a creepy giant mouth. Watch closely!" },
+
+    { group: 'contestants', name: 'BBA', aka: 'Ball But Alive', img: 'images/characters/bba.jpg',
+      status: ['out', 'Eliminated in NWAOS 3 · up for rejoin'],
+      facts: { 'Team': 'Team Piece', 'Voice': "Doesn't talk", 'Favorite food': 'Probably candy', 'Up for elimination': 'NWAOS 2', 'Realistic look': 'Stays white' },
+      desc: "BBA won NWAOS 1 and got the Win Token, then became enemies with Piece 1 and Piece 2 when they both tried to steal it, which is pretty funny since they were all on the same team. After getting eliminated, BBA became friends with Spikester.",
+      fun: "BBA is based on Ball from Ball the Movie, the animation Eli made before NWAOS that inspired the whole show." },
+
+    { group: 'contestants', name: 'Spikester', img: 'images/characters/spikester.jpg',
+      status: ['out', 'First one eliminated (NWAOS 2) · up for rejoin'],
+      facts: { 'Team': 'Team Grimm', 'Voice': 'Eli (a low voice)', 'Favorite food': 'Candy', 'Up for elimination': 'NWAOS 1', 'Realistic look': 'Brown handle, gray spike' },
+      desc: "Kind of grouchy, but nice on the inside. Spikester is friends with Sweater, even if they don't really admit it, and became friends with BBA after they both got eliminated. Spikester was the villain in Ball the Movie.",
+      fun: "Eli dressed up as Spikester for Halloween!" },
+
+    { group: 'contestants', name: 'Heart Balloon', img: 'images/characters/heart-balloon.jpg',
+      status: ['out', 'Up for elimination right now'],
+      facts: { 'Debut': 'NWAOS 3 (won the audition by a landslide)', 'Voice': 'Eli (deep, buff, tough and confident)', 'Power level': 'Overpowered' },
+      desc: "Looks like a sweet, peaceful heart balloon... until they flex. Heart Balloon is the buffest contestant in the show. In NWAOS 4 they super-jumped straight to the top of the pole, and in NWAOS 5 they pressed a button they REALLY shouldn't have.",
+      quote: "If you think this is hard, you should see my morning vaulting sessions." },
+
+    { group: 'hosts', name: 'Floating Text', img: 'images/characters/floating-text.jpg',
+      status: ['host', 'Host of NWAOS 1 to 4 · turned to stone'],
+      facts: { 'Power level': 'Super powerful' },
+      desc: "The mysterious host. Floating Text is just text that pops up out of nowhere, and nobody knows exactly how they work. They can teleport people, explode them and summon things, and in NWAOS 3 they revealed the PDOL (the Pocket Dimension of Losers). Then, in NWAOS 5, a mysterious robot turned Floating Text to stone." },
+
+    { group: 'hosts', name: 'CYFATG Paper', aka: 'Can You Find All The Gems Paper', img: 'images/characters/cyfatg-paper.jpg',
+      status: ['host', 'Host since NWAOS 5'],
+      facts: { 'Audition': 'NWAOS 3 (didn\'t get in)', 'Voice': 'Eli (sleepy monotone)', 'Favorite food': 'Probably gems' },
+      desc: "Talks in a monotone voice, like they never get enough sleep. CYFATG Paper auditioned to join in NWAOS 3 but didn't make it, so they just kind of sat around... until NWAOS 5, when they took over as host after Floating Text got turned to stone.",
+      fun: "CYFATG Paper existed before NWAOS! Eli drew gems on a real paper that said \"Can you find all the gems?\" and hid them around the bathroom for people to find." },
+
+    { group: 'hosts', name: 'GD', img: 'images/characters/gd.jpg',
+      status: ['other', 'Potential debuter · 0 votes'],
+      facts: { 'Audition': 'NWAOS 3', 'Voice': 'Eli\'s friend' },
+      desc: "An average Geometry Dash character. GD just kind of slides along, goes through portals, and turns into things like a ball or a ship. Not a lot of personality. GD got the fewest votes ever: zero, the only character with none.",
+      fun: "GD is one of Eli's random characters from before Ball the Movie. Eli voiced GD in Ball the Movie's end-credits scene." },
+
+    { group: 'hosts', name: 'Skibidi', img: 'images/characters/skibidi.jpg',
+      status: ['other', 'Potential debuter · 1 vote'],
+      facts: { 'Audition': 'NWAOS 3', 'Voice': 'Never talks' },
+      desc: "A toilet with a head sticking out. Skibidi auditioned to join in NWAOS 3, got 1 vote, and hasn't really been seen since.",
+      fun: "Eli says Skibidi is irritating to animate sometimes (but not that hard)." },
+
+    { group: 'other', name: 'Baby Giant Snail', img: 'images/characters/baby-giant-snail.png',
+      status: ['other', "Giant Snail's baby"],
+      facts: { 'Seen in': 'NWAOS 5 (the very beginning)', 'Voice': "Doesn't talk", 'Favorite food': 'Lettuce (just like their parent)' },
+      desc: "Giant Snail's baby! This solves the big mystery: Giant Snail disappeared between NWAOS 3 and NWAOS 4 to have Baby Giant Snail. They first show up at the very beginning of NWAOS 5, and sometimes ride around on Giant Snail's back." },
+
+    { group: 'other', name: 'Cloudini', img: 'images/characters/cloudini.jpg',
+      status: ['other', 'Background character'],
+      facts: { 'Seen in': 'NWAOS 4', 'Voice': "Hasn't talked" },
+      desc: "A background cloud. When the pole was rising in NWAOS 4, it smashed right through Cloudini, and part of them fell into the sun. Nobody even knew their name." },
+
+    { group: 'other', name: 'Piece 2763', img: 'images/characters/piece2763.jpg',
+      status: ['other', 'Never joined'],
+      facts: { 'Seen in': 'NWAOS 5', 'Voice': 'Eli\'s brother (deep voice)', 'Made by': 'Eli\'s brother' },
+      desc: "\"The most powerful piece\" (it's a joke). Heart Balloon held Piece 2763 up to CYFATG Paper to ask if they were a gem, and they looked tiny. But in the end-credits scene with Sweater, they explain they're actually HUGE. Heart Balloon was just holding them far away from the camera." },
+
+    { group: 'other', name: 'Find the Fire', img: 'images/characters/find-the-fire.jpg',
+      status: ['other', 'Never joined'],
+      facts: { 'Seen in': 'NWAOS 5', 'Voice': 'Eli' },
+      desc: "A silly paper character. When Heart Balloon held them up to CYFATG Paper, they yelled \"Brother, help!\" and CYFATG Paper just said \"That's not a gem.\" Find the Fire calls CYFATG Paper their brother, but nobody knows if they actually are. They also announced the vote in NWAOS 5's end credits.",
+      fun: "Find the Fire is based on another one of the papers Eli hid in the bathroom." },
+
+    { group: 'other', name: 'Person Guy Dude Man Face Mister', img: 'images/characters/face-mister.jpg',
+      status: ['other', 'Guardian of the pyramid'],
+      facts: { 'Seen in': 'NWAOS 4 and 5', 'Voice': 'Never talks', 'Power level': 'Extraordinary' },
+      desc: "A faceless stick man who guards the pyramid. They can shoot laser beams and are super powerful. Nobody knows if they'd win a fight against Floating Text. When you see them from a first-person view, they have a cool eye.",
+      fun: "Their name is \"Mr. Face Man Dude Guy Person\" backwards! They're one of Eli's very first animation characters." },
+
+    { group: 'other', name: 'Mr. Face Man Dude Guy Person', img: 'images/characters/mr-face-man.jpg',
+      status: ['other', 'Never joined'],
+      facts: { 'Seen in': 'NWAOS 5', 'Voice': 'Never talks', 'Power level': 'The most powerful of everyone' },
+      desc: "A circle with eyes and a smile. Don't let that fool you: they're extremely powerful and can shoot laser beams. In the show, they only appear when Sweater holds them up to CYFATG Paper to see if they're a gem.",
+      fun: "In an older animation of Eli's, Mr. Face Man Dude Guy Person beat Person Guy Dude Man Face Mister." },
+
+    { group: 'other', name: 'Robot Cube Thing Person', img: 'images/characters/robot.jpg',
+      status: ['other', 'Unknown'],
+      facts: { 'Seen in': 'NWAOS 5', 'Voice': 'A mysterious hum' },
+      desc: "A gray square with a power button on their back. When Heart Balloon turned them on in NWAOS 5, they floated up, turned around and showed a red square face that shoots lasers that turn things to stone. Humming \"must defeat Floating Text,\" they popped Heart Balloon and turned Floating Text to stone. Everything else about them is unknown." },
+  ],
+
+  // Faded NWAOS scenes behind each page (files in images/bg). Remove a line for plain paper.
+  backgrounds: {
+    home:       'images/bg/home.jpg',        // the pole in the sky
+    episodes:   'images/bg/episodes.jpg',    // grass, sun and Spikester
+    characters: 'images/bg/characters.jpg',  // the pyramid + Person Guy Dude Man Face Mister
+    news:       'images/bg/news.jpg',        // climbing the pole
+    vote:       'images/bg/vote.jpg',
+    theories:   'images/bg/theories.jpg',    // the PDOL
+    fanart:     'images/bg/episodes.jpg',
+    music:      'images/bg/music.jpg',       // the PDOL with Piece 2
+  },
+
+  // FIND THE CHARACTERS game: where each one hides.
+  //   anchor = something on the page to hide next to, style = where exactly (CSS), size = width in px
+  findGame: [
+    { id: 'piece1',        name: 'Piece 1',        anchor: '#heroArt',                  style: 'left:6px;bottom:-20px', r: -12 },
+    { id: 'skibidi',       name: 'Skibidi',        anchor: '.snail-toy',                style: 'right:14px;bottom:12px', r: 8, size: 40 },
+    { id: 'cloudini',      name: 'Cloudini',       anchor: '.sticky-note.blue',         style: 'right:-16px;top:-22px', r: 10 },
+    { id: 'spikester',     name: 'Spikester',      anchor: '.marathon-banner',          style: 'left:46%;bottom:-30px', r: 4, size: 30 },
+    { id: 'bba',           name: 'BBA',            anchor: '#episodes .section-head',   style: 'left:42%;top:-4px', r: -6, size: 40 },
+    { id: 'heart-balloon', name: 'Heart Balloon',  anchor: '#playerWrap',               style: 'left:6px;bottom:30px', r: -14 },
+    { id: 'robot',         name: 'Robot Cube Thing Person', anchor: '#characters .section-head', style: 'right:34%;bottom:-14px', r: 6, size: 40 },
+    { id: 'mr-face-man',   name: 'Mr. Face Man Dude Guy Person', anchor: '#characters .char-intro', style: 'right:2px;top:-16px', r: 0, size: 38 },
+    { id: 'cyfatg-paper',  name: 'CYFATG Paper',   anchor: '#news .section-head',       style: 'right:30%;top:-10px', r: -8 },
+    { id: 'find-the-fire', name: 'Find the Fire',  anchor: '#news',                     style: 'right:4px;bottom:-34px', r: 12 },
+    { id: 'piece2763',     name: 'Piece 2763',     anchor: '#news',                     style: 'left:26%;bottom:-30px', r: -4, size: 44 },
+    { id: 'gd',            name: 'GD',             anchor: '#commentForm',              style: 'right:-6px;top:-26px', r: 14, size: 38 },
+    { id: 'piece2',        name: 'Piece 2',        anchor: '#commentFilters',           style: 'right:0;top:-8px', r: -10 },
+    { id: 'sweater',       name: 'Sweater',        anchor: '#theories',                 style: 'left:44%;bottom:-38px', r: 6, size: 40 },
+    { id: 'floating-text', name: 'Floating Text',  anchor: '#commentList .comment.mine', style: 'right:16px;bottom:14px', r: -3, size: 92, afterFirstPost: true }, // only appears next to your own theory after you post one
+    { id: 'face-mister',   name: 'Person Guy Dude Man Face Mister', anchor: '#music',   style: 'right:6px;bottom:-40px', r: 0, size: 40 },
+    { id: 'baby-giant-snail', name: 'Baby Giant Snail', anchor: '#charList .char-card', style: 'right:18px;top:-20px', r: 6, size: 42 }, // riding on Giant Snail's card
+    { id: 'giant-snail',   name: 'Giant Snail',    anchor: 'footer',                    style: 'right:7%;top:14px', r: 0, size: 58 },
+  ],
+
+  // Only the creator (logged in) can use this nickname, in any capitals / spacing.
+  creatorNickname: 'NWAOSmaker372',
+
+  // Character emojis: type :code: in a theory or news post (or use the emoji button).
+  emojis: {
+    snail: 'images/find/giant-snail.png', baby: 'images/find/baby-giant-snail.png', sweater: 'images/find/sweater.png',
+    piece1: 'images/find/piece1.png', piece2: 'images/find/piece2.png', bba: 'images/find/bba.png',
+    spikester: 'images/find/spikester.png', heart: 'images/find/heart-balloon.png', paper: 'images/find/cyfatg-paper.png',
+    text: 'images/find/floating-text.png', gd: 'images/find/gd.png', skibidi: 'images/find/skibidi.png',
+    cloudini: 'images/find/cloudini.png', '2763': 'images/find/piece2763.png', fire: 'images/find/find-the-fire.png',
+    facemister: 'images/find/face-mister.png', faceman: 'images/find/mr-face-man.png', robot: 'images/find/robot.png',
+  },
+
+  // ★ CHRISTMAS SPECIAL ★  Everything Christmas switches on by itself on `start`
+  // (in the visitor's own time zone) and off again on `end`.
+  christmas: {
+    start: '2026-12-16',
+    end:   '2026-12-27',     // switches off at the start of this day, so Dec 26 is the last day
+    title: 'No Way A Christmas Special',
+    short: 'NWACS',
+    youtubeId: '',            // paste the Christmas special's YouTube ID here when it's uploaded
+    introSongId: '',          // paste the NWACS intro song's YouTube ID here (shows on the Music tab at Christmas)
+    desc: 'Snow, presents and object show chaos. Merry Christmas from NWAOS!',
+  },
+
+  // Words that block a comment from posting (lowercase). Add any you want.
+  blockedWords: ['badword1', 'badword2'],
+};
+
+const POLL_QUESTIONS = {
+  eliminate: 'Who should be ELIMINATED?',
+  save:      'Who do YOU want to SAVE?',
+  favorite:  'Vote for your FAVORITE character!',
+};
+
+/* =========================================================
+   STORAGE
+   Everything is saved in the visitor's browser (localStorage).
+   To make votes/comments shared between ALL visitors, swap these
+   two functions for a real database (see notes at the bottom).
+   ========================================================= */
+const store = {
+  get(key, fallback) {
+    try { const v = JSON.parse(localStorage.getItem('nwaos_' + key)); return v ?? fallback; }
+    catch { return fallback; }
+  },
+  set(key, value) {
+    try { localStorage.setItem('nwaos_' + key, JSON.stringify(value)); return true; } catch { return false; }
+  },
+};
+
+/* ---------- helpers ---------- */
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const emojify = html => html.replace(/:([a-z0-9]+):/gi, (m, k) => {
+  const src = CONFIG.emojis[k.toLowerCase()];
+  return src ? `<img class="emo" src="${src}" alt="${m}" title="${m}">` : m;
+});
+const isAdmin = () => document.body.classList.contains('is-admin');
+function flash(el, text, kind = 'ok') { el.textContent = text; el.className = 'msg ' + kind; }
+function fmtDate(d) { return new Date(d + (d.length === 10 ? 'T12:00:00' : '')).toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' }); }
+function timeAgo(t) {
+  const s = Math.floor((Date.now() - t) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return new Date(t).toLocaleDateString();
+}
+
+/* =========================================================
+   HAND-DRAWN DOODLES (inline SVG, wobbly lines)
+   ========================================================= */
+const ink = 'stroke="#111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"';
+const DOODLES = {
+  snail: (c = '#18b84a') => `
+    <svg viewBox="0 0 200 140" aria-hidden="true">
+      <path d="M20 118 Q60 112 120 116 Q160 118 186 112" ${ink}/>
+      <path d="M40 112 Q36 92 52 90 L150 92 Q172 96 176 112 Z" fill="#e8d3a8" ${ink.replace('fill="none"','')}/>
+      <path d="M160 92 L166 62 M174 96 L184 66" ${ink}/>
+      <circle cx="166" cy="60" r="5" fill="#111"/><circle cx="184" cy="64" r="5" fill="#111"/>
+      <path d="M58 92 Q50 40 96 34 Q140 32 142 72 Q140 98 104 96 Q76 92 80 68 Q84 52 102 54 Q118 58 114 72 Q110 82 100 78" fill="${c}" ${ink.replace('fill="none"','')}/>
+      <path d="M150 104 Q156 108 162 104" ${ink}/>
+    </svg>`,
+  piece: (c = '#2f6bff') => `
+    <svg viewBox="0 0 200 140" aria-hidden="true">
+      <path d="M62 24 L132 20 L128 50 Q146 44 148 60 Q146 76 128 70 L130 100 L98 102 Q104 118 90 120 Q74 118 80 102 L60 104 Z" fill="${c}" ${ink.replace('fill="none"','')}/>
+      <circle cx="84" cy="54" r="5" fill="#111"/><circle cx="108" cy="52" r="5" fill="#111"/>
+      <path d="M84 74 Q96 84 108 72" ${ink}/>
+      <path d="M60 80 L34 96 M130 84 L156 98 M80 104 L72 132 M110 102 L118 132" ${ink}/>
+      <text x="96" y="40" font-family="Press Start 2P, monospace" font-size="12" fill="#fff" text-anchor="middle">2</text>
+    </svg>`,
+  sweater: (c = '#ff3b30') => `
+    <svg viewBox="0 0 200 140" aria-hidden="true">
+      <path d="M72 22 Q100 34 128 22 L170 44 L156 72 L140 64 L140 122 L60 122 L60 64 L44 72 L30 44 Z" fill="${c}" ${ink.replace('fill="none"','')}/>
+      <path d="M66 112 L134 112 M70 40 L130 40" stroke="#fff" stroke-width="3" stroke-dasharray="6 6" fill="none"/>
+      <circle cx="88" cy="70" r="5" fill="#111"/><circle cx="112" cy="70" r="5" fill="#111"/>
+      <path d="M86 92 Q100 84 114 92" ${ink}/>
+      <path d="M140 118 Q160 126 170 136" stroke="${c}" stroke-width="3" fill="none"/>
+    </svg>`,
+  stick: (n, c = '#ffd400') => `
+    <svg viewBox="0 0 320 180" aria-hidden="true">
+      <rect width="320" height="180" fill="${c}"/>
+      <path d="M0 150 Q80 140 160 148 T320 144" ${ink}/>
+      <circle cx="80" cy="60" r="18" ${ink} fill="#fff"/>
+      <path d="M80 78 L80 118 M80 92 L58 ${n % 2 ? 76 : 108} M80 92 L102 ${n % 2 ? 108 : 74} M80 118 L64 146 M80 118 L96 146" ${ink}/>
+      <circle cx="74" cy="58" r="2.5" fill="#111"/><circle cx="86" cy="58" r="2.5" fill="#111"/>
+      <path d="M73 66 Q80 72 87 66" ${ink} stroke-width="3"/>
+      <text x="215" y="112" font-family="Press Start 2P, monospace" font-size="58" fill="#111" text-anchor="middle">${n}</text>
+      <text x="215" y="140" font-family="Press Start 2P, monospace" font-size="11" fill="#111" text-anchor="middle">EPISODE</text>
+      <path d="M150 30 l10 -8 l6 10 l10 -6" ${ink} stroke-width="3"/>
+    </svg>`,
+};
+const EP_COLORS = ['#ffd400', '#7ee0ff', '#ff9ad1', '#9dff8a', '#ffb066', '#c9b6ff'];
+
+/* =========================================================
+   NAVIGATION (hash-based tabs)
+   ========================================================= */
+const PAGES = ['home', 'episodes', 'characters', 'news', 'vote', 'theories', 'fanart', 'music'];
+const voteLocked = () => (CONFIG.poll.status || 'open') === 'locked';
+function showPage(name) {
+  if (!PAGES.includes(name)) name = 'home';
+  if (name === 'vote' && voteLocked()) name = 'home';
+  $$('.page').forEach(p => p.classList.toggle('active', p.id === name));
+  $$('.tab').forEach(t => t.setAttribute('aria-current', t.dataset.tab === name ? 'page' : 'false'));
+  $('#nav').classList.remove('open');
+  $('#menuBtn').setAttribute('aria-expanded', 'false');
+  if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
+  const bg = (CONFIG.backgrounds || {})[name];
+  $('#scene').style.backgroundImage = bg ? `url("${bg}")` : 'none';
+  window.scrollTo({ top: 0, behavior: showPage.ready ? 'smooth' : 'auto' });
+  showPage.ready = true;
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-tab],[data-link]');
+  if (!t) return;
+  e.preventDefault();
+  showPage(t.dataset.tab || t.dataset.link);
+});
+$('#menuBtn').addEventListener('click', () => {
+  const open = $('#nav').classList.toggle('open');
+  $('#menuBtn').setAttribute('aria-expanded', open);
+});
+window.addEventListener('hashchange', () => showPage(location.hash.slice(1)));
+
+/* =========================================================
+   EPISODES + MARATHON
+   ========================================================= */
+const ytWatch = id => `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`;
+function embed(src, label, watchUrl) {
+  $('#player').innerHTML = `<iframe src="${src}" title="${esc(label)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
+  $('#nowPlaying').innerHTML = 'NOW PLAYING: ' + esc(label) +
+    (watchUrl ? ` · <a href="${esc(watchUrl)}" target="_blank" rel="noopener">Not loading? Watch on YouTube ↗</a>` : '');
+  $('#playerWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function playerMessage(text) {
+  $('#player').innerHTML = `<div class="player-empty">${text}</div>`;
+  $('#nowPlaying').textContent = '';
+}
+function playEpisode(num) {
+  const ep = CONFIG.episodes.find(e => String(e.num) === String(num));
+  $$('.ep-card').forEach(c => c.classList.toggle('playing', c.dataset.num === String(num)));
+  if (!ep.youtubeId) return playerMessage(`${esc(ep.title).toUpperCase()}<br>COMING SOON!<br><small>(Eli: add the YouTube ID in CONFIG)</small>`);
+  embed(`https://www.youtube-nocookie.com/embed/${encodeURIComponent(ep.youtubeId)}?autoplay=1&rel=0`, ep.title, ytWatch(ep.youtubeId));
+}
+function playMarathon() {
+  $$('.ep-card').forEach(c => c.classList.remove('playing'));
+  if (CONFIG.marathonVideoId) {
+    return embed(`https://www.youtube-nocookie.com/embed/${encodeURIComponent(CONFIG.marathonVideoId)}?autoplay=1&rel=0`, 'FULL MARATHON + BONUS CONTENT', ytWatch(CONFIG.marathonVideoId));
+  }
+  if (CONFIG.marathonPlaylistId) {
+    return embed(`https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(CONFIG.marathonPlaylistId)}&autoplay=1&rel=0`, 'FULL MARATHON', `https://www.youtube.com/playlist?list=${encodeURIComponent(CONFIG.marathonPlaylistId)}`);
+  }
+  const ids = CONFIG.episodes.filter(e => e.youtubeId).map(e => encodeURIComponent(e.youtubeId));
+  if (!ids.length) return playerMessage('MARATHON COMING SOON!<br><small>(Eli: add episode IDs in CONFIG)</small>');
+  // YouTube's "playlist" param plays the remaining IDs in order after the first
+  embed(`https://www.youtube-nocookie.com/embed/${ids[0]}?autoplay=1&rel=0&playlist=${ids.slice(1).join(',')}`, `FULL MARATHON (${ids.length} episodes)`, ytWatch(decodeURIComponent(ids[0])));
+}
+function renderEpisodes() {
+  $('#episodeGrid').innerHTML = CONFIG.episodes.map((ep, i) => `
+    <article class="box ep-card ${i % 2 ? 'tilt-r' : 'tilt-l'}" data-num="${ep.num}">
+      <div class="ep-thumb">
+        ${ep.thumb ? `<img src="${esc(ep.thumb)}" alt="NWAOS ${ep.num}: ${esc(ep.title)} thumbnail" loading="lazy">` : DOODLES.stick(ep.num, EP_COLORS[i % EP_COLORS.length])}
+        ${ep.length ? `<span class="ep-len">${esc(ep.length)}</span>` : ''}
+      </div>
+      <div class="ep-body">
+        <span class="ep-num">${esc(ep.label || 'NWAOS ' + ep.num)}</span>
+        <h3>${esc(ep.title).toUpperCase()}</h3>
+        <p>${esc(ep.desc)}</p>
+        <button class="btn ${ep.youtubeId ? 'red' : 'white'}" data-play="${ep.num}">${ep.youtubeId ? '▶ WATCH' : '⏳ SOON'}</button>
+        ${ep.youtubeId ? `<a class="yt-link" href="${ytWatch(ep.youtubeId)}" target="_blank" rel="noopener">or watch on YouTube ↗</a>` : ''}
+      </div>
+    </article>`).join('');
+}
+$('#episodeGrid').addEventListener('click', e => {
+  const b = e.target.closest('[data-play]');
+  if (b) playEpisode(b.dataset.play);
+});
+$('#marathonBtn').addEventListener('click', playMarathon);
+
+/* =========================================================
+   NEWS / BLOG
+   ========================================================= */
+function allPosts() {
+  return [...CONFIG.starterPosts, ...store.get('posts', [])]
+    .sort((a, b) => (b.date + (b.t || 0)).localeCompare(a.date + (a.t || 0)));
+}
+function renderNews() {
+  const posts = allPosts();
+  $('#newsList').innerHTML = posts.length ? posts.map((p, i) => `
+    <article class="box post ${i % 2 ? 'tilt-r' : 'tilt-l'}">
+      <div class="post-meta">
+        <span class="badge ${esc(p.type)}">${esc(p.type).toUpperCase()}</span>
+        <span>${fmtDate(p.date)}</span>
+        ${p.id.startsWith('starter') ? '' : `<button class="btn small red admin-only" data-del-post="${esc(p.id)}">DELETE</button>`}
+      </div>
+      <h3>${esc(p.title)}</h3>
+      ${p.image ? `<img class="post-img" src="${esc(p.image)}" alt="${esc(p.title)}" loading="lazy">` : ''}
+      <div class="post-body">${emojify(esc(p.body))}</div>
+    </article>`).join('') : '<p class="empty">No posts yet!</p>';
+
+  const latest = posts[0];
+  $('#homeNews').innerHTML = latest
+    ? `<p><strong>${esc(latest.title)}</strong><br><span class="muted">${fmtDate(latest.date)}</span></p>`
+    : '<p>No news yet.</p>';
+}
+// Shrink a picture so it fits in browser storage (max 900px wide, JPEG)
+function shrinkImage(file, max = 900) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+      g.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src);
+      resolve(c.toDataURL('image/jpeg', 0.8));
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
+$('#postImage').addEventListener('change', async () => {
+  const f = $('#postImage').files[0], prev = $('#postImagePreview');
+  if (!f) { prev.hidden = true; return; }
+  try { prev.src = await shrinkImage(f); prev.hidden = false; } catch { prev.hidden = true; flash($('#postMsg'), "Couldn't open that picture.", 'err'); }
+});
+$('#postForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!isAdmin()) return;
+  const posts = store.get('posts', []);
+  const now = new Date();
+  const file = $('#postImage').files[0];
+  let image = '';
+  if (file) {
+    try { image = await shrinkImage(file); } catch { return flash($('#postMsg'), "Couldn't open that picture.", 'err'); }
+  }
+  posts.push({
+    image,
+    id: 'p-' + uid(),
+    date: now.toISOString().slice(0, 10),
+    t: now.toISOString().slice(11, 19),
+    type: $('#postType').value,
+    title: $('#postTitle').value.trim(),
+    body: $('#postBody').value.trim(),
+  });
+  if (!store.set('posts', posts)) return flash($('#postMsg'), 'That picture is too big to save. Try a smaller one.', 'err');
+  e.target.reset();
+  $('#postImagePreview').hidden = true;
+  flash($('#postMsg'), 'Posted!');
+  renderNews();
+});
+$('#newsList').addEventListener('click', async e => {
+  const b = e.target.closest('[data-del-post]');
+  if (!b || !isAdmin() || !(await ask('Delete this post?'))) return;
+  store.set('posts', store.get('posts', []).filter(p => p.id !== b.dataset.delPost));
+  renderNews();
+});
+
+/* =========================================================
+   VOTING POLL
+   ========================================================= */
+const P = CONFIG.poll;
+const pollKey = k => `poll_${P.id}_${k}`;
+function pollData() {
+  return {
+    online:  store.get(pollKey('online'), {}),
+    offline: store.get(pollKey('offline'), {}),
+    log:     store.get(pollKey('log'), []),
+    myVote:  store.get(pollKey('myvote'), null),
+    closed:  store.get(pollKey('closed'), false),
+  };
+}
+function renderPoll() {
+  const d = pollData();
+  const status = P.status || 'open';
+  if (status === 'closed') d.closed = true;
+  const preLaunch = status === 'locked';
+  $('#vote-title').textContent = { eliminate: 'ELIMINATION VOTE', save: 'SAVE VOTE', favorite: 'FAN FAVORITE VOTE' }[P.mode] || 'VOTE';
+  $('#pollTag').textContent = P.tag;
+  $('#pollQuestion').textContent = POLL_QUESTIONS[P.mode] || POLL_QUESTIONS.eliminate;
+  $('#pollNote').textContent = preLaunch ? 'Meet the contestants! Come back when the episode drops.' : P.note;
+  $('#togglePollBtn').textContent = d.closed ? 'REOPEN POLL' : 'CLOSE POLL';
+  $('#lockedBanner').hidden = !preLaunch;
+  $('#lockedBanner').innerHTML = preLaunch ? '🔒 ' + P.lockedText : '';
+  $('#resultsBox').hidden = preLaunch;
+  $('#pollOptions').classList.toggle('locked', preLaunch);
+  $('#homePollTitle').textContent = preLaunch ? 'VOTING COMING SOON' : d.closed ? 'VOTING CLOSED' : 'VOTING IS OPEN!';
+  $('#homePollBtn').textContent = preLaunch ? 'MEET THE CONTESTANTS →' : 'CAST YOUR VOTE →';
+  $('#homePollBtn').dataset.link = preLaunch ? 'characters' : 'vote';
+  $('#heroVoteBtn').hidden = preLaunch;
+  const voteTab = $('.tab[data-tab="vote"]');
+  voteTab.disabled = preLaunch;
+  voteTab.classList.toggle('locked', preLaunch);
+  voteTab.title = preLaunch ? 'Voting opens when NWAOS 6 comes out!' : '';
+  voteTab.innerHTML = preLaunch ? 'VOTE! <span class="soon-tag">WAIT FOR NWAOS 6!</span>' : 'VOTE!';
+
+  const locked = preLaunch || d.myVote || d.closed;
+  $('#pollOptions').innerHTML = P.options.map(o => `
+    <button class="vote-card ${d.myVote === o.id ? 'picked' : ''}" data-vote="${o.id}" ${locked ? 'disabled' : ''}
+            aria-label="Vote for ${esc(o.name)}">
+      ${o.img ? `<img src="${esc(o.img)}" alt="">` : (DOODLES[o.doodle] ? DOODLES[o.doodle](o.color) : '')}
+      <div class="name">${esc(o.name).toUpperCase()}</div>
+      ${d.myVote === o.id ? '<div class="hand">your vote ✓</div>' : ''}
+    </button>`).join('');
+
+  if (preLaunch) $('#voteMsg').textContent = '';
+  else if (d.closed) $('#voteMsg').innerHTML = '<span class="poll-closed">VOTING IS CLOSED</span>';
+  else if (d.myVote) flash($('#voteMsg'), 'Thanks for voting! Check back for the results in the next episode.');
+  else $('#voteMsg').textContent = '';
+
+  const totals = P.options.map(o => ({ ...o, n: (d.online[o.id] || 0) + (d.offline[o.id] || 0) }));
+  const sum = totals.reduce((a, t) => a + Math.max(0, t.n), 0);
+  $('#pollResults').innerHTML = totals.map(t => {
+    const pct = sum ? Math.round(Math.max(0, t.n) / sum * 100) : 0;
+    return `<div class="bar-row">
+      <div class="bar-label"><span>${esc(t.name)}</span><span>${pct}% · ${t.n} vote${t.n === 1 ? '' : 's'}</span></div>
+      <div class="bar-track"><div class="bar-fill" style="background-color:${t.color}" data-w="${pct}"></div></div>
+    </div>`;
+  }).join('');
+  requestAnimationFrame(() => $$('.bar-fill').forEach(b => b.style.width = b.dataset.w + '%'));
+
+  const offTotal = Object.values(d.offline).reduce((a, b) => a + b, 0);
+  $('#pollTotal').textContent = `${sum} total votes` + (offTotal ? ` (includes ${offTotal} offline/external)` : '');
+  $('#homePoll').textContent = preLaunch ? `${P.options.map(o => o.name).join(', ')}... voting opens when NWAOS 6 is out!`
+    : d.closed ? 'Voting is closed — results soon!' : `${P.options.map(o => o.name).join(' vs ')} — go vote!`;
+
+  $('#offlineWho').innerHTML = P.options.map(o => `<option value="${o.id}">${esc(o.name)}</option>`).join('');
+  $('#offlineLog').innerHTML = d.log.length
+    ? '<p><strong>Offline vote log:</strong></p>' + d.log.slice(-10).reverse().map(l =>
+        `<div>${new Date(l.t).toLocaleString()} — ${l.n > 0 ? '+' : ''}${l.n} for ${esc(l.name)}${l.src ? ' (' + esc(l.src) + ')' : ''}</div>`).join('')
+    : '';
+}
+$('#pollOptions').addEventListener('click', e => {
+  const b = e.target.closest('[data-vote]');
+  const d = pollData();
+  if (!b || d.myVote || d.closed || P.status !== 'open') return;
+  d.online[b.dataset.vote] = (d.online[b.dataset.vote] || 0) + 1;
+  store.set(pollKey('online'), d.online);
+  store.set(pollKey('myvote'), b.dataset.vote);
+  renderPoll();
+});
+$('#offlineForm').addEventListener('submit', e => {
+  e.preventDefault();
+  if (!isAdmin()) return;
+  const id = $('#offlineWho').value;
+  const n = parseInt($('#offlineCount').value, 10);
+  if (!Number.isFinite(n) || n === 0) return flash($('#offlineMsg'), 'Enter a number (not 0).', 'err');
+  const d = pollData();
+  d.offline[id] = (d.offline[id] || 0) + n;
+  d.log.push({ t: Date.now(), n, name: P.options.find(o => o.id === id).name, src: $('#offlineSource').value.trim() });
+  store.set(pollKey('offline'), d.offline);
+  store.set(pollKey('log'), d.log);
+  flash($('#offlineMsg'), `Added ${n} vote(s)!`);
+  renderPoll();
+});
+$('#togglePollBtn').addEventListener('click', () => {
+  if (!isAdmin()) return;
+  store.set(pollKey('closed'), !pollData().closed);
+  renderPoll();
+});
+$('#resetPollBtn').addEventListener('click', async () => {
+  if (!isAdmin() || !(await ask('Reset ALL votes for this poll? This can\'t be undone.'))) return;
+  ['online', 'offline', 'log', 'myvote', 'closed'].forEach(k => { try { localStorage.removeItem('nwaos_' + pollKey(k)); } catch {} });
+  renderPoll();
+});
+
+/* =========================================================
+   FAN THEORIES / COMMENTS
+   ========================================================= */
+let commentFilter = 'all';
+function getComments() { return store.get('comments', []).filter(c => !String(c.id).startsWith('seed')); }
+function renderComments() {
+  const myIds = store.get('myComments', []);
+  const liked = store.get('liked', []);
+  let list = [...getComments()];
+  if (commentFilter === 'top') list.sort((a, b) => b.likes - a.likes);
+  else {
+    if (commentFilter !== 'all') list = list.filter(c => c.tag === commentFilter);
+    list.sort((a, b) => b.time - a.time);
+  }
+  list.sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0)); // Creator's Picks float to the top
+  const tagLabel = { theory: 'THEORY', chat: 'CHAT', fanart: 'FAN IDEA' };
+  const nick = store.get('nickname', '');
+  $('#commentList').innerHTML = list.length ? list.map(c => `
+    <article class="box comment ${myIds.includes(c.id) ? 'mine' : ''} ${c.starred ? 'starred' : ''}">
+      ${c.starred ? '<span class="pick-ribbon">★ CREATOR\'S PICK</span>' : ''}
+      <div class="comment-head">
+        <span class="badge ${c.tag === 'theory' ? 'teaser' : c.tag === 'fanart' ? 'update' : ''}">${tagLabel[c.tag] || 'CHAT'}</span>
+        <span class="comment-name">${esc(c.name)}</span>${c.creator ? '<span class="badge creator">★ CREATOR</span>' : ''}
+        <span class="comment-time">${timeAgo(c.time)}</span>
+      </div>
+      <p class="comment-text">${emojify(esc(c.text))}</p>
+      ${commentImage(c, myIds)}
+      <div class="comment-actions">
+        <button class="like-btn ${liked.includes(c.id) ? 'liked' : ''}" data-like="${c.id}" aria-pressed="${liked.includes(c.id)}" aria-label="Like"><img src="images/find/heart-balloon.png" alt=""> ${c.likes}</button>
+        <button class="reply-btn" data-reply-open="${c.id}">↩ REPLY${(c.replies || []).length ? ` (${c.replies.length})` : ''}</button>
+        <button class="btn small admin-only" data-star="${c.id}">${c.starred ? '★ UNSTAR' : '☆ STAR'}</button>
+        ${c.image && c.imageStatus === 'approved' ? `<button class="btn small blue admin-only" data-fanart="${c.id}">${c.fanart ? 'REMOVE FROM FAN ART' : '🎨 ADD TO FAN ART'}</button>` : ''}
+        <button class="btn small red admin-only" data-del-comment="${c.id}">DELETE</button>
+      </div>
+      ${(c.replies || []).length ? `<div class="replies">${c.replies.map(r => `
+        <div class="reply">
+          <div class="comment-head"><span class="comment-name">↳ ${esc(r.name)}</span>${r.creator ? '<span class="badge creator">★ CREATOR</span>' : ''}<span class="comment-time">${timeAgo(r.time)}</span>
+            <button class="linkish admin-only reply-del" data-del-reply="${c.id}|${r.id}">delete</button></div>
+          <p class="comment-text">${emojify(esc(r.text))}</p>
+        </div>`).join('')}</div>` : ''}
+      <form class="reply-form" data-reply-to="${c.id}" hidden>
+        <input class="reply-name" maxlength="24" placeholder="Your nickname" value="${esc(nick)}" aria-label="Your nickname">
+        <textarea class="reply-text" maxlength="300" placeholder="Write a reply... :snail:" aria-label="Your reply"></textarea>
+        <button class="btn small blue" type="submit">POST REPLY</button>
+        <p class="msg reply-msg" role="status"></p>
+      </form>
+    </article>`).join('') : '<p class="box empty">No posts here yet. Be the first!</p>';
+  renderFanArt();
+  if (typeof CONFIG.findGame !== 'undefined' && document.readyState !== 'loading') placeHiders();
+}
+// Fan Art tab: approved pictures Eli picked with "Add to Fan Art"
+function renderFanArt() {
+  const art = getComments().filter(c => c.fanart && c.image && c.imageStatus === 'approved').sort((a, b) => b.time - a.time);
+  $('#fanartGrid').innerHTML = art.length ? art.map((c, i) => `
+    <figure class="box fanart-card ${i % 2 ? 'tilt-r' : 'tilt-l'}">
+      <img src="${esc(c.image)}" alt="Fan art by ${esc(c.name)}" loading="lazy">
+      <figcaption><strong>by ${esc(c.name)}</strong><span>${emojify(esc(c.text.length > 90 ? c.text.slice(0, 90) + '…' : c.text))}</span></figcaption>
+      <button class="btn small red admin-only" data-fanart-remove="${c.id}">REMOVE</button>
+    </figure>`).join('') : '<p class="box empty">No fan art yet! Post your drawings on the Theories page, and Eli might pick yours. 🎨</p>';
+}
+$('#fanartGrid').addEventListener('click', e => {
+  const b = e.target.closest('[data-fanart-remove]'); if (!b || !isAdmin()) return;
+  const comments = getComments(), c = comments.find(x => x.id === b.dataset.fanartRemove);
+  if (c) { c.fanart = false; store.set('comments', comments); renderComments(); }
+});
+
+// Fan pictures: only shown once the creator approves them
+function commentImage(c, myIds) {
+  if (!c.image) return '';
+  if (c.imageStatus === 'approved') return `<img class="post-img" src="${esc(c.image)}" alt="Fan picture from ${esc(c.name)}" loading="lazy">`;
+  if (isAdmin()) return `<div class="pending-pic"><span class="badge teaser">WAITING FOR YOUR OK</span>
+      <img class="post-img" src="${esc(c.image)}" alt="Picture waiting for approval">
+      <div class="row"><button class="btn small green" data-approve="${c.id}">APPROVE</button><button class="btn small red" data-reject="${c.id}">REJECT</button></div></div>`;
+  if (myIds.includes(c.id)) return '<p class="form-note">📷 Your picture is waiting for Eli to approve it.</p>';
+  return '';
+}
+$('#cImage').addEventListener('change', async () => {
+  const f = $('#cImage').files[0], prev = $('#cImagePreview');
+  if (!f) { prev.hidden = true; return; }
+  try { prev.src = await shrinkImage(f); prev.hidden = false; } catch { prev.hidden = true; flash($('#commentMsg'), "Couldn't open that picture.", 'err'); }
+});
+// Checks shared by posts and replies. Returns a problem message, or '' if it's fine.
+function postProblem(name, text) {
+  if (!name || !text) return 'Fill in both boxes!';
+  const lower = (name + ' ' + text).toLowerCase();
+  if (CONFIG.blockedWords.some(w => w && lower.includes(w))) return 'Hmm, let\'s keep it friendly. Try rewording that!';
+  if (/\b\d{3}[\s.-]?\d{3}[\s.-]?\d{4}\b|@[a-z0-9-]+\.[a-z]{2,}/i.test(text)) return 'Please don\'t post phone numbers or emails!';
+  const squish = t => t.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (squish(name).includes(squish(CONFIG.creatorNickname)) && !isAdmin()) return 'That nickname belongs to the creator! Pick a different one.';
+  if (Date.now() - store.get('lastPost', 0) < 15000) return 'Whoa, slow down! Wait a few seconds.';
+  return '';
+}
+$('#commentForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const msg = $('#commentMsg');
+  const name = $('#cName').value.trim();
+  const text = $('#cText').value.trim();
+  const problem = postProblem(name, text);
+  if (problem) return flash(msg, problem, 'err');
+  const comments = getComments();
+  const newId = 'c-' + uid();
+  let image = '';
+  if ($('#cImage').files[0]) {
+    try { image = await shrinkImage($('#cImage').files[0]); } catch { return flash(msg, "Couldn't open that picture.", 'err'); }
+  }
+  comments.push({ id: newId, name, tag: $('#cTag').value, text, time: Date.now(), likes: 0, creator: isAdmin(),
+    ...(image ? { image, imageStatus: isAdmin() ? 'approved' : 'pending' } : {}) });
+  const firstPost = !store.get('myComments', []).length;
+  store.set('myComments', [...store.get('myComments', []), newId]);
+  if (!store.set('comments', comments)) return flash(msg, 'That picture is too big to save. Try a smaller one.', 'err');
+  store.set('lastPost', Date.now());
+  store.set('nickname', name);
+  $('#cText').value = '';
+  $('#cImage').value = ''; $('#cImagePreview').hidden = true;
+  flash(msg, 'Posted! 🐌');
+  renderComments();
+  if (firstPost && !findFound().includes('floating-text')) toast('Wait... did something just pop up next to your post?');
+});
+$('#commentList').addEventListener('submit', e => {
+  const f = e.target.closest('.reply-form'); if (!f) return;
+  e.preventDefault();
+  const name = f.querySelector('.reply-name').value.trim(), text = f.querySelector('.reply-text').value.trim();
+  const problem = postProblem(name, text);
+  if (problem) return flash(f.querySelector('.reply-msg'), problem, 'err');
+  const comments = getComments(), c = comments.find(x => x.id === f.dataset.replyTo);
+  if (!c) return;
+  (c.replies = c.replies || []).push({ id: 'r-' + uid(), name, text, time: Date.now(), creator: isAdmin() });
+  store.set('comments', comments); store.set('lastPost', Date.now()); store.set('nickname', name);
+  renderComments();
+  toast('Reply posted! 🐌');
+});
+$('#commentList').addEventListener('click', async e => {
+  const open = e.target.closest('[data-reply-open]');
+  if (open) {
+    const f = open.closest('.comment').querySelector('.reply-form');
+    f.hidden = !f.hidden; if (!f.hidden) f.querySelector('.reply-text').focus();
+    return;
+  }
+  const star = e.target.closest('[data-star]'), fa = e.target.closest('[data-fanart]'), dr = e.target.closest('[data-del-reply]');
+  if ((star || fa || dr) && isAdmin()) {
+    const comments = getComments();
+    if (star) { const c = comments.find(x => x.id === star.dataset.star); c.starred = !c.starred; toast(c.starred ? '★ Starred! It moved to the top.' : 'Star removed.'); }
+    if (fa) { const c = comments.find(x => x.id === fa.dataset.fanart); c.fanart = !c.fanart; toast(c.fanart ? '🎨 Added to the Fan Art tab!' : 'Removed from Fan Art.'); }
+    if (dr) {
+      const [cid, rid] = dr.dataset.delReply.split('|');
+      if (!(await ask('Delete this reply?'))) return;
+      const c = comments.find(x => x.id === cid); c.replies = (c.replies || []).filter(r => r.id !== rid);
+    }
+    store.set('comments', comments); renderComments();
+    return;
+  }
+  const like = e.target.closest('[data-like]');
+  const del = e.target.closest('[data-del-comment]');
+  const comments = getComments();
+  if (like) {
+    const liked = store.get('liked', []);
+    const c = comments.find(c => c.id === like.dataset.like);
+    if (!c) return;
+    if (liked.includes(c.id)) { c.likes = Math.max(0, c.likes - 1); liked.splice(liked.indexOf(c.id), 1); }
+    else { c.likes++; liked.push(c.id); }
+    store.set('liked', liked); store.set('comments', comments); renderComments();
+  }
+  const appr = e.target.closest('[data-approve]'), rej = e.target.closest('[data-reject]');
+  if ((appr || rej) && isAdmin()) {
+    const c = comments.find(x => x.id === (appr || rej).dataset[appr ? 'approve' : 'reject']);
+    if (c) {
+      if (appr) c.imageStatus = 'approved';
+      else if (await ask('Reject this picture? The comment stays, the picture is removed.')) { delete c.image; delete c.imageStatus; }
+      store.set('comments', comments); renderComments();
+    }
+    return;
+  }
+  if (del && isAdmin() && (await ask('Delete this comment?'))) {
+    store.set('comments', comments.filter(c => c.id !== del.dataset.delComment));
+    renderComments();
+  }
+});
+$('#emojiPicker').innerHTML = Object.entries(CONFIG.emojis).map(([k, src]) =>
+  `<button type="button" data-emo="${k}" title=":${k}:"><img src="${src}" alt=":${k}:"><span>:${k}:</span></button>`).join('');
+$('#emojiToggle').addEventListener('click', () => {
+  const open = $('#emojiPicker').hidden;
+  $('#emojiPicker').hidden = !open; $('#emojiToggle').setAttribute('aria-expanded', open);
+});
+$('#emojiPicker').addEventListener('click', e => {
+  const b = e.target.closest('[data-emo]'); if (!b) return;
+  const t = $('#cText'), code = `:${b.dataset.emo}: `, at = t.selectionStart ?? t.value.length;
+  if (t.value.length + code.length > 500) return;
+  t.value = t.value.slice(0, at) + code + t.value.slice(t.selectionEnd ?? at);
+  t.focus(); t.selectionStart = t.selectionEnd = at + code.length;
+});
+$('#commentFilters').addEventListener('click', e => {
+  const chip = e.target.closest('[data-filter]');
+  if (!chip) return;
+  commentFilter = chip.dataset.filter;
+  $$('.chip').forEach(c => c.setAttribute('aria-pressed', c === chip));
+  renderComments();
+});
+
+/* =========================================================
+   MUSIC (each song loops forever)
+   ========================================================= */
+function renderMusic() {
+  const songs = CONFIG.music.filter(s => s.youtubeId || s.soon);
+  $('#musicGrid').innerHTML = songs.length ? songs.map((s, i) => {
+    if (!s.youtubeId) return `<article class="box song ${i % 2 ? 'tilt-r' : 'tilt-l'}">
+      <div class="song-head"><h3>♪ ${esc(s.title).toUpperCase()}</h3><span class="badge">🎄 SOON</span></div>
+      <div class="player"><div class="player-empty">COMING SOON!</div></div>
+    </article>`;
+    const id = encodeURIComponent(s.youtubeId);
+    return `<article class="box song ${i % 2 ? 'tilt-r' : 'tilt-l'}">
+      <div class="song-head"><h3>♪ ${esc(s.title).toUpperCase()}</h3><span class="badge">LOOP</span></div>
+      <div class="player"><iframe src="https://www.youtube-nocookie.com/embed/${id}?loop=1&playlist=${id}&rel=0" title="${esc(s.title)}" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>
+      <a class="yt-link" href="${ytWatch(s.youtubeId)}" target="_blank" rel="noopener">Not loading? Listen on YouTube ↗</a>
+    </article>`;
+  }).join('') : '<p class="box empty">♪ Songs coming soon! ♪</p>';
+}
+
+/* =========================================================
+   CHARACTERS
+   ========================================================= */
+function renderCharacters() {
+  $('#charList').innerHTML = CONFIG.characterGroups.map(g => {
+    const chars = CONFIG.characters.filter(c => c.group === g.id);
+    if (!chars.length) return '';
+    return `<div class="char-group"><h3>${esc(g.title)}</h3><span class="hand muted">${esc(g.note)}</span></div>
+      <div class="char-grid">${chars.map(c => {
+        const facts = { 'Gender': 'None', ...(c.facts || {}) };
+        return `<article class="box char-card">
+          <div class="char-pic">${!c.img ? '<span class="mystery">?</span>'
+            : XMAS ? hatted(`<img class="cut" src="${esc((CONFIG.findGame.find(f => f.name === c.name) || {}).id ? 'images/find/' + CONFIG.findGame.find(f => f.name === c.name).id + '.png' : c.img)}" alt="${esc(c.name)}">`)
+            : `<img src="${esc(c.img)}" alt="${esc(c.name)}" loading="lazy">`}</div>
+          <div class="char-body">
+            <h4>${esc(c.name).toUpperCase()}</h4>
+            ${c.aka ? `<p class="char-aka">aka ${esc(c.aka)}</p>` : ''}
+            ${c.status ? `<span class="badge ${esc(c.status[0])} char-status">${esc(c.status[1]).toUpperCase()}</span>` : ''}
+            <dl class="facts">${Object.entries(facts).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
+            <p class="char-desc">${esc(c.desc || '')}</p>
+            ${c.quote ? `<p class="char-quote">"${esc(c.quote)}"</p>` : ''}
+            ${c.fun ? `<p class="char-fun">${esc(c.fun)}</p>` : ''}
+          </div>
+        </article>`;
+      }).join('')}</div>`;
+  }).join('');
+}
+
+// "Are you sure?" box built into the page (some places block the browser's own popup)
+function ask(text) {
+  return new Promise(resolve => {
+    const d = $('#askDialog');
+    $('#askText').textContent = text;
+    d.returnValue = '';
+    d.addEventListener('close', () => resolve(d.returnValue === 'yes'), { once: true });
+    d.showModal();
+  });
+}
+
+/* =========================================================
+   FIND THE CHARACTERS
+   ========================================================= */
+const findFound = () => store.get('found', []).filter(id => CONFIG.findGame.some(c => c.id === id));
+const findWon = () => findFound().length >= CONFIG.findGame.length;
+function renderFindBoard() {
+  const found = findFound();
+  $('#findCount').textContent = `${found.length} / ${CONFIG.findGame.length}`;
+  $('#findWin').hidden = !findWon();
+  $('#findGrid').innerHTML = CONFIG.findGame.map(c => {
+    const got = found.includes(c.id);
+    return `<div class="find-slot ${got ? 'found' : ''}">${hatted(`<img src="images/find/${esc(c.id)}.png" alt="${got ? esc(c.name) : 'not found yet'}">`)}<span>${got ? esc(c.name) : '???'}</span></div>`;
+  }).join('');
+}
+function placeHiders() {
+  $$('.hider').forEach(h => h.remove());
+  const found = findFound();
+  CONFIG.findGame.forEach(c => {
+    if (found.includes(c.id)) return;
+    if (c.afterFirstPost && !store.get('myComments', []).length) return;
+    const anchor = $(c.anchor);
+    if (!anchor) return;
+    if (getComputedStyle(anchor).position === 'static') anchor.style.position = 'relative';
+    const b = document.createElement('button');
+    b.className = 'hider'; b.type = 'button'; b.dataset.find = c.id;
+    b.setAttribute('aria-label', 'Something is hiding here!');
+    b.style.cssText = `${c.style};--r:${c.r || 0}deg;${c.size ? `width:${c.size}px;` : ''}`;
+    b.innerHTML = `<img src="images/find/${esc(c.id)}.png" alt="">${XMAS ? HAT : ''}`;
+    anchor.appendChild(b);
+  });
+}
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+document.addEventListener('click', e => {
+  const h = e.target.closest('.hider');
+  if (!h) return;
+  e.preventDefault(); e.stopPropagation();
+  const c = CONFIG.findGame.find(x => x.id === h.dataset.find);
+  const found = findFound();
+  if (!found.includes(c.id)) { found.push(c.id); store.set('found', found); }
+  h.classList.add('got'); setTimeout(() => h.remove(), 500);
+  renderFindBoard();
+  if (findWon()) { toast('YOU FOUND EVERYONE! Go poke the snail on Home!'); renderSnailToy(); }
+  else toast(`You found ${c.name}! (${found.length}/${CONFIG.findGame.length})`);
+}, true);
+$('#findReset').addEventListener('click', async () => {
+  if (!(await ask('Hide everyone again and start over?'))) return;
+  store.set('found', []); renderFindBoard(); placeHiders(); renderSnailToy();
+  $('#snailSays').textContent = "he's waiting.";
+});
+
+/* =========================================================
+   SNAIL TOY (home page)
+   ========================================================= */
+const BABY_POKES = 3729;
+function renderSnailToy() {
+  const won = findWon();
+  const babies = store.get('pokes', 0) >= BABY_POKES;
+  $('.snail-toy').classList.toggle('won', won);
+  $('#snailBtn').innerHTML = (won ? hatted('<img src="images/sweater-rides-snail.png" alt="Sweater riding Giant Snail">') : (typeof XMAS !== 'undefined' && XMAS ? '<img src="images/xmas/snail-santa.png" alt="">' : '<img src="images/giant-snail.png" alt="">')) +
+    (babies ? '<span class="babies"><img src="images/find/baby-giant-snail.png" alt="a baby snail"><img src="images/find/baby-giant-snail.png" alt="another baby snail" style="transform:scaleX(-1)"></span>' : '');
+  if (won) $('#snailSays').textContent = 'Sweater and Giant Snail, riding together. The alliance is strong!';
+  $('#snailCount').textContent = store.get('pokes', 0);
+}
+const SNAIL_LINES = [
+  '...', 'hey.', 'HEY.', 'stop that.', 'i will remember this.',
+  'Sweater will hear about this.',
+  'is that lettuce? no? then stop poking me.',
+  'to pay for your crimes, you must give me some lettuce.',
+  'i am a GIANT snail.',
+  'poke me one more time and the lettuce budget gets cut.',
+  "that's it. i'm telling Sweater.",
+  'ok fine, keep going.',
+  'this is my life now.',
+  'unless you have lettuce, this alliance is over.',
+];
+// When Sweater is riding (after you find everyone), Sweater protects Giant Snail
+const SWEATER_LINES = [
+  "Sweater: Ha! Nice try. I've got Giant Snail's back now!",
+  'Sweater: No poking my alliance buddy!',
+  "Sweater: Don't worry Giant Snail, I've got you!",
+  "Sweater: You'll have to get through ME first!",
+  'Sweater: Giant Snail says thanks. Well, Giant Snail doesn\'t talk, but I can tell.',
+  'Sweater: This is what alliances are for!',
+  'Sweater: Poke all you want, we are UNSTOPPABLE.',
+];
+$('#snailBtn').addEventListener('click', () => {
+  const n = store.get('pokes', 0) + 1;
+  store.set('pokes', n);
+  $('#snailCount').textContent = n;
+  if (n === BABY_POKES) { renderSnailToy(); toast('3,729 pokes?! Two baby snails came to see what all the poking is about!'); return; }
+  if (findWon()) {
+    if (n % 3 === 0) $('#snailSays').textContent = SWEATER_LINES[Math.floor(n / 3) % SWEATER_LINES.length];
+    return;
+  }
+  const i = Math.floor(n / 5);
+  $('#snailSays').textContent = i < SNAIL_LINES.length ? SNAIL_LINES[i] : SNAIL_LINES[1 + (i - 1) % (SNAIL_LINES.length - 1)];
+});
+
+/* =========================================================
+   ADMIN MODE
+   ========================================================= */
+const dlg = $('#adminDialog');
+$('#adminOpen').addEventListener('click', () => { $('#adminMsg').textContent = ''; $('#adminCode').value = ''; dlg.showModal(); });
+$('#adminCancel').addEventListener('click', () => dlg.close());
+async function sha256(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+$('#adminForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  let ok = false;
+  try { ok = (await sha256($('#adminCode').value)) === CONFIG.adminCodeHash; } catch {}
+  if (ok) {
+    try { sessionStorage.setItem('nwaos_admin', '1'); } catch {}
+    document.body.classList.add('is-admin'); renderComments();
+    dlg.close();
+  } else {
+    $('#adminMsg').textContent = 'Wrong passcode!';
+  }
+});
+$('#adminExit').addEventListener('click', () => {
+  try { sessionStorage.removeItem('nwaos_admin'); } catch {}
+  document.body.classList.remove('is-admin'); renderComments();
+});
+
+/* =========================================================
+   START
+   ========================================================= */
+/* ---------- password screen ---------- */
+function openGate() { $('#gate').hidden = true; document.body.classList.remove('gated'); }
+if (store.get('gate', '') === CONFIG.sitePasswordHash) openGate();
+else setTimeout(() => $('#gateCode').focus(), 50);
+$('#gateForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  let ok = false;
+  try { ok = (await sha256($('#gateCode').value.trim())) === CONFIG.sitePasswordHash; } catch {}
+  if (ok) { store.set('gate', CONFIG.sitePasswordHash); openGate(); }
+  else { $('#gateMsg').textContent = 'Nope! That\'s not the password.'; $('#gateCode').select(); }
+});
+
+try { if (sessionStorage.getItem('nwaos_admin') === '1') document.body.classList.add('is-admin'); } catch {}
+$('#year').textContent = new Date().getFullYear();
+/* ---------- Christmas mode ---------- */
+// Wrap a picture so a Santa hat sits on top of it (only while Christmas is on)
+const HAT = '<img class="hat" src="images/xmas/hat.png" alt="">';
+function hatted(imgHtml) { return (typeof XMAS !== 'undefined' && XMAS) ? `<span class="hatwrap">${imgHtml}${HAT}</span>` : imgHtml; }
+function isChristmas() {
+  let preview = false;
+  try { preview = sessionStorage.getItem('nwaos_xmas_preview') === '1'; } catch {}
+  const d = new Date(), today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return preview || (today >= CONFIG.christmas.start && today < CONFIG.christmas.end);
+}
+function startChristmas() {
+  const X = CONFIG.christmas;
+  document.body.classList.add('xmas');
+  CONFIG.music.unshift({ title: X.short + ' Intro', youtubeId: X.introSongId, soon: !X.introSongId });
+  CONFIG.episodes.push({ num: 'xmas', label: X.short, title: X.title, youtubeId: X.youtubeId,
+    thumb: 'images/xmas/christmas-special-thumb.jpg', length: '', desc: X.desc });
+  $('#xmasBanner').hidden = false;
+  $('#xmasText').textContent = X.youtubeId ? `${X.title} (${X.short}) is out now. Go watch it!` : `${X.title} (${X.short}) is coming very soon!`;
+  const snow = document.createElement('div'); snow.className = 'snow'; snow.setAttribute('aria-hidden', 'true');
+  snow.innerHTML = Array.from({ length: 42 }, () =>
+    `<i style="--x:${Math.random() * 100}%;--s:${4 + Math.random() * 8}px;--d:${7 + Math.random() * 9}s;--delay:${-Math.random() * 16}s;--drift:${-40 + Math.random() * 80}px"></i>`).join('');
+  document.body.appendChild(snow);
+}
+$('#xmasPreview').addEventListener('click', () => {
+  try {
+    const on = sessionStorage.getItem('nwaos_xmas_preview') === '1';
+    if (on) sessionStorage.removeItem('nwaos_xmas_preview'); else sessionStorage.setItem('nwaos_xmas_preview', '1');
+  } catch {}
+  location.reload();
+});
+const XMAS = isChristmas();
+if (XMAS) startChristmas();
+$('#heroArt').innerHTML = XMAS ? '<img src="images/xmas/snail-santa.png" alt="Giant Snail in a Santa hat">' : '<img src="images/giant-snail.png" alt="Giant Snail, a real garden snail">';
+const savedNick = store.get('nickname', '');
+if (savedNick) $('#cName').value = savedNick;
+renderEpisodes();
+renderNews();
+renderPoll();
+renderComments();
+renderMusic();
+renderCharacters();
+renderSnailToy();
+renderFindBoard();
+placeHiders();
+showPage(location.hash.slice(1) || 'home');
+
+/* =========================================================
+   NOTES FOR ELI
+   1. HOSTING: upload this one file as "index.html" to GitHub Pages,
+      Neocities, or Netlify Drop. No server needed.
+   2. EPISODES: paste YouTube IDs into CONFIG.episodes above.
+   3. ADMIN: click "creator login" in the footer and type your passcode.
+   4. IMPORTANT: right now votes, comments and new posts are saved
+      only in each visitor's own browser. To make them LIVE and shared
+      by everyone, connect a free database (e.g. Firebase Firestore or
+      Supabase) and replace store.get/store.set with calls to it. Do
+      that before announcing the vote, and also move the admin check
+      to the database's security rules — a passcode in this file can
+      be found by anyone who views the page source.
+   5. Starter news posts live in CONFIG.starterPosts — editing them
+      there makes them show up for everyone even without a database.
+   ========================================================= */
+</script>
+</body>
+</html>
