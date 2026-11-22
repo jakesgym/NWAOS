@@ -1,0 +1,94 @@
+rules_version = '2';
+// NWAOS fan site database rules.
+// Usernames sign in as <username>@fans.nwaos.com (no real emails are collected).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isAdmin() { return signedIn() && request.auth.token.email == 'nwaosmaker372@fans.nwaos.com'; }
+    function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function hasAccount() { return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)); }
+    function approved() { return isAdmin() || (hasAccount() && me().status == 'approved'); }
+    function notBanned() { return isAdmin() || (hasAccount() && me().status != 'banned'); }
+    function onlyChanged(keys) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys); }
+
+    // ---------- accounts ----------
+    match /users/{uid} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.username is string
+        && request.auth.token.email == request.resource.data.username.lower() + '@fans.nwaos.com'
+        && request.resource.data.status == (isAdmin() ? 'approved' : 'new')
+        && request.resource.data.keys().hasOnly(['username', 'status', 'created', 'save']);
+      // You can update your own saved games; only the creator can approve or ban.
+      allow update: if (signedIn() && request.auth.uid == uid && onlyChanged(['save']))
+        || (isAdmin() && onlyChanged(['status']) && request.resource.data.status in ['new', 'approved', 'banned']);
+      allow delete: if isAdmin();
+    }
+
+    // ---------- news posts (creator only) ----------
+    match /posts/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ---------- theories / comments ----------
+    match /comments/{id} {
+      allow read: if true;
+      allow create: if approved()
+        && request.resource.data.uid == request.auth.uid
+        && (isAdmin() || request.resource.data.name == me().username)
+        && request.resource.data.creator == isAdmin()
+        && request.resource.data.text is string && request.resource.data.text.size() <= 500
+        && request.resource.data.likes == {}
+        && request.resource.data.replies == []
+        && request.resource.data.starred == false && request.resource.data.fanart == false
+        && request.resource.data.keys().hasOnly(['uid', 'name', 'tag', 'text', 'time', 'likes', 'replies', 'creator', 'starred', 'fanart', 'pic']);
+      allow update: if isAdmin()
+        // like / unlike: only your own heart changes
+        || (notBanned() && onlyChanged(['likes'])
+            && request.resource.data.likes.diff(resource.data.likes).affectedKeys().hasOnly([request.auth.uid]))
+        // reply: adds exactly one reply, written by you, and keeps all the old ones
+        || (approved() && onlyChanged(['replies'])
+            && request.resource.data.replies.size() == resource.data.replies.size() + 1
+            && request.resource.data.replies.hasAll(resource.data.replies)
+            && request.resource.data.replies[resource.data.replies.size()].uid == request.auth.uid
+            && request.resource.data.replies[resource.data.replies.size()].name == me().username
+            && request.resource.data.replies[resource.data.replies.size()].creator == false
+            && request.resource.data.replies[resource.data.replies.size()].text.size() <= 300);
+      allow delete: if isAdmin();
+    }
+
+    // ---------- fan pictures (hidden until the creator approves) ----------
+    match /pics/{id} {
+      allow read: if resource.data.status == 'approved' || isAdmin()
+        || (signedIn() && resource.data.uid == request.auth.uid);
+      allow create: if approved()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == (isAdmin() ? 'approved' : 'pending')
+        && request.resource.data.image is string && request.resource.data.image.size() < 900000
+        && request.resource.data.keys().hasOnly(['uid', 'image', 'status', 'time']);
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------- voting ----------
+    match /polls/{poll} {
+      allow read: if true;              // offline votes, log, closed switch
+      allow write: if isAdmin();
+      match /votes/{uid} {
+        allow read: if true;
+        allow create: if notBanned() && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['choice', 'time'])
+          && request.resource.data.choice is string;
+        allow update: if false;
+        allow delete: if isAdmin();
+      }
+    }
+
+    // ---------- site settings (creator only) ----------
+    match /site/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

@@ -31,6 +31,7 @@
   --font-hand:'Patrick Hand', 'Comic Sans MS', cursive;
 }
 *{box-sizing:border-box}
+button,input,textarea,select{color:var(--ink)}
 .yt-link{font-size:.85rem;font-weight:700}
 /* Orbitron (closest match to Eli's Floating Text font) runs smaller than the old pixel font, so bump it up */
 h1,h2,h3,.btn,.tab,.logo-mark,.badge,.chip,.vote-card .name,.ep-num,.ep-len,.now-playing,.player-empty,.poll-closed,.locked-banner,.counter,.char-body h4,.soon-tag,.admin-bar{font-weight:900;font-size-adjust:.62}
@@ -406,6 +407,22 @@ input,textarea,select{border-radius:14px 6px 12px 8px / 8px 12px 6px 14px}
 #gate .logo-mark{display:inline-block;font-size:1.6rem;margin-bottom:12px}
 #gate img{width:180px;height:auto;display:block;margin:0 auto 8px}
 body.gated{overflow:hidden}
+.nav{order:2}
+@media (min-width:821px){.header-inner{gap:10px}.nav{gap:2px}.tab{padding:10px 7px}}
+@media (max-width:820px){.acct-btn{order:1;margin-left:auto}.menu-btn{order:2}}
+.acct-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:6px 0 10px}
+#gate .field{text-align:left}
+.acct-btn{font-family:var(--font-title);font-weight:900;font-size:.6rem;background:var(--yellow,#ffd84d);color:var(--ink);border:3px solid var(--ink);border-radius:20px;padding:7px 12px;cursor:pointer;order:3;flex:0 0 auto;max-width:44vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-shadow:3px 3px 0 var(--ink)}
+.acct-btn.in{background:#bdf5c8}
+.acct-btn.waiting{background:#ffe9b0}
+.as-name{font-family:var(--font-title);font-weight:900;padding:10px 0;font-size:.85rem}
+dialog.wide{width:min(94vw,620px)}
+.acct-list{max-height:55vh;overflow:auto;margin:10px 0;display:grid;gap:8px}
+.acct-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border:2px solid var(--ink);border-radius:12px;padding:8px 10px;background:#fff}
+.acct-row strong{flex:1 1 140px;word-break:break-all}
+.acct-row .muted{font-size:.8rem}
+.acct-filter{gap:6px;flex-wrap:wrap}
+.offline-note{background:#fff3c4;border:2px dashed var(--ink);border-radius:12px;padding:8px 12px;margin:0 0 16px;font-size:.9rem}
 
 /* ---------- find the characters ---------- */
 .find-board{--fill:#fff}
@@ -509,6 +526,18 @@ img.hat{position:absolute;left:50%;top:0;width:44%;max-width:84px;min-width:16px
 .poll-cast > img,.poll-cast .hatwrap > img:first-child{height:56px;width:auto;max-width:90px;object-fit:contain;transition:transform .15s}
 .poll-cast .hatwrap{margin-top:18px}
 .poll-cast:hover img:not(.hat){transform:rotate(-4deg) translateY(-2px)}
+
+.ttt-wallet{font-size:1.05rem;margin:-4px 0 10px}
+.ttt-chars button small{display:block;font-weight:400;font-size:.55rem;margin-top:2px}
+.ttt-chars button.locked img{filter:brightness(0) opacity(.3)}
+.ttt-chars button.locked{color:var(--muted)}
+.ttt-chars button.shop{border-color:#b8860b;background:#fff7d6}
+.ttt-chars button.shop img{filter:brightness(0) opacity(.45)}
+.ttt-speed{display:flex;align-items:center;gap:8px;font-family:var(--font-title);font-weight:900;font-size:.7rem;margin:0}
+.ttt-speed input{width:140px;padding:0;border:0}
+.ttt-bar{flex-wrap:wrap;justify-content:center;align-items:center}
+.coin-ico{height:1.3em;width:auto;vertical-align:-.3em}
+.ttt-chars button small .coin-ico{height:1.5em;width:auto;display:inline;margin:0;filter:none;vertical-align:-.45em}
 </style>
 </head>
 <body>
@@ -520,14 +549,20 @@ img.hat{position:absolute;left:50%;top:0;width:44%;max-width:84px;min-width:16px
 </svg>
 
 <div id="gate" hidden>
-  <form class="box" id="gateForm">
+  <form class="box" id="gateForm" autocomplete="on">
     <span class="logo-mark">NWAOS</span>
     <img src="images/giant-snail.png" alt="">
-    <h2>PASSWORD, PLEASE!</h2>
-    <p class="hand">Anyone can look around, but you need the password to post theories, replies and pictures.</p>
-    <div class="field"><label for="gateCode">Password</label><input id="gateCode" type="password" autocomplete="current-password" required></div>
+    <div class="acct-tabs" role="tablist">
+      <button type="button" class="chip" id="tabLogin" aria-pressed="true">LOG IN</button>
+      <button type="button" class="chip" id="tabSignup" aria-pressed="false">MAKE AN ACCOUNT</button>
+    </div>
+    <p class="hand" id="gateHelp">Anyone can look around. Log in to post theories, replies and pictures, and to save your games.</p>
+    <div class="field"><label for="gateUser">Username</label><input id="gateUser" maxlength="20" autocomplete="username" autocapitalize="off" spellcheck="false" required></div>
+    <div class="field"><label for="gateCode">Password</label><input id="gateCode" type="password" minlength="6" autocomplete="current-password" required></div>
+    <div class="field" id="gateCode2Wrap" hidden><label for="gateCode2">Type the password again</label><input id="gateCode2" type="password" autocomplete="new-password"></div>
+    <p class="form-note" id="gateRules" hidden>Use a made-up username, never your real name. Letters, numbers and _ only. Write your password down! There's no email, so it can't be reset.</p>
     <div class="row" style="justify-content:center">
-      <button class="btn red" type="submit">UNLOCK POSTING</button>
+      <button class="btn red" type="submit" id="gateGo">LOG IN</button>
       <button class="btn white" type="button" id="gateCancel">JUST LOOKING</button>
     </div>
     <p class="msg err" id="gateMsg" role="status"></p>
@@ -541,6 +576,7 @@ img.hat{position:absolute;left:50%;top:0;width:44%;max-width:84px;min-width:16px
       <span class="logo-mark">NWAOS</span>
       <span class="logo-sub">No Way An<br>Object Show</span>
     </a>
+    <button class="acct-btn" id="acctBtn" type="button">LOG IN</button>
     <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="nav">MENU</button>
     <nav class="nav" id="nav" aria-label="Main">
       <button class="tab" data-tab="home">HOME</button>
@@ -727,7 +763,7 @@ img.hat{position:absolute;left:50%;top:0;width:44%;max-width:84px;min-width:16px
     <div class="box" style="margin-bottom:26px">
       <form id="commentForm">
         <div class="row">
-          <div class="field"><label for="cName">Nickname</label><input id="cName" maxlength="24" placeholder="SnailFan99" required></div>
+          <div class="field"><label>Posting as</label><div class="as-name" id="cAs">not logged in</div></div>
           <div class="field" style="flex:0 1 180px"><label for="cTag">Type</label>
             <select id="cTag"><option value="theory">Theory</option><option value="chat">Chat</option><option value="fanart">Fan idea</option></select>
           </div>
@@ -742,7 +778,7 @@ img.hat{position:absolute;left:50%;top:0;width:44%;max-width:84px;min-width:16px
         </div>
         <button class="btn blue" type="submit">POST IT</button>
         <p class="form-note" style="margin-top:10px">Keep it friendly! Use a nickname — never post your real name, address, school or contact info.</p>
-        <p class="form-note">🔒 Posting needs the NWAOS password (you only type it once).</p>
+        <p class="form-note">🔒 You need an account to post. New accounts can post once Eli approves them.</p>
         <p class="msg" id="commentMsg" role="status"></p>
       </form>
     </div>
@@ -790,6 +826,7 @@ img.hat{position:absolute;left:50%;top:0;width:44%;max-width:84px;min-width:16px
     <div id="ttt" hidden>
       <div class="box ttt-setup" id="tttSetup">
         <h3>TO THE TOP: PICK YOUR CLIMBER</h3>
+        <p class="ttt-wallet"><img class="coin-ico" src="images/ttt/coin.png" alt=""> <strong id="tttCoins">0</strong> coins <span class="form-note">· grab coins between two obstacles on the same side, and beat levels for bonus coins</span></p>
         <div class="ttt-chars" id="tttChars"></div>
         <h3>PICK A MODE</h3>
         <div class="ttt-modes" id="tttModes"></div>
@@ -797,13 +834,14 @@ img.hat{position:absolute;left:50%;top:0;width:44%;max-width:84px;min-width:16px
           <button class="btn red" id="tttStart">▶ START CLIMBING</button>
           <button class="btn white" id="tttBack">← BACK TO GAMES</button>
         </div>
-        <p class="form-note" style="text-align:center;margin-top:12px">Tap the game (or press SPACE) to switch sides of the pole. You have 3 hearts!</p>
+        <p class="form-note" style="text-align:center;margin-top:12px">Tap the game (or press SPACE) to switch sides of the pole. You have 3 hearts! In Endless, grab a SUPER POWERS orb to knock obstacles off for the next 20 heights (it flickers when it's about to run out).</p>
       </div>
       <div class="ttt-stage" id="tttStage" hidden>
         <canvas id="tttCanvas" aria-label="To The Top game. Press space or tap to switch sides."></canvas>
         <div class="ttt-bar">
           <button class="btn small white" id="tttQuit">✕ QUIT</button>
           <button class="btn small blue" id="tttPower" hidden>⚡ POWER: OFF</button>
+          <label class="ttt-speed" id="tttSpeedWrap" hidden>SPEED <input type="range" id="tttSpeed" min="0.5" max="10" step="0.5" value="1"> <span id="tttSpeedVal">1x</span></label>
         </div>
         <div class="ttt-end box" id="tttEnd" hidden>
           <h3 id="tttEndTitle"></h3>
@@ -840,11 +878,10 @@ img.hat{position:absolute;left:50%;top:0;width:44%;max-width:84px;min-width:16px
 <footer>
   <p style="font-family:var(--font-title);font-size:.7rem">NWAOS © <span id="year"></span> Eli</p>
   <p class="hand">Made with markers, stick figures, and one real garden snail.</p>
-  <button class="linkish" id="adminOpen">creator login</button>
 </footer>
 
 <div class="admin-bar admin-only flex">
-  ADMIN MODE <button id="xmasPreview" type="button">🎄 PREVIEW CHRISTMAS</button> <button id="adminExit">LOG OUT</button>
+  CREATOR MODE <button id="acctListBtn" type="button">👥 ACCOUNTS <span id="waitCount"></span></button> <button id="xmasPreview" type="button">🎄 PREVIEW CHRISTMAS</button> <button id="adminExit">LOG OUT</button>
 </div>
 
 <dialog id="askDialog">
@@ -857,30 +894,54 @@ img.hat{position:absolute;left:50%;top:0;width:44%;max-width:84px;min-width:16px
   </form>
 </dialog>
 
-<dialog id="adminDialog">
-  <form id="adminForm" method="dialog">
-    <h3>CREATOR LOGIN</h3>
-    <div class="field"><label for="adminCode">Passcode</label><input id="adminCode" type="password" autocomplete="off"></div>
-    <div class="row">
-      <button class="btn green" type="submit" value="ok">ENTER</button>
-      <button class="btn white" type="button" id="adminCancel">CANCEL</button>
+<dialog id="adminDialog" class="wide">
+  <form method="dialog">
+    <h3>⭐ ACCOUNT OF AWESOMENESS ⭐</h3>
+    <p class="form-note">Every account on the site. New accounts can't post until you APPROVE them. BAN stops an account from posting, liking or voting.</p>
+    <div class="acct-filter row" id="acctFilter">
+      <button type="button" class="chip" data-af="new" aria-pressed="true">WAITING</button>
+      <button type="button" class="chip" data-af="approved" aria-pressed="false">APPROVED</button>
+      <button type="button" class="chip" data-af="banned" aria-pressed="false">BANNED</button>
+      <button type="button" class="chip" data-af="all" aria-pressed="false">ALL</button>
     </div>
-    <p class="msg err" id="adminMsg" role="status"></p>
+    <div id="acctList" class="acct-list"></div>
+    <div class="row"><button class="btn white" value="close">CLOSE</button></div>
   </form>
 </dialog>
 
+<dialog id="meDialog">
+  <form method="dialog">
+    <h3 id="meName">YOU</h3>
+    <p id="meStatus"></p>
+    <p class="form-note">Your To The Top coins and characters, the find game and your snail pokes are saved to this account.</p>
+    <div class="row">
+      <button class="btn red" type="button" id="meLogout">LOG OUT</button>
+      <button class="btn white" value="close">CLOSE</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 /* =========================================================
    NWAOS FAN SITE — SETTINGS
    ★ Eli: this CONFIG block is the only part you normally edit. ★
    ========================================================= */
 const CONFIG = {
-  // Creator passcode, stored scrambled (SHA-256) so it isn't readable here.
-  // To change it, ask Claude, or put a new SHA-256 hash of your passcode here.
-  // Password everyone needs to get into the site (stored scrambled, SHA-256).
-  sitePasswordHash: '172adbc85daa71564f9538595eb518f88b499525e563056aa3efb4fbdd5e313f',
-
-  adminCodeHash: '2cd6dc065ddd9c3a07caebe24fdefe3c019d61a203988cc130291888be6de1b8',
+  // The shared database (Firebase project "nwaos"). These settings are public on purpose;
+  // who can do what is controlled by the database's security rules, not by this file.
+  firebase: {
+    apiKey: 'AIzaSyB5w-Jf6PyAUIVlRA7YrroTd3gokDiUIKE',
+    authDomain: 'nwaos-65265.firebaseapp.com',
+    projectId: 'nwaos-65265',
+    storageBucket: 'nwaos-65265.firebasestorage.app',
+    messagingSenderId: '479121092839',
+    appId: '1:479121092839:web:c5d09145b026db384db242',
+  },
+  // Usernames sign in as <username>@fans.nwaos.com behind the scenes (no real emails).
+  accountDomain: 'fans.nwaos.com',
 
   // Paste the YouTube video ID for each episode (the part after "watch?v=").
   // Example: https://www.youtube.com/watch?v=dQw4w9WgXcQ  ->  'dQw4w9WgXcQ'
@@ -1077,7 +1138,7 @@ const CONFIG = {
     { id: 'find-the-fire', name: 'Find the Fire',  anchor: '#news',                     style: 'right:4px;bottom:-34px', r: 12 },
     { id: 'piece2763',     name: 'Piece 2763',     anchor: '#news',                     style: 'left:26%;bottom:-30px', r: -4, size: 44 },
     { id: 'gd',            name: 'GD',             anchor: '#commentForm',              style: 'right:-6px;top:-26px', r: 14, size: 38 },
-    { id: 'piece2',        name: 'Piece 2',        anchor: '#commentFilters',           style: 'right:0;top:-8px', r: -10 },
+    { id: 'piece2',        name: 'Piece 2',        img: 'images/ttt/piece2.png', anchor: '#commentFilters',           style: 'right:0;top:-8px', r: -10 },
     { id: 'sweater',       name: 'Sweater',        anchor: '#theories',                 style: 'left:44%;bottom:-38px', r: 6, size: 40 },
     { id: 'floating-text', name: 'Floating Text',  anchor: '#commentList .comment.mine', style: 'right:16px;bottom:14px', r: -3, size: 92, afterFirstPost: true }, // only appears next to your own theory after you post one
     { id: 'face-mister',   name: 'Person Guy Dude Man Face Mister', anchor: '#music',   style: 'right:6px;bottom:-40px', r: 0, size: 40 },
@@ -1123,9 +1184,8 @@ const POLL_QUESTIONS = {
 
 /* =========================================================
    STORAGE
-   Everything is saved in the visitor's browser (localStorage).
-   To make votes/comments shared between ALL visitors, swap these
-   two functions for a real database (see notes at the bottom).
+   store = this browser only (game progress for people who aren't logged in).
+   Shared things (theories, news, votes, accounts) live in the Firebase database below.
    ========================================================= */
 const store = {
   get(key, fallback) {
@@ -1136,6 +1196,126 @@ const store = {
     try { localStorage.setItem('nwaos_' + key, JSON.stringify(value)); return true; } catch { return false; }
   },
 };
+
+/* =========================================================
+   SHARED DATABASE + ACCOUNTS (Firebase)
+   ========================================================= */
+let db = null, auth = null;
+try { firebase.initializeApp(CONFIG.firebase); auth = firebase.auth(); db = firebase.firestore(); }
+catch (e) { console.warn('Database offline', e); }
+const FV = () => firebase.firestore.FieldValue;
+const DB = { comments: [], picsApproved: {}, picsMine: {}, posts: [], votes: {}, poll: {}, users: [] };
+let ME = null;   // { uid, username, status, admin } when logged in
+const emailFor = name => name.trim().toLowerCase() + '@' + CONFIG.accountDomain;
+
+// Game progress saves to your account when you're logged in
+const SAVE_KEYS = ['ttt_progress', 'found', 'pokes'];
+const rawSet = store.set.bind(store);
+store.set = (k, v) => { const ok = rawSet(k, v); if (ME && SAVE_KEYS.includes(k)) scheduleSave(); return ok; };
+let saveTimer;
+function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(pushSave, 1200); }
+function localSave() { return { ttt_progress: store.get('ttt_progress', {}), found: store.get('found', []), pokes: store.get('pokes', 0) }; }
+function pushSave() { if (ME && db) db.collection('users').doc(ME.uid).update({ save: localSave() }).catch(e => console.warn('save failed', e)); }
+function mergeSave(a = {}, b = {}) {
+  const ta = a.ttt_progress || {}, tb = b.ttt_progress || {};
+  const best = { ...(ta.best || {}) };
+  Object.entries(tb.best || {}).forEach(([k, v]) => { best[k] = Math.max(best[k] || 0, v || 0); });
+  return {
+    ttt_progress: { beat: { ...(ta.beat || {}), ...(tb.beat || {}) }, best,
+      coins: Math.max(ta.coins || 0, tb.coins || 0), bought: [...new Set([...(ta.bought || []), ...(tb.bought || [])])] },
+    found: [...new Set([...(a.found || []), ...(b.found || [])])],
+    pokes: Math.max(a.pokes || 0, b.pokes || 0),
+  };
+}
+function refreshGames() {
+  if (typeof renderSnailToy === 'function') renderSnailToy();
+  if (typeof renderFindBoard === 'function') { renderFindBoard(); placeHiders(); }
+  if (typeof tttRenderSetup === 'function' && !$('#ttt').hidden) tttRenderSetup();
+}
+function renderAll() { renderNews(); renderPoll(); renderComments(); updateAccountUI(); }
+
+// Live data everyone can see
+let picsUnsub = null, usersUnsub = null, meUnsub = null;
+function startLiveData() {
+  if (!db) return;
+  const oops = what => e => console.warn(what, e);
+  db.collection('comments').orderBy('time', 'desc').limit(400).onSnapshot(q => {
+    DB.comments = q.docs.map(d => ({ id: d.id, ...d.data() })); renderComments();
+  }, oops('comments'));
+  db.collection('pics').where('status', '==', 'approved').onSnapshot(q => {
+    DB.picsApproved = {}; q.docs.forEach(d => { DB.picsApproved[d.id] = d.data(); }); renderComments();
+  }, oops('pics'));
+  db.collection('posts').onSnapshot(q => { DB.posts = q.docs.map(d => ({ id: d.id, ...d.data() })); renderNews(); }, oops('posts'));
+  db.collection('polls').doc(String(CONFIG.poll.id)).onSnapshot(d => { DB.poll = d.exists ? d.data() : {}; renderPoll(); }, oops('poll'));
+  db.collection('polls').doc(String(CONFIG.poll.id)).collection('votes').onSnapshot(q => {
+    DB.votes = {}; q.docs.forEach(d => { DB.votes[d.id] = d.data(); }); renderPoll();
+  }, oops('votes'));
+}
+
+let pendingName = '';   // the username typed when making a new account
+if (auth) auth.onAuthStateChanged(async user => {
+  [picsUnsub, usersUnsub, meUnsub].forEach(f => f && f());
+  picsUnsub = usersUnsub = meUnsub = null; DB.picsMine = {}; DB.users = [];
+  if (!user) { ME = null; document.body.classList.remove('is-admin'); renderAll(); return; }
+  const admin = user.email === emailFor(CONFIG.creatorNickname);
+  const ref = db.collection('users').doc(user.uid);
+  try {
+    let snap = await ref.get();
+    if (!snap.exists) {
+      const name = admin ? CONFIG.creatorNickname
+        : (pendingName && emailFor(pendingName) === user.email ? pendingName.trim() : user.email.split('@')[0]);
+      await ref.set({ username: name, status: admin ? 'approved' : 'new', created: Date.now(), save: localSave() });
+      snap = await ref.get();
+    }
+    const data = snap.data();
+    ME = { uid: user.uid, username: data.username, status: data.status, admin };
+    const merged = mergeSave(data.save, localSave());
+    SAVE_KEYS.forEach(k => rawSet(k, merged[k]));
+    ref.update({ save: merged }).catch(() => {});
+  } catch (e) {
+    console.warn('account load failed', e);
+    ME = { uid: user.uid, username: user.email.split('@')[0], status: 'new', admin };
+  }
+  document.body.classList.toggle('is-admin', admin);
+  meUnsub = ref.onSnapshot(d => { if (d.exists && ME) { ME.status = d.data().status; updateAccountUI(); } }, () => {});
+  const picsQuery = admin ? db.collection('pics') : db.collection('pics').where('uid', '==', user.uid);
+  picsUnsub = picsQuery.onSnapshot(q => { DB.picsMine = {}; q.docs.forEach(d => { DB.picsMine[d.id] = d.data(); }); renderComments(); }, () => {});
+  if (admin) usersUnsub = db.collection('users').onSnapshot(q => {
+    DB.users = q.docs.map(d => ({ id: d.id, ...d.data() })); renderAccounts();
+  }, e => console.warn('users', e));
+  refreshGames(); renderAll();
+});
+
+function updateAccountUI() {
+  const b = $('#acctBtn'); if (!b) return;
+  b.classList.toggle('in', !!ME && (ME.admin || ME.status === 'approved'));
+  b.classList.toggle('waiting', !!ME && !ME.admin && ME.status !== 'approved');
+  b.textContent = ME ? (ME.admin ? '⭐ ' : '👤 ') + ME.username : 'LOG IN';
+  $('#cAs').textContent = ME ? ME.username + (ME.admin || ME.status === 'approved' ? '' : ' (waiting for approval)') : 'not logged in — tap LOG IN at the top';
+  if (ME) {
+    $('#meName').textContent = (ME.admin ? '⭐ ' : '👤 ') + ME.username;
+    $('#meStatus').innerHTML = ME.admin ? 'You are the creator!'
+      : ME.status === 'approved' ? '✅ Approved! You can post theories, replies and pictures.'
+      : ME.status === 'banned' ? '🚫 This account can\'t post, like or vote.'
+      : '⏳ Waiting for Eli to approve your account. You can still play, like and vote!';
+  }
+}
+// Can I post? Opens the login box if needed.
+let afterUnlock = null;
+function needAccount(then) {
+  if (!db) { toast('Accounts are offline right now. Try again later!'); return false; }
+  if (!ME) { afterUnlock = then; openGate('login'); return false; }
+  if (ME.admin || ME.status === 'approved') return true;
+  toast(ME.status === 'banned' ? 'This account isn\'t allowed to post.' : 'Your account is waiting for Eli to approve it. Check back soon!');
+  return false;
+}
+// Can I like or vote? (any account that isn't banned)
+function needLogin(then) {
+  if (!db) { toast('Accounts are offline right now. Try again later!'); return false; }
+  if (!ME) { afterUnlock = then; openGate('login'); return false; }
+  if (ME.status === 'banned' && !ME.admin) { toast('This account can\'t do that.'); return false; }
+  return true;
+}
 
 /* ---------- helpers ---------- */
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -1291,7 +1471,7 @@ $('#marathonBtn').addEventListener('click', playMarathon);
    NEWS / BLOG
    ========================================================= */
 function allPosts() {
-  return [...CONFIG.starterPosts, ...store.get('posts', [])]
+  return [...CONFIG.starterPosts, ...DB.posts]
     .sort((a, b) => (b.date + (b.t || 0)).localeCompare(a.date + (a.t || 0)));
 }
 function renderNews() {
@@ -1337,24 +1517,24 @@ $('#postImage').addEventListener('change', async () => {
 });
 $('#postForm').addEventListener('submit', async e => {
   e.preventDefault();
-  if (!isAdmin()) return;
-  const posts = store.get('posts', []);
+  if (!isAdmin() || !db) return;
   const now = new Date();
   const file = $('#postImage').files[0];
   let image = '';
   if (file) {
     try { image = await shrinkImage(file); } catch { return flash($('#postMsg'), "Couldn't open that picture.", 'err'); }
   }
-  posts.push({
-    image,
-    id: 'p-' + uid(),
-    date: now.toISOString().slice(0, 10),
-    t: now.toISOString().slice(11, 19),
-    type: $('#postType').value,
-    title: $('#postTitle').value.trim(),
-    body: $('#postBody').value.trim(),
-  });
-  if (!store.set('posts', posts)) return flash($('#postMsg'), 'That picture is too big to save. Try a smaller one.', 'err');
+  const id = 'p-' + uid();
+  try {
+    await db.collection('posts').doc(id).set({
+      image,
+      date: now.toISOString().slice(0, 10),
+      t: now.toISOString().slice(11, 19),
+      type: $('#postType').value,
+      title: $('#postTitle').value.trim(),
+      body: $('#postBody').value.trim(),
+    });
+  } catch { return flash($('#postMsg'), 'Couldn\'t post that. If there\'s a picture, try a smaller one.', 'err'); }
   e.target.reset();
   $('#postImagePreview').hidden = true;
   flash($('#postMsg'), 'Posted!');
@@ -1363,8 +1543,7 @@ $('#postForm').addEventListener('submit', async e => {
 $('#newsList').addEventListener('click', async e => {
   const b = e.target.closest('[data-del-post]');
   if (!b || !isAdmin() || !(await ask('Delete this post?'))) return;
-  store.set('posts', store.get('posts', []).filter(p => p.id !== b.dataset.delPost));
-  renderNews();
+  db.collection('posts').doc(b.dataset.delPost).delete().catch(() => toast('Couldn\'t delete that.'));
 });
 
 /* =========================================================
@@ -1373,14 +1552,17 @@ $('#newsList').addEventListener('click', async e => {
 const P = CONFIG.poll;
 const pollKey = k => `poll_${P.id}_${k}`;
 function pollData() {
+  const online = {};
+  Object.values(DB.votes).forEach(v => { online[v.choice] = (online[v.choice] || 0) + 1; });
   return {
-    online:  store.get(pollKey('online'), {}),
-    offline: store.get(pollKey('offline'), {}),
-    log:     store.get(pollKey('log'), []),
-    myVote:  store.get(pollKey('myvote'), null),
-    closed:  store.get(pollKey('closed'), false),
+    online,
+    offline: DB.poll.offline || {},
+    log:     DB.poll.log || [],
+    myVote:  ME && DB.votes[ME.uid] ? DB.votes[ME.uid].choice : null,
+    closed:  !!DB.poll.closed,
   };
 }
+const pollDoc = () => db.collection('polls').doc(String(P.id));
 function renderPoll() {
   const d = pollData();
   const status = P.status || 'open';
@@ -1445,10 +1627,9 @@ $('#pollOptions').addEventListener('click', e => {
   const b = e.target.closest('[data-vote]');
   const d = pollData();
   if (!b || d.myVote || d.closed || P.status !== 'open') return;
-  d.online[b.dataset.vote] = (d.online[b.dataset.vote] || 0) + 1;
-  store.set(pollKey('online'), d.online);
-  store.set(pollKey('myvote'), b.dataset.vote);
-  renderPoll();
+  if (!needLogin(() => b.click())) return;
+  pollDoc().collection('votes').doc(ME.uid).set({ choice: b.dataset.vote, time: Date.now() })
+    .catch(() => toast('Couldn\'t save your vote. Try again!'));
 });
 $('#offlineForm').addEventListener('submit', e => {
   e.preventDefault();
@@ -1459,30 +1640,39 @@ $('#offlineForm').addEventListener('submit', e => {
   const d = pollData();
   d.offline[id] = (d.offline[id] || 0) + n;
   d.log.push({ t: Date.now(), n, name: P.options.find(o => o.id === id).name, src: $('#offlineSource').value.trim() });
-  store.set(pollKey('offline'), d.offline);
-  store.set(pollKey('log'), d.log);
-  flash($('#offlineMsg'), `Added ${n} vote(s)!`);
-  renderPoll();
+  pollDoc().set({ offline: d.offline, log: d.log }, { merge: true })
+    .then(() => flash($('#offlineMsg'), `Added ${n} vote(s)!`))
+    .catch(() => flash($('#offlineMsg'), 'Couldn\'t save that.', 'err'));
 });
 $('#togglePollBtn').addEventListener('click', () => {
   if (!isAdmin()) return;
-  store.set(pollKey('closed'), !pollData().closed);
-  renderPoll();
+  pollDoc().set({ closed: !pollData().closed }, { merge: true });
 });
 $('#resetPollBtn').addEventListener('click', async () => {
   if (!isAdmin() || !(await ask('Reset ALL votes for this poll? This can\'t be undone.'))) return;
-  ['online', 'offline', 'log', 'myvote', 'closed'].forEach(k => { try { localStorage.removeItem('nwaos_' + pollKey(k)); } catch {} });
-  renderPoll();
+  const votes = await pollDoc().collection('votes').get();
+  for (let i = 0; i < votes.docs.length; i += 400) {
+    const batch = db.batch(); votes.docs.slice(i, i + 400).forEach(d => batch.delete(d.ref)); await batch.commit();
+  }
+  await pollDoc().set({ offline: {}, log: [], closed: false });
 });
 
 /* =========================================================
    FAN THEORIES / COMMENTS
    ========================================================= */
 let commentFilter = 'all';
-function getComments() { return store.get('comments', []).filter(c => !String(c.id).startsWith('seed')); }
+// Theories from the database, shaped for the page. Pictures are kept separately until Eli approves them.
+function getComments() {
+  return DB.comments.map(c => {
+    const pic = DB.picsMine[c.id] || DB.picsApproved[c.id];
+    const likesMap = c.likes || {};
+    return { ...c, likesMap, likes: Object.keys(likesMap).length, replies: c.replies || [],
+      image: pic ? pic.image : '', imageStatus: pic ? pic.status : undefined };
+  });
+}
+const mine = c => !!ME && c.uid === ME.uid;
 function renderComments() {
-  const myIds = store.get('myComments', []);
-  const liked = store.get('liked', []);
+  const meId = ME ? ME.uid : '';
   let list = [...getComments()];
   if (commentFilter === 'top') list.sort((a, b) => b.likes - a.likes);
   else {
@@ -1491,9 +1681,11 @@ function renderComments() {
   }
   list.sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0)); // Creator's Picks float to the top
   const tagLabel = { theory: 'THEORY', chat: 'CHAT', fanart: 'FAN IDEA' };
-  const nick = store.get('nickname', '');
-  $('#commentList').innerHTML = list.length ? list.map(c => `
-    <article class="box comment ${myIds.includes(c.id) ? 'mine' : ''} ${c.starred ? 'starred' : ''}">
+  const offline = !db ? '<p class="offline-note">⚠️ The theories board can\'t connect right now. Try again in a bit!</p>' : '';
+  $('#commentList').innerHTML = offline + (list.length ? list.map(c => {
+    const liked = !!meId && !!c.likesMap[meId];
+    return `
+    <article class="box comment ${mine(c) ? 'mine' : ''} ${c.starred ? 'starred' : ''}">
       ${c.starred ? '<span class="pick-ribbon">★ CREATOR\'S PICK</span>' : ''}
       <div class="comment-head">
         <span class="badge ${c.tag === 'theory' ? 'teaser' : c.tag === 'fanart' ? 'update' : ''}">${tagLabel[c.tag] || 'CHAT'}</span>
@@ -1501,29 +1693,29 @@ function renderComments() {
         <span class="comment-time">${timeAgo(c.time)}</span>
       </div>
       <p class="comment-text">${emojify(esc(c.text))}</p>
-      ${commentImage(c, myIds)}
+      ${commentImage(c)}
       <div class="comment-actions">
-        <button class="like-btn ${liked.includes(c.id) ? 'liked' : ''}" data-like="${c.id}" aria-pressed="${liked.includes(c.id)}" aria-label="Like"><img src="images/find/heart-balloon.png" alt=""> ${c.likes}</button>
-        <button class="reply-btn" data-reply-open="${c.id}">↩ REPLY${(c.replies || []).length ? ` (${c.replies.length})` : ''}</button>
+        <button class="like-btn ${liked ? 'liked' : ''}" data-like="${c.id}" aria-pressed="${liked}" aria-label="Like"><img src="images/find/heart-balloon.png" alt=""> ${c.likes}</button>
+        <button class="reply-btn" data-reply-open="${c.id}">↩ REPLY${c.replies.length ? ` (${c.replies.length})` : ''}</button>
         <button class="btn small admin-only" data-star="${c.id}">${c.starred ? '★ UNSTAR' : '☆ STAR'}</button>
         ${c.image && c.imageStatus === 'approved' ? `<button class="btn small blue admin-only" data-fanart="${c.id}">${c.fanart ? 'REMOVE FROM FAN ART' : '🎨 ADD TO FAN ART'}</button>` : ''}
         <button class="btn small red admin-only" data-del-comment="${c.id}">DELETE</button>
       </div>
-      ${(c.replies || []).length ? `<div class="replies">${c.replies.map(r => `
+      ${c.replies.length ? `<div class="replies">${c.replies.map(r => `
         <div class="reply">
           <div class="comment-head"><span class="comment-name">↳ ${esc(r.name)}</span>${r.creator ? '<span class="badge creator">★ CREATOR</span>' : ''}<span class="comment-time">${timeAgo(r.time)}</span>
-            <button class="linkish admin-only reply-del" data-del-reply="${c.id}|${r.id}">delete</button></div>
+            <button class="linkish admin-only reply-del" data-del-reply="${c.id}|${esc(r.id)}">delete</button></div>
           <p class="comment-text">${emojify(esc(r.text))}</p>
         </div>`).join('')}</div>` : ''}
       <form class="reply-form" data-reply-to="${c.id}" hidden>
-        <input class="reply-name" maxlength="24" placeholder="Your nickname" value="${esc(nick)}" aria-label="Your nickname">
         <textarea class="reply-text" maxlength="300" placeholder="Write a reply... :snail:" aria-label="Your reply"></textarea>
         <button class="btn small blue" type="submit">POST REPLY</button>
         <p class="msg reply-msg" role="status"></p>
       </form>
-    </article>`).join('') : '<p class="box empty">No posts here yet. Be the first!</p>';
+    </article>`;
+  }).join('') : (db ? '<p class="box empty">No posts here yet. Be the first!</p>' : ''));
   renderFanArt();
-  if (typeof CONFIG.findGame !== 'undefined' && document.readyState !== 'loading') placeHiders();
+  if (typeof CONFIG.findGame !== 'undefined' && document.readyState !== 'loading' && typeof placeHiders === 'function') placeHiders();
 }
 // Fan Art tab: approved pictures Eli picked with "Add to Fan Art"
 function renderFanArt() {
@@ -1535,20 +1727,21 @@ function renderFanArt() {
       <button class="btn small red admin-only" data-fanart-remove="${c.id}">REMOVE</button>
     </figure>`).join('') : '<p class="box empty">No fan art yet! Post your drawings on the Theories page, and Eli might pick yours. 🎨</p>';
 }
+const commentDoc = id => db.collection('comments').doc(id);
+const oops = msg => () => toast(msg || 'Something went wrong. Try again!');
 $('#fanartGrid').addEventListener('click', e => {
   const b = e.target.closest('[data-fanart-remove]'); if (!b || !isAdmin()) return;
-  const comments = getComments(), c = comments.find(x => x.id === b.dataset.fanartRemove);
-  if (c) { c.fanart = false; store.set('comments', comments); renderComments(); }
+  commentDoc(b.dataset.fanartRemove).update({ fanart: false }).catch(oops());
 });
 
 // Fan pictures: only shown once the creator approves them
-function commentImage(c, myIds) {
+function commentImage(c) {
   if (!c.image) return '';
   if (c.imageStatus === 'approved') return `<img class="post-img" src="${esc(c.image)}" alt="Fan picture from ${esc(c.name)}" loading="lazy">`;
   if (isAdmin()) return `<div class="pending-pic"><span class="badge teaser">WAITING FOR YOUR OK</span>
       <img class="post-img" src="${esc(c.image)}" alt="Picture waiting for approval">
       <div class="row"><button class="btn small green" data-approve="${c.id}">APPROVE</button><button class="btn small red" data-reject="${c.id}">REJECT</button></div></div>`;
-  if (myIds.includes(c.id)) return '<p class="form-note">📷 Your picture is waiting for Eli to approve it.</p>';
+  if (mine(c)) return '<p class="form-note">📷 Your picture is waiting for Eli to approve it.</p>';
   return '';
 }
 $('#cImage').addEventListener('change', async () => {
@@ -1557,56 +1750,58 @@ $('#cImage').addEventListener('change', async () => {
   try { prev.src = await shrinkImage(f); prev.hidden = false; } catch { prev.hidden = true; flash($('#commentMsg'), "Couldn't open that picture.", 'err'); }
 });
 // Checks shared by posts and replies. Returns a problem message, or '' if it's fine.
-function postProblem(name, text) {
-  if (!name || !text) return 'Fill in both boxes!';
-  const lower = (name + ' ' + text).toLowerCase();
+function postProblem(text) {
+  if (!text) return 'Write something first!';
+  const lower = text.toLowerCase();
   if (CONFIG.blockedWords.some(w => w && lower.includes(w))) return 'Hmm, let\'s keep it friendly. Try rewording that!';
   if (/\b\d{3}[\s.-]?\d{3}[\s.-]?\d{4}\b|@[a-z0-9-]+\.[a-z]{2,}/i.test(text)) return 'Please don\'t post phone numbers or emails!';
-  const squish = t => t.toLowerCase().replace(/[^a-z0-9]/g, '');
-  if (squish(name).includes(squish(CONFIG.creatorNickname)) && !isAdmin()) return 'That nickname belongs to the creator! Pick a different one.';
-  if (Date.now() - store.get('lastPost', 0) < 15000) return 'Whoa, slow down! Wait a few seconds.';
+  if (!isAdmin() && Date.now() - store.get('lastPost', 0) < 15000) return 'Whoa, slow down! Wait a few seconds.';
   return '';
 }
+let posting = false;
 $('#commentForm').addEventListener('submit', async e => {
   e.preventDefault();
-  if (!needPassword(() => $('#commentForm').requestSubmit())) return;
+  if (posting || !needAccount(() => $('#commentForm').requestSubmit())) return;
   const msg = $('#commentMsg');
-  const name = $('#cName').value.trim();
   const text = $('#cText').value.trim();
-  const problem = postProblem(name, text);
+  const problem = postProblem(text);
   if (problem) return flash(msg, problem, 'err');
-  const comments = getComments();
-  const newId = 'c-' + uid();
   let image = '';
   if ($('#cImage').files[0]) {
-    try { image = await shrinkImage($('#cImage').files[0]); } catch { return flash(msg, "Couldn't open that picture.", 'err'); }
+    try {
+      image = await shrinkImage($('#cImage').files[0]);
+      if (image.length > 850000) image = await shrinkImage($('#cImage').files[0], 600);
+    } catch { return flash(msg, "Couldn't open that picture.", 'err'); }
   }
-  comments.push({ id: newId, name, tag: $('#cTag').value, text, time: Date.now(), likes: 0, creator: isAdmin(),
-    ...(image ? { image, imageStatus: isAdmin() ? 'approved' : 'pending' } : {}) });
-  const firstPost = !store.get('myComments', []).length;
-  store.set('myComments', [...store.get('myComments', []), newId]);
-  if (!store.set('comments', comments)) return flash(msg, 'That picture is too big to save. Try a smaller one.', 'err');
+  const firstPost = !DB.comments.some(c => c.uid === ME.uid);
+  const id = 'c-' + uid();
+  posting = true; flash(msg, 'Posting...');
+  try {
+    await commentDoc(id).set({ uid: ME.uid, name: ME.username, tag: $('#cTag').value, text, time: Date.now(),
+      likes: {}, replies: [], creator: !!ME.admin, starred: false, fanart: false, pic: !!image });
+    if (image) await db.collection('pics').doc(id).set({ uid: ME.uid, image, status: ME.admin ? 'approved' : 'pending', time: Date.now() });
+  } catch (err) {
+    console.warn(err); posting = false;
+    return flash(msg, 'Couldn\'t post that. Try again! (If there\'s a picture, try a smaller one.)', 'err');
+  }
+  posting = false;
   store.set('lastPost', Date.now());
-  store.set('nickname', name);
   $('#cText').value = '';
   $('#cImage').value = ''; $('#cImagePreview').hidden = true;
-  flash(msg, 'Posted! 🐌');
-  renderComments();
+  flash(msg, image && !ME.admin ? 'Posted! 🐌 Your picture shows up once Eli approves it.' : 'Posted! 🐌');
   if (firstPost && !findFound().includes('floating-text')) toast('Wait... did something just pop up next to your post?');
 });
 $('#commentList').addEventListener('submit', e => {
   const f = e.target.closest('.reply-form'); if (!f) return;
   e.preventDefault();
-  if (!needPassword(() => f.requestSubmit())) return;
-  const name = f.querySelector('.reply-name').value.trim(), text = f.querySelector('.reply-text').value.trim();
-  const problem = postProblem(name, text);
+  if (!needAccount(() => f.requestSubmit())) return;
+  const text = f.querySelector('.reply-text').value.trim();
+  const problem = postProblem(text);
   if (problem) return flash(f.querySelector('.reply-msg'), problem, 'err');
-  const comments = getComments(), c = comments.find(x => x.id === f.dataset.replyTo);
-  if (!c) return;
-  (c.replies = c.replies || []).push({ id: 'r-' + uid(), name, text, time: Date.now(), creator: isAdmin() });
-  store.set('comments', comments); store.set('lastPost', Date.now()); store.set('nickname', name);
-  renderComments();
-  toast('Reply posted! 🐌');
+  commentDoc(f.dataset.replyTo).update({
+    replies: FV().arrayUnion({ id: 'r-' + uid(), uid: ME.uid, name: ME.username, text, time: Date.now(), creator: !!ME.admin }),
+  }).then(() => { store.set('lastPost', Date.now()); toast('Reply posted! 🐌'); })
+    .catch(err => { console.warn(err); flash(f.querySelector('.reply-msg'), 'Couldn\'t post that reply. Try again!', 'err'); });
 });
 $('#commentList').addEventListener('click', async e => {
   const open = e.target.closest('[data-reply-open]');
@@ -1615,43 +1810,30 @@ $('#commentList').addEventListener('click', async e => {
     f.hidden = !f.hidden; if (!f.hidden) f.querySelector('.reply-text').focus();
     return;
   }
-  const star = e.target.closest('[data-star]'), fa = e.target.closest('[data-fanart]'), dr = e.target.closest('[data-del-reply]');
-  if ((star || fa || dr) && isAdmin()) {
-    const comments = getComments();
-    if (star) { const c = comments.find(x => x.id === star.dataset.star); c.starred = !c.starred; toast(c.starred ? '★ Starred! It moved to the top.' : 'Star removed.'); }
-    if (fa) { const c = comments.find(x => x.id === fa.dataset.fanart); c.fanart = !c.fanart; toast(c.fanart ? '🎨 Added to the Fan Art tab!' : 'Removed from Fan Art.'); }
-    if (dr) {
-      const [cid, rid] = dr.dataset.delReply.split('|');
-      if (!(await ask('Delete this reply?'))) return;
-      const c = comments.find(x => x.id === cid); c.replies = (c.replies || []).filter(r => r.id !== rid);
-    }
-    store.set('comments', comments); renderComments();
-    return;
-  }
+  const comments = getComments(), find = id => comments.find(x => x.id === id);
   const like = e.target.closest('[data-like]');
-  const del = e.target.closest('[data-del-comment]');
-  const comments = getComments();
   if (like) {
-    const liked = store.get('liked', []);
-    const c = comments.find(c => c.id === like.dataset.like);
-    if (!c) return;
-    if (liked.includes(c.id)) { c.likes = Math.max(0, c.likes - 1); liked.splice(liked.indexOf(c.id), 1); }
-    else { c.likes++; liked.push(c.id); }
-    store.set('liked', liked); store.set('comments', comments); renderComments();
-  }
-  const appr = e.target.closest('[data-approve]'), rej = e.target.closest('[data-reject]');
-  if ((appr || rej) && isAdmin()) {
-    const c = comments.find(x => x.id === (appr || rej).dataset[appr ? 'approve' : 'reject']);
-    if (c) {
-      if (appr) c.imageStatus = 'approved';
-      else if (await ask('Reject this picture? The comment stays, the picture is removed.')) { delete c.image; delete c.imageStatus; }
-      store.set('comments', comments); renderComments();
-    }
+    if (!needLogin(() => like.click())) return;
+    const c = find(like.dataset.like); if (!c) return;
+    commentDoc(c.id).update({ ['likes.' + ME.uid]: c.likesMap[ME.uid] ? FV().delete() : true }).catch(oops('Couldn\'t save that like.'));
     return;
   }
-  if (del && isAdmin() && (await ask('Delete this comment?'))) {
-    store.set('comments', comments.filter(c => c.id !== del.dataset.delComment));
-    renderComments();
+  if (!isAdmin()) return;
+  const star = e.target.closest('[data-star]'), fa = e.target.closest('[data-fanart]'), dr = e.target.closest('[data-del-reply]');
+  const appr = e.target.closest('[data-approve]'), rej = e.target.closest('[data-reject]'), del = e.target.closest('[data-del-comment]');
+  if (star) { const c = find(star.dataset.star); commentDoc(c.id).update({ starred: !c.starred }).then(() => toast(!c.starred ? '★ Starred! It moved to the top.' : 'Star removed.')).catch(oops()); }
+  if (fa) { const c = find(fa.dataset.fanart); commentDoc(c.id).update({ fanart: !c.fanart }).then(() => toast(!c.fanart ? '🎨 Added to the Fan Art tab!' : 'Removed from Fan Art.')).catch(oops()); }
+  if (dr) {
+    const [cid, rid] = dr.dataset.delReply.split('|');
+    if (!(await ask('Delete this reply?'))) return;
+    const c = find(cid); commentDoc(cid).update({ replies: c.replies.filter(r => r.id !== rid) }).catch(oops());
+  }
+  if (appr) db.collection('pics').doc(appr.dataset.approve).update({ status: 'approved' }).catch(oops());
+  if (rej && await ask('Reject this picture? The comment stays, the picture is removed.')) {
+    db.collection('pics').doc(rej.dataset.reject).delete().then(() => commentDoc(rej.dataset.reject).update({ pic: false })).catch(oops());
+  }
+  if (del && await ask('Delete this comment?')) {
+    commentDoc(del.dataset.delComment).delete().then(() => db.collection('pics').doc(del.dataset.delComment).delete()).catch(oops());
   }
 });
 $('#emojiPicker').innerHTML = Object.entries(CONFIG.emojis).map(([k, src]) =>
@@ -1744,7 +1926,7 @@ function renderFindBoard() {
   $('#findWin').hidden = !findWon();
   $('#findGrid').innerHTML = CONFIG.findGame.map(c => {
     const got = found.includes(c.id);
-    return `<div class="find-slot ${got ? 'found' : ''}">${hatted(`<img src="images/find/${esc(c.id)}.png" alt="${got ? esc(c.name) : 'not found yet'}">`)}<span>${got ? esc(c.name) : '???'}</span></div>`;
+    return `<div class="find-slot ${got ? 'found' : ''}">${hatted(`<img src="${esc(c.img || 'images/find/' + c.id + '.png')}" alt="${got ? esc(c.name) : 'not found yet'}">`)}<span>${got ? esc(c.name) : '???'}</span></div>`;
   }).join('');
 }
 function placeHiders() {
@@ -1752,7 +1934,7 @@ function placeHiders() {
   const found = findFound();
   CONFIG.findGame.forEach(c => {
     if (found.includes(c.id)) return;
-    if (c.afterFirstPost && !store.get('myComments', []).length) return;
+    if (c.afterFirstPost && !(ME && DB.comments.some(x => x.uid === ME.uid))) return;
     const anchor = $(c.anchor);
     if (!anchor) return;
     if (getComputedStyle(anchor).position === 'static') anchor.style.position = 'relative';
@@ -1760,7 +1942,7 @@ function placeHiders() {
     b.className = 'hider'; b.type = 'button'; b.dataset.find = c.id;
     b.setAttribute('aria-label', 'Something is hiding here!');
     b.style.cssText = `${c.style};--r:${c.r || 0}deg;${c.size ? `width:${c.size}px;` : ''}`;
-    b.innerHTML = `<img src="images/find/${esc(c.id)}.png" alt="">${XMAS ? HAT : ''}`;
+    b.innerHTML = `<img src="${esc(c.img || 'images/find/' + c.id + '.png')}" alt="">${XMAS ? HAT : ''}`;
     anchor.appendChild(b);
   });
 }
@@ -1778,7 +1960,7 @@ document.addEventListener('click', e => {
   if (!found.includes(c.id)) { found.push(c.id); store.set('found', found); }
   h.classList.add('got'); setTimeout(() => h.remove(), 500);
   renderFindBoard();
-  if (findWon()) { toast('YOU FOUND EVERYONE! Go poke the snail on Home!'); renderSnailToy(); }
+  if (findWon()) { toast('YOU FOUND EVERYONE! Go poke the snail, and CYFATG Paper is unlocked in To The Top!'); renderSnailToy(); }
   else toast(`You found ${c.name}! (${found.length}/${CONFIG.findGame.length})`);
 }, true);
 $('#findReset').addEventListener('click', async () => {
@@ -1793,12 +1975,21 @@ $('#findReset').addEventListener('click', async () => {
    "character heights" (one climber tall).
    ========================================================= */
 const TTT = {
+  // Start with Piece 1, Sweater and Piece 2. The rest unlock by playing (or buying with coins).
   climbers: [
     { id: 'piece1', name: 'Piece 1' }, { id: 'sweater', name: 'Sweater' }, { id: 'piece2', name: 'Piece 2' },
-    { id: 'spikester', name: 'Spikester' }, { id: 'bba', name: 'BBA' }, { id: 'giant-snail', name: 'Giant Snail' },
-    { id: 'heart-balloon', name: 'Heart Balloon' },
+    { id: 'spikester', name: 'Spikester', unlock: { beat: 'easy' }, how: 'Beat Easy' },
+    { id: 'bba', name: 'BBA', unlock: { beat: 'medium' }, how: 'Beat Medium' },
+    { id: 'giant-snail', name: 'Giant Snail', unlock: { beat: 'hard' }, how: 'Beat Hard' },
+    { id: 'heart-balloon', name: 'Heart Balloon', unlock: { endless: 5000 }, how: '5,000 in Endless' },
+    { id: 'cyfatg-paper', name: 'CYFATG Paper', unlock: { findAll: true }, how: 'Find all the characters', secret: true }, // stays hidden until unlocked
+    { id: 'gd', name: 'GD', price: 5 },
+    { id: 'skibidi', name: 'Skibidi', price: 25 },
     { id: 'floating-text', name: 'Floating Text', creatorOnly: true },
   ],
+  winCoins: { easy: 3, medium: 4, hard: 5 },        // free coins for beating a level
+  orbPower: 20,                                      // HEIGHTS a power orb lasts (Endless only); fades for the last 3
+  orbEvery: () => 70 + Math.random() * 60,           // heights until the next orb (about every 100, not exactly)
   modes: [
     { id: 'easy', name: 'EASY', goal: 150, gap: 5 }, { id: 'medium', name: 'MEDIUM', goal: 500, gap: 3 },
     { id: 'hard', name: 'HARD', goal: 1000, gap: 1 }, { id: 'endless', name: 'ENDLESS', goal: Infinity, gap: 'endless' },
@@ -1818,27 +2009,60 @@ const TTT = {
     spikester: 'images/ttt/spikester.png',
     piece2: 'images/ttt/piece2.png',
     piece1: 'images/ttt/piece1.png',
+    'cyfatg-paper': 'images/ttt/cyfatg-paper.png',
+    gd: 'images/ttt/gd.png',
+    skibidi: 'images/ttt/skibidi.png',
   },
   src: id => TTT.realistic[id] || `images/find/${id}.png`,
   // Obstacles can have their own "enemy" look (the grinning Piece 2 that pushes you down)
   enemy: { piece2: 'images/ttt/piece2-enemy.png' },
   enemySrc: id => TTT.enemy[id] || TTT.src(id),
-  best: {},                              // best heights this visit (no saving yet)
 };
+// Progress is saved in this browser for now (moves to accounts later)
+function tttProgress() { return Object.assign({ beat: {}, best: {}, coins: 0, bought: [] }, store.get('ttt_progress', {})); }
+function tttSaveProgress(p) { store.set('ttt_progress', p); }
+function tttUnlocked(c, P = tttProgress()) {
+  if (isAdmin()) return true;                    // the creator can play as anyone
+  if (c.creatorOnly) return false;
+  if (c.price) return P.bought.includes(c.id);
+  if (!c.unlock) return true;
+  if (c.unlock.beat) return !!P.beat[c.unlock.beat];
+  if (c.unlock.endless) return (P.best.endless || 0) >= c.unlock.endless;
+  if (c.unlock.findAll) return findWon();
+  return false;
+}
 const tttImgs = {};
 function tttImg(src) { if (!tttImgs[src]) { const i = new Image(); i.src = src; tttImgs[src] = i; } return tttImgs[src]; }
 
 function tttRenderSetup() {
-  const list = TTT.climbers.filter(c => !c.creatorOnly || isAdmin());
-  if (!list.some(c => c.id === TTT.pick.climber)) TTT.pick.climber = 'sweater';
-  $('#tttChars').innerHTML = list.map(c => `<button type="button" data-climber="${c.id}" aria-pressed="${c.id === TTT.pick.climber}" class="${c.creatorOnly ? 'creator-only' : ''}">
-      <img src="${TTT.src(c.id)}" alt="">${esc(c.name)}${c.creatorOnly ? '<small style="display:block;font-weight:400">creator only</small>' : ''}</button>`).join('');
+  const P = tttProgress();
+  const list = TTT.climbers.filter(c => (!c.creatorOnly || isAdmin()) && (!c.secret || tttUnlocked(c, P)));
+  if (!tttUnlocked(TTT.climbers.find(c => c.id === TTT.pick.climber), P)) TTT.pick.climber = 'sweater';
+  $('#tttCoins').textContent = P.coins.toLocaleString();
+  $('#tttChars').innerHTML = list.map(c => {
+    const open = tttUnlocked(c, P);
+    const label = c.creatorOnly ? 'creator only' : open ? '' : c.price ? `<img class="coin-ico" src="images/ttt/coin.png" alt=""> ${c.price} · BUY` : '🔒 ' + esc(c.how);
+    return `<button type="button" data-climber="${c.id}" aria-pressed="${open && c.id === TTT.pick.climber}"
+      class="${c.creatorOnly ? 'creator-only' : ''} ${open ? '' : 'locked'} ${!open && c.price ? 'shop' : ''}">
+      <img src="${TTT.src(c.id)}" alt="">${esc(c.name)}${label ? `<small>${label}</small>` : ''}</button>`;
+  }).join('');
   $('#tttModes').innerHTML = TTT.modes.map(m => `<button type="button" data-mode="${m.id}" aria-pressed="${m.id === TTT.pick.mode}">${m.name}
-      <small>${m.goal === Infinity ? 'climb forever' : m.goal.toLocaleString() + ' tall'}${TTT.best[m.id] ? ' · best ' + TTT.best[m.id].toLocaleString() : ''}</small></button>`).join('');
+      <small>${m.goal === Infinity ? 'climb forever' : m.goal.toLocaleString() + ' tall'}${P.best[m.id] ? ' · best ' + P.best[m.id].toLocaleString() : ''}${P.beat[m.id] ? ' ✓' : ''}</small></button>`).join('');
 }
 $('#tttOpen').addEventListener('click', () => { $('#gamesHub').hidden = true; $('#ttt').hidden = false; $('#tttSetup').hidden = false; $('#tttStage').hidden = true; tttRenderSetup(); });
 $('#tttBack').addEventListener('click', () => { $('#ttt').hidden = true; $('#gamesHub').hidden = false; });
-$('#tttChars').addEventListener('click', e => { const b = e.target.closest('[data-climber]'); if (b) { TTT.pick.climber = b.dataset.climber; tttRenderSetup(); } });
+$('#tttChars').addEventListener('click', async e => {
+  const b = e.target.closest('[data-climber]'); if (!b) return;
+  const c = TTT.climbers.find(x => x.id === b.dataset.climber), P = tttProgress();
+  if (tttUnlocked(c, P)) { TTT.pick.climber = c.id; return tttRenderSetup(); }
+  if (c.price) {
+    if (P.coins < c.price) return toast(`${c.name} costs ${c.price} coins. You have ${P.coins}. Keep climbing!`);
+    if (!(await ask(`Buy ${c.name} for ${c.price} coins?`))) return;
+    P.coins -= c.price; P.bought.push(c.id); tttSaveProgress(P);
+    toast(`🎉 You bought ${c.name}!`); TTT.pick.climber = c.id; return tttRenderSetup();
+  }
+  toast(`🔒 ${c.name}: ${c.how} to unlock.`);
+});
 $('#tttModes').addEventListener('click', e => { const b = e.target.closest('[data-mode]'); if (b) { TTT.pick.mode = b.dataset.mode; tttRenderSetup(); } });
 
 let ttt = null;   // the game in progress
@@ -1851,12 +2075,14 @@ function tttStart() {
   cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
   const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
   ttt = { g, W, H, CH: Math.round(H / 9), mode, climber: TTT.pick.climber,
-    alt: 0, side: -1, sideX: -1, hearts: 3, inv: 0, obstacles: [], spawnIn: 1.2, lastLane: 0,
+    alt: 0, side: -1, sideX: -1, hearts: 3, inv: 0, obstacles: [], spawnIn: 1.2, lastLane: 0, lastObs: null,
+    coins: [], coinCount: 0, orbs: [], orbAt: TTT.orbEvery(), powerLeft: 0, speed: 1,
     power: false, state: 'play', fall: 0, flash: 0, last: performance.now(), t: 0 };
   $('#tttSetup').hidden = true; $('#tttStage').hidden = false; $('#tttEnd').hidden = true;
   const ft = ttt.climber === 'floating-text';
   $('#tttPower').hidden = !ft; $('#tttPower').textContent = '⚡ POWER: OFF';
-  ['piece2', 'cloudini'].forEach(id => tttImg(TTT.enemySrc(id))); tttImg(TTT.src(ttt.climber)); tttImg('images/xmas/hat.png');
+  $('#tttSpeedWrap').hidden = !ft; $('#tttSpeed').value = 1; $('#tttSpeedVal').textContent = '1x';
+  ['piece2', 'cloudini'].forEach(id => tttImg(TTT.enemySrc(id))); tttImg(TTT.src(ttt.climber)); tttImg('images/ttt/coin.png'); tttImg('images/ttt/orb.png'); tttImg('images/xmas/hat.png');
   requestAnimationFrame(tttLoop);
   $('#tttStage').scrollIntoView({ block: 'start', behavior: 'smooth' });
 }
@@ -1864,6 +2090,10 @@ $('#tttStart').addEventListener('click', tttStart);
 $('#tttAgain').addEventListener('click', tttStart);
 $('#tttChange').addEventListener('click', () => { ttt = null; $('#tttStage').hidden = true; $('#tttSetup').hidden = false; tttRenderSetup(); });
 $('#tttQuit').addEventListener('click', () => { ttt = null; $('#tttStage').hidden = true; $('#tttSetup').hidden = false; tttRenderSetup(); });
+$('#tttSpeed').addEventListener('input', () => {
+  const v = +$('#tttSpeed').value; $('#tttSpeedVal').textContent = v + 'x'; if (ttt) ttt.speed = v;
+});
+$('#tttSpeed').addEventListener('pointerdown', e => e.stopPropagation());
 $('#tttPower').addEventListener('click', e => { e.stopPropagation(); if (ttt) { ttt.power = !ttt.power; $('#tttPower').textContent = `⚡ POWER: ${ttt.power ? 'ON' : 'OFF'}`; } });
 function tttFlip() { if (ttt && ttt.state === 'play') ttt.side = -ttt.side; }
 $('#tttCanvas').addEventListener('pointerdown', e => { e.preventDefault(); tttFlip(); });
@@ -1876,6 +2106,7 @@ document.addEventListener('keydown', e => {
   if ((e.key === 'p' || e.key === 'P') && !$('#tttPower').hidden) $('#tttPower').click();
 });
 
+const tttPowerLeft = G => G.powerLeft;   // heights of orb power left (only climbing uses it up; falling never gives it back)
 function tttZone(alt) { return Math.floor(alt / TTT.zoneLength) % TTT.zones.length; }
 function tttLoop(now) {
   const G = ttt; if (!G) return;
@@ -1889,7 +2120,9 @@ function tttUpdate(G, dt) {
   G.t += dt;
   G.sideX += (G.side - G.sideX) * Math.min(1, dt * 26);
   if (G.state === 'falling') { G.fall += dt; if (G.fall > 1.3) tttEnd(G, false); return; }
-  G.alt += TTT.climbSpeed(G.alt) * dt;
+  const climbed = TTT.climbSpeed(G.alt) * G.speed * dt;
+  G.alt += climbed;
+  G.powerLeft = Math.max(0, G.powerLeft - climbed);
   G.inv = Math.max(0, G.inv - dt);
   if (G.alt >= G.mode.goal) return tttEnd(G, true);
   // spawn
@@ -1909,8 +2142,19 @@ function tttUpdate(G, dt) {
     if (lane === G.lastLane && Math.random() < 0.35) lane = -lane;
     G.lastLane = lane;
     const fallSpeed = { piece2: 1.1, cloudini: 0.5, satellite: 2.2 }[kind];
-    G.obstacles.push({ kind, lane, alt: at, fallSpeed, spin: Math.random() * 6, hit: false, knock: null });
+    const ob = { kind, lane, alt: at, fallSpeed, spin: Math.random() * 6, hit: false, knock: null };
+    G.obstacles.push(ob);
+    // COIN: two obstacles in a row on the same side (nothing on the other side to dodge) -> a coin in the gap
+    if (G.lastObs && G.lastObs.lane === lane && !G.lastObs.knock && !G.lastObs.hit) G.coins.push({ lane, a: G.lastObs, b: ob, got: false, spin: 0 });
+    G.lastObs = ob;
     G.spawnIn = TTT.spawnGap(G.alt);
+  }
+  // POWER ORBS: Endless only, every now and then, away from obstacles
+  if (G.mode.id === 'endless') {
+    if (G.alt >= G.orbAt && live.every(o => Math.abs(o.alt - spawnAt) > 1.6)) {   // waits for a clear spot
+      G.orbs.push({ lane: Math.random() < 0.5 ? -1 : 1, alt: spawnAt, got: false });
+      G.orbAt = G.alt + TTT.orbEvery();
+    }
   }
   // keep the gap: a faster obstacle never catches up to the one below it
   const order = G.obstacles.filter(o => !o.knock).sort((a, b) => a.alt - b.alt);
@@ -1925,7 +2169,7 @@ function tttUpdate(G, dt) {
     const sameSide = Math.abs(G.sideX - o.lane) < 0.6;
     if (!o.hit && sameSide && Math.abs(o.alt - G.alt) < 0.7) {
       o.hit = true;
-      if (G.climber === 'floating-text' && G.power) { o.knock = { x: 0, y: 0, vx: o.lane * 380, vy: -260, r: 0 }; G.knocks = (G.knocks || 0) + 1; continue; }
+      if ((G.climber === 'floating-text' && G.power) || tttPowerLeft(G) > 0) { o.knock = { x: 0, y: 0, vx: o.lane * 380, vy: -260, r: 0 }; G.knocks = (G.knocks || 0) + 1; continue; }
       if (G.inv > 0) continue;
       G.hearts--; G.flash = 0.25;
       if (G.hearts === 2) { G.alt = Math.max(0, G.alt - 5); G.inv = 1.3; }
@@ -1934,16 +2178,36 @@ function tttUpdate(G, dt) {
     }
   }
   G.obstacles = G.obstacles.filter(o => o.alt > G.alt - below && (!o.knock || o.knock.y < G.H));
+  // coins sit halfway between their two obstacles
+  for (const c of G.coins) {
+    c.alt = (c.a.alt + c.b.alt) / 2; c.spin += dt * 5;
+    if (!c.got && Math.abs(G.sideX - c.lane) < 0.6 && Math.abs(c.alt - G.alt) < 0.6) { c.got = true; G.coinCount++; G.coinPop = 0.5; }
+  }
+  G.coins = G.coins.filter(c => !c.got && c.alt > G.alt - below);
+  for (const o of G.orbs) {
+    o.alt -= 0.8 * dt;
+    if (!o.got && Math.abs(G.sideX - o.lane) < 0.6 && Math.abs(o.alt - G.alt) < 0.7) { o.got = true; G.powerLeft = TTT.orbPower; }
+  }
+  G.orbs = G.orbs.filter(o => !o.got && o.alt > G.alt - below);
+  G.coinPop = Math.max(0, (G.coinPop || 0) - dt);
   G.flash = Math.max(0, G.flash - dt);
 }
 function tttEnd(G, won) {
   G.state = 'over';
   const h = Math.floor(won ? G.mode.goal : G.alt);
-  TTT.best[G.mode.id] = Math.max(TTT.best[G.mode.id] || 0, h);
+  const P = tttProgress(), before = TTT.climbers.filter(c => !c.creatorOnly && !c.price && tttUnlocked(c, P)).map(c => c.id);
+  P.best[G.mode.id] = Math.max(P.best[G.mode.id] || 0, h);
+  const bonus = won ? (TTT.winCoins[G.mode.id] || 0) : 0;
+  if (won) P.beat[G.mode.id] = true;
+  P.coins += G.coinCount + bonus;
+  tttSaveProgress(P);
+  const fresh = TTT.climbers.filter(c => !c.creatorOnly && !c.price && tttUnlocked(c, P) && !before.includes(c.id)).map(c => c.name);
   const who = TTT.climbers.find(c => c.id === G.climber).name;
-  $('#tttEndTitle').textContent = won ? 'YOU MADE IT TO THE TOP!' : (G.mode.goal === Infinity ? 'YOU FELL OFF!' : 'YOU FELL OFF!');
-  $('#tttEndText').textContent = won ? `${who} climbed all ${h.toLocaleString()} heights on ${G.mode.name}!`
-    : `${who} climbed ${h.toLocaleString()}${G.mode.goal === Infinity ? '' : ' of ' + G.mode.goal.toLocaleString()} heights. Best: ${TTT.best[G.mode.id].toLocaleString()}`;
+  const coinLine = (G.coinCount || bonus) ? ` <img class="coin-ico" src="images/ttt/coin.png" alt=""> +${G.coinCount + bonus} coin${G.coinCount + bonus === 1 ? '' : 's'}${bonus ? ` (${bonus} for beating ${G.mode.name})` : ''}.` : '';
+  const unlockLine = fresh.length && !isAdmin() ? ` 🔓 UNLOCKED: ${fresh.join(', ')}!` : '';
+  $('#tttEndTitle').textContent = won ? 'YOU MADE IT TO THE TOP!' : 'YOU FELL OFF!';
+  $('#tttEndText').innerHTML = (won ? `${esc(who)} climbed all ${h.toLocaleString()} heights on ${G.mode.name}!`
+    : `${esc(who)} climbed ${h.toLocaleString()}${G.mode.goal === Infinity ? '' : ' of ' + G.mode.goal.toLocaleString()} heights. Best: ${P.best[G.mode.id].toLocaleString()}.`) + coinLine + unlockLine;
   $('#tttEnd').hidden = false;
   tttDraw(G);
 }
@@ -1986,11 +2250,13 @@ function tttDraw(G) {
   for (let y = -CH + off; y < H; y += CH) { g.beginPath(); g.moveTo(px - pw / 2 + 4, y); g.lineTo(px + pw / 2 - 4, y); g.stroke(); }
 
   const py = H * 0.72, lane = x => px + x * (pw / 2 + CH * 0.72);
+  const touch = (side, w) => px + side * (pw / 2 + w / 2 - 3);   // centre that puts a sprite's edge against the pole
   const inBlack = here === 'black' && blend < 0.5;
   // obstacles
   for (const o of G.obstacles) {
     const y = py - (o.alt - G.alt) * CH;
-    let x = lane(o.lane) + (o.kind === 'cloudini' ? Math.sin(o.spin) * 6 : 0);
+    let x = o.kind === 'piece2' ? touch(o.lane, tttDrawnSize(tttImg(TTT.enemySrc('piece2')), CH * 0.95).w)   // Piece 2 grabs the pole
+      : lane(o.lane) + (o.kind === 'cloudini' ? Math.sin(o.spin) * 6 : 0);
     g.save();
     if (o.knock) { x += o.knock.x; g.translate(x, y + o.knock.y); g.rotate(o.knock.r); } else g.translate(x, y);
     if (inBlack) g.globalAlpha = 0.6;
@@ -1998,15 +2264,43 @@ function tttDraw(G) {
     else tttSprite(g, tttImg(TTT.enemySrc(o.kind)), CH * (o.kind === 'cloudini' ? 1.1 : 0.95), -o.lane);  // face the pole
     g.restore();
   }
+  // coins + power orbs
+  for (const c of G.coins) {
+    const cy = py - (c.alt - G.alt) * CH;
+    g.save(); g.translate(lane(c.lane), cy); if (inBlack) g.globalAlpha = 0.7;
+    g.scale(Math.abs(Math.cos(c.spin)) * 0.8 + 0.2, 1);
+    const ci = tttImg('images/ttt/coin.png'), cs = CH * 0.55;
+    if (ci.complete && ci.naturalWidth) g.drawImage(ci, -cs / 2, -cs / 2, cs, cs);
+    else { g.beginPath(); g.arc(0, 0, cs / 2, 0, 7); g.fillStyle = '#e8e64f'; g.fill(); }
+    g.restore();
+  }
+  for (const o of G.orbs) {
+    const oy = py - (o.alt - G.alt) * CH, r = CH * 0.3 + Math.sin(G.t * 6) * 2;
+    g.save(); g.translate(lane(o.lane), oy);
+    const grad = g.createRadialGradient(0, 0, 2, 0, 0, r * 1.7); grad.addColorStop(0, 'rgba(150,240,110,.9)'); grad.addColorStop(1, 'rgba(76,154,42,0)');
+    g.fillStyle = grad; g.beginPath(); g.arc(0, 0, r * 1.6, 0, 7); g.fill();
+    const oi = tttImg('images/ttt/orb.png'), os = r * 2.4;
+    if (oi.complete && oi.naturalWidth) g.drawImage(oi, -os / 2, -os / 2 * oi.naturalHeight / oi.naturalWidth, os, os * oi.naturalHeight / oi.naturalWidth);
+    else { g.beginPath(); g.arc(0, 0, r, 0, 7); g.fillStyle = '#4c9a2a'; g.fill(); }
+    g.restore();
+  }
+  g.textAlign = 'left'; g.textBaseline = 'top';
   // player
   g.save();
-  let x = lane(G.sideX), y = py;
+  const snail = G.climber === 'giant-snail';
+  let x = touch(G.sideX, tttDrawnSize(tttImg(TTT.src(G.climber)), CH, snail).w), y = py;
   if (G.state === 'falling' || (G.state === 'over' && G.hearts <= 0)) { y += G.fall * G.fall * 500; x += G.side * G.fall * 120; g.translate(x, y); g.rotate(G.fall * 6 * G.side); }
   else g.translate(x, y);
   if (G.inv > 0 && Math.floor(G.t * 12) % 2) g.globalAlpha = 0.3;
   if (inBlack) g.globalAlpha *= 0.22;
-  tttSprite(g, tttImg(TTT.src(G.climber)), CH, -G.side, typeof XMAS !== 'undefined' && XMAS);
-  if (G.power && G.climber === 'floating-text') { g.globalAlpha = 0.6; g.strokeStyle = '#ffd400'; g.lineWidth = 3; g.beginPath(); g.arc(0, 0, CH * 0.8, 0, 7); g.stroke(); }
+  tttSprite(g, tttImg(TTT.src(G.climber)), CH, G.climber === 'floating-text' ? 1 : -G.side,   // never mirror words
+    !snail && typeof XMAS !== 'undefined' && XMAS, snail);
+  const left = tttPowerLeft(G);
+  if (left > 0) {   // SUPER POWERS glow; fades on and off for the last 3 heights
+    const a = left > 3 ? 0.75 : 0.1 + 0.65 * (0.5 + 0.5 * Math.sin(G.t * 9));
+    g.globalAlpha = a; g.fillStyle = 'rgba(120,220,80,.35)'; g.strokeStyle = '#3f8f22'; g.lineWidth = 4;
+    g.beginPath(); g.arc(0, 0, CH * 0.85, 0, 7); g.fill(); g.stroke();
+  } else if (G.power && G.climber === 'floating-text') { g.globalAlpha = 0.6; g.strokeStyle = '#ffd400'; g.lineWidth = 3; g.beginPath(); g.arc(0, 0, CH * 0.8, 0, 7); g.stroke(); }
   g.restore();
   if (G.flash > 0) { g.fillStyle = `rgba(255,59,48,${G.flash * 1.6})`; g.fillRect(0, 0, W, H); }
   // HUD
@@ -2016,14 +2310,28 @@ function tttDraw(G) {
   g.fillText(`${h.toLocaleString()}${goal === Infinity ? '' : ' / ' + goal.toLocaleString()}`, 12, 12);
   g.font = '700 11px Orbitron, sans-serif'; g.fillText(`${G.mode.name}  ·  HEIGHT`, 12, 36);
   for (let i = 0; i < 3; i++) tttHeart(g, W - 26 - i * 28, 22, i < G.hearts);
+  g.fillStyle = txt; g.font = '900 14px Orbitron, sans-serif'; g.textAlign = 'right';
+  const ctext = `${G.coinCount}${G.coinPop > 0 ? '  +1!' : ''}`, cw = g.measureText(ctext).width;
+  g.fillText(ctext, W - 12, 43);
+  const hci = tttImg('images/ttt/coin.png'); if (hci.complete && hci.naturalWidth) g.drawImage(hci, W - 12 - cw - 22, 40, 18, 18);
+  if (tttPowerLeft(G) > 0) g.fillText(`SUPER POWERS: ${Math.ceil(tttPowerLeft(G))}`, W - 12, 64);
+  g.textAlign = 'left';
   if (goal !== Infinity) { g.fillStyle = 'rgba(0,0,0,.15)'; g.fillRect(12, 54, 120, 6); g.fillStyle = '#18b84a'; g.fillRect(12, 54, 120 * Math.min(1, G.alt / goal), 6); }
   if (G.t < 2.2 && G.state === 'play') { g.fillStyle = txt; g.font = '900 14px Orbitron, sans-serif'; g.textAlign = 'center'; g.fillText('TAP OR SPACE TO SWITCH SIDES', W / 2, H * 0.86); g.textAlign = 'left'; }
 }
-function tttSprite(g, img, size, face, hat) {
+// how big a sprite is drawn (so climbers can be placed touching the pole)
+function tttDrawnSize(img, size, sideways) {
+  if (!img.complete || !img.naturalWidth) return { w: size * 0.66, h: size };
+  let h = size, w = img.naturalWidth / img.naturalHeight * h;
+  if (w > size * 1.6) { w = size * 1.6; h = w * img.naturalHeight / img.naturalWidth; }
+  return sideways ? { w: h, h: w } : { w, h };
+}
+function tttSprite(g, img, size, face, hat, sideways) {
   if (!img.complete || !img.naturalWidth) { g.fillStyle = '#999'; g.fillRect(-size / 3, -size / 2, size / 1.5, size); return; }
   let h = size, w = img.naturalWidth / img.naturalHeight * h;
   if (w > size * 1.6) { w = size * 1.6; h = w * img.naturalHeight / img.naturalWidth; }
-  g.save(); if (face < 0) g.scale(-1, 1); g.drawImage(img, -w / 2, -h / 2, w, h); g.restore();
+  // sideways = Giant Snail: turned so its foot is flat on the pole and it slides up head-first
+  g.save(); if (face < 0) g.scale(-1, 1); if (sideways) g.rotate(-Math.PI / 2); g.drawImage(img, -w / 2, -h / 2, w, h); g.restore();
   if (hat) { const hi = tttImg('images/xmas/hat.png'); if (hi.complete && hi.naturalWidth) g.drawImage(hi, -size * 0.28, -h / 2 - size * 0.32, size * 0.5, size * 0.4); }
 }
 function tttSatellite(g, CH, spin) {
@@ -2089,92 +2397,116 @@ $('#snailBtn').addEventListener('click', () => {
 });
 
 /* =========================================================
-   ADMIN MODE
+   ACCOUNTS: log in, make an account, log out
    ========================================================= */
-const dlg = $('#adminDialog');
-$('#adminOpen').addEventListener('click', () => { $('#adminMsg').textContent = ''; $('#adminCode').value = ''; dlg.showModal(); });
-$('#adminCancel').addEventListener('click', () => dlg.close());
-// Password scrambler. Uses the browser's built-in one when it can (https),
-// and a plain-JavaScript copy otherwise (plain http blocks the built-in one).
-async function sha256(text) {
-  const bytes = new TextEncoder().encode(text);
-  if (window.crypto && crypto.subtle) {
-    try {
-      const buf = await crypto.subtle.digest('SHA-256', bytes);
-      return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
-    } catch {}
-  }
-  return sha256Plain(bytes);
+let gateMode = 'login';
+function openGate(mode = 'login') {
+  gateMode = mode;
+  const signup = mode === 'signup';
+  $('#tabLogin').setAttribute('aria-pressed', !signup);
+  $('#tabSignup').setAttribute('aria-pressed', signup);
+  $('#gateCode2Wrap').hidden = !signup; $('#gateCode2').required = signup;
+  $('#gateRules').hidden = !signup;
+  $('#gateGo').textContent = signup ? 'MAKE MY ACCOUNT' : 'LOG IN';
+  $('#gateCode').autocomplete = signup ? 'new-password' : 'current-password';
+  $('#gateMsg').textContent = '';
+  $('#gate').hidden = false; document.body.classList.add('gated');
+  setTimeout(() => $('#gateUser').focus(), 50);
 }
-function sha256Plain(bytes) {
-  const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
-  const H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
-  const len = bytes.length, total = ((len + 9 + 63) >> 6) << 6, m = new Uint8Array(total);
-  m.set(bytes); m[len] = 0x80;
-  const bits = len * 8; m[total - 4] = bits >>> 24; m[total - 3] = bits >>> 16; m[total - 2] = bits >>> 8; m[total - 1] = bits;
-  const w = new Array(64), r = (x, n) => (x >>> n) | (x << (32 - n));
-  for (let i = 0; i < total; i += 64) {
-    for (let t = 0; t < 16; t++) w[t] = (m[i + t*4] << 24) | (m[i + t*4 + 1] << 16) | (m[i + t*4 + 2] << 8) | m[i + t*4 + 3];
-    for (let t = 16; t < 64; t++) {
-      const s0 = r(w[t-15], 7) ^ r(w[t-15], 18) ^ (w[t-15] >>> 3), s1 = r(w[t-2], 17) ^ r(w[t-2], 19) ^ (w[t-2] >>> 10);
-      w[t] = (w[t-16] + s0 + w[t-7] + s1) | 0;
-    }
-    let [a, b, c, d, e, f, g, h] = H;
-    for (let t = 0; t < 64; t++) {
-      const t1 = (h + (r(e, 6) ^ r(e, 11) ^ r(e, 25)) + ((e & f) ^ (~e & g)) + K[t] + w[t]) | 0;
-      const t2 = ((r(a, 2) ^ r(a, 13) ^ r(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
-      h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
-    }
-    H[0] = (H[0] + a) | 0; H[1] = (H[1] + b) | 0; H[2] = (H[2] + c) | 0; H[3] = (H[3] + d) | 0;
-    H[4] = (H[4] + e) | 0; H[5] = (H[5] + f) | 0; H[6] = (H[6] + g) | 0; H[7] = (H[7] + h) | 0;
-  }
-  return H.map(x => (x >>> 0).toString(16).padStart(8, '0')).join('');
-}
-$('#adminForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  let ok = false;
-  try { ok = (await sha256($('#adminCode').value)) === CONFIG.adminCodeHash; } catch {}
-  if (ok) {
-    try { sessionStorage.setItem('nwaos_admin', '1'); } catch {}
-    document.body.classList.add('is-admin'); renderComments();
-    dlg.close();
-  } else {
-    $('#adminMsg').textContent = 'Wrong passcode!';
-  }
+function closeGate() { $('#gate').hidden = true; document.body.classList.remove('gated'); $('#gateCode').value = ''; $('#gateCode2').value = ''; }
+$('#tabLogin').addEventListener('click', () => openGate('login'));
+$('#tabSignup').addEventListener('click', () => openGate('signup'));
+$('#gateCancel').addEventListener('click', () => { afterUnlock = null; closeGate(); });
+$('#acctBtn').addEventListener('click', () => {
+  if (!ME) return openGate('login');
+  updateAccountUI(); $('#meDialog').showModal();
 });
-$('#adminExit').addEventListener('click', () => {
-  try { sessionStorage.removeItem('nwaos_admin'); } catch {}
-  document.body.classList.remove('is-admin'); renderComments();
+function usernameProblem(name) {
+  if (!/^[A-Za-z0-9_]{3,20}$/.test(name)) return 'Usernames are 3 to 20 letters, numbers or _ (no spaces).';
+  const lower = name.toLowerCase(), squish = t => t.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (CONFIG.blockedWords.some(w => w && lower.includes(w))) return 'Pick a friendlier username!';
+  if (squish(name).includes(squish(CONFIG.creatorNickname)) || /nwaos|admin|creator|^eli$/i.test(name)) return 'That name is saved for the creator. Pick a different one!';
+  return '';
+}
+$('#gateForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!auth) return flash($('#gateMsg'), 'Accounts are offline right now. Try again later!', 'err');
+  const name = $('#gateUser').value.trim(), pw = $('#gateCode').value;
+  const go = $('#gateGo'), msg = $('#gateMsg');
+  if (gateMode === 'signup') {
+    const problem = usernameProblem(name);
+    if (problem) return flash(msg, problem, 'err');
+    if (pw.length < 6) return flash(msg, 'Passwords need at least 6 characters.', 'err');
+    if (pw !== $('#gateCode2').value) return flash(msg, 'The two passwords don\'t match.', 'err');
+  } else if (!name || !pw) return flash(msg, 'Type your username and password.', 'err');
+  go.disabled = true; flash(msg, gateMode === 'signup' ? 'Making your account...' : 'Logging in...');
+  try {
+    if (gateMode === 'signup') { pendingName = name; await auth.createUserWithEmailAndPassword(emailFor(name), pw); }
+    else await auth.signInWithEmailAndPassword(emailFor(name), pw);
+  } catch (err) {
+    go.disabled = false;
+    const code = err && err.code || '';
+    return flash(msg,
+      code === 'auth/email-already-in-use' ? 'That username is taken! Try another one.'
+      : code === 'auth/too-many-requests' ? 'Too many tries. Wait a few minutes and try again.'
+      : code === 'auth/network-request-failed' ? 'Can\'t reach the internet right now.'
+      : code === 'auth/weak-password' ? 'Pick a longer password (at least 6 characters).'
+      : gateMode === 'signup' ? 'Couldn\'t make that account. Try again!'
+      : 'Wrong username or password.', 'err');
+  }
+  go.disabled = false;
+  closeGate();
+  toast(gateMode === 'signup' ? `Welcome, ${name}! 🐌 Eli will approve your account soon so you can post.` : `Welcome back, ${name}! 🐌`);
+  const then = afterUnlock; afterUnlock = null;
+  if (then) setTimeout(then, 1500);   // give the account a moment to load
+});
+async function logOut() {
+  clearTimeout(saveTimer); pushSave();
+  SAVE_KEYS.forEach(k => { try { localStorage.removeItem('nwaos_' + k); } catch {} });
+  try { await auth.signOut(); } catch {}
+  location.reload();
+}
+$('#meLogout').addEventListener('click', logOut);
+$('#adminExit').addEventListener('click', logOut);
+
+/* ---------- the Account of Awesomeness (creator only) ---------- */
+let acctFilter = 'new';
+function renderAccounts() {
+  const waiting = DB.users.filter(u => u.status === 'new').length;
+  $('#waitCount').textContent = waiting ? `(${waiting} waiting)` : '';
+  const list = DB.users.filter(u => acctFilter === 'all' || u.status === acctFilter)
+    .sort((a, b) => (b.created || 0) - (a.created || 0));
+  const label = { new: '⏳ waiting', approved: '✅ approved', banned: '🚫 banned' };
+  $('#acctList').innerHTML = list.length ? list.map(u => {
+    const creator = u.username && u.username.toLowerCase() === CONFIG.creatorNickname.toLowerCase();
+    return `<div class="acct-row">
+      <strong>${creator ? '⭐ ' : ''}${esc(u.username || '?')}</strong>
+      <span class="muted">${label[u.status] || esc(u.status)}${u.created ? ' · joined ' + timeAgo(u.created) : ''}</span>
+      ${creator ? '' : `${u.status !== 'approved' ? `<button type="button" class="btn small green" data-acct="${u.id}" data-to="approved">APPROVE</button>` : ''}
+      ${u.status !== 'banned' ? `<button type="button" class="btn small red" data-acct="${u.id}" data-to="banned">BAN</button>`
+                              : `<button type="button" class="btn small white" data-acct="${u.id}" data-to="new">UNBAN</button>`}`}
+    </div>`;
+  }).join('') : `<p class="empty">No ${acctFilter === 'all' ? '' : label[acctFilter].split(' ')[1] + ' '}accounts.</p>`;
+}
+$('#acctListBtn').addEventListener('click', () => { renderAccounts(); $('#adminDialog').showModal(); });
+$('#acctFilter').addEventListener('click', e => {
+  const b = e.target.closest('[data-af]'); if (!b) return;
+  acctFilter = b.dataset.af;
+  $$('#acctFilter .chip').forEach(c => c.setAttribute('aria-pressed', c === b));
+  renderAccounts();
+});
+$('#acctList').addEventListener('click', async e => {
+  const b = e.target.closest('[data-acct]'); if (!b || !isAdmin()) return;
+  const u = DB.users.find(x => x.id === b.dataset.acct);
+  if (b.dataset.to === 'banned' && !(await ask(`Ban ${u ? u.username : 'this account'}? They won't be able to post, like or vote.`))) return;
+  db.collection('users').doc(b.dataset.acct).update({ status: b.dataset.to })
+    .then(() => toast(b.dataset.to === 'approved' ? '✅ Approved!' : b.dataset.to === 'banned' ? '🚫 Banned.' : 'Unbanned.'))
+    .catch(oops('Couldn\'t change that account.'));
 });
 
 /* =========================================================
    START
    ========================================================= */
-/* ---------- password (only needed to post) ----------
-   Looking around, liking, games, the find game and the snail are open to everyone.
-   Posting theories, replies and pictures asks for the password once per browser. */
-const canPost = () => isAdmin() || store.get('gate', '') === CONFIG.sitePasswordHash;
-let afterUnlock = null;
-function needPassword(then) {
-  if (canPost()) return true;
-  afterUnlock = then;
-  $('#gateMsg').textContent = ''; $('#gateCode').value = '';
-  $('#gate').hidden = false; document.body.classList.add('gated');
-  setTimeout(() => $('#gateCode').focus(), 50);
-  return false;
-}
-function closeGate() { $('#gate').hidden = true; document.body.classList.remove('gated'); }
-$('#gateCancel').addEventListener('click', () => { afterUnlock = null; closeGate(); });
-$('#gateForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  let ok = false;
-  try { ok = (await sha256($('#gateCode').value.trim())) === CONFIG.sitePasswordHash; } catch {}
-  if (!ok) { $('#gateMsg').textContent = 'Nope! That\'s not the password.'; $('#gateCode').select(); return; }
-  store.set('gate', CONFIG.sitePasswordHash); closeGate(); toast('Unlocked! You can post now. 🐌');
-  const then = afterUnlock; afterUnlock = null; if (then) then();
-});
-
-try { if (sessionStorage.getItem('nwaos_admin') === '1') document.body.classList.add('is-admin'); } catch {}
 $('#year').textContent = new Date().getFullYear();
 /* ---------- Christmas mode ---------- */
 // Wrap a picture so a Santa hat sits on top of it (only while Christmas is on)
@@ -2214,8 +2546,6 @@ $('#pollCast').innerHTML = ['spikester', 'sweater', 'giant-snail', 'bba']
   .map(id => hatted(`<img src="images/find/${id}.png" alt="">`)).join('');
 if (XMAS) startChristmas();
 $('#heroArt').innerHTML = XMAS ? '<img src="images/xmas/snail-santa.png" alt="Giant Snail in a Santa hat">' : '<img src="images/giant-snail.png" alt="Giant Snail, a real garden snail">';
-const savedNick = store.get('nickname', '');
-if (savedNick) $('#cName').value = savedNick;
 renderEpisodes();
 renderNews();
 renderPoll();
@@ -2226,22 +2556,19 @@ renderSnailToy();
 renderFindBoard();
 placeHiders();
 showPage(location.hash.slice(1) || 'home');
+updateAccountUI();
+startLiveData();
 
 /* =========================================================
    NOTES FOR ELI
-   1. HOSTING: upload this one file as "index.html" to GitHub Pages,
-      Neocities, or Netlify Drop. No server needed.
+   1. HOSTING: upload this file (index.html) and the images folder to GitHub Pages.
    2. EPISODES: paste YouTube IDs into CONFIG.episodes above.
-   3. ADMIN: click "creator login" in the footer and type your passcode.
-   4. IMPORTANT: right now votes, comments and new posts are saved
-      only in each visitor's own browser. To make them LIVE and shared
-      by everyone, connect a free database (e.g. Firebase Firestore or
-      Supabase) and replace store.get/store.set with calls to it. Do
-      that before announcing the vote, and also move the admin check
-      to the database's security rules — a passcode in this file can
-      be found by anyone who views the page source.
-   5. Starter news posts live in CONFIG.starterPosts — editing them
-      there makes them show up for everyone even without a database.
+   3. CREATOR: log in with the LOG IN button at the top as NWAOSmaker372.
+      The 👥 ACCOUNTS button (bottom bar) lists every account with APPROVE / BAN.
+   4. DATA: theories, replies, likes, fan pictures, news posts, votes and accounts
+      are shared through the Firebase project "nwaos". Who can change what is
+      decided by the database's security rules (firestore.rules), not this file.
+   5. Starter news posts live in CONFIG.starterPosts.
    ========================================================= */
 </script>
 </body>
