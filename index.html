@@ -328,8 +328,9 @@ body.is-admin .admin-only.flex{display:flex !important}
 .admin-panel h3::before{content:'🔒 '}
 .creator-side{position:fixed;right:8px;top:50%;transform:translateY(-50%);z-index:60;display:flex;flex-direction:column;gap:10px}
 .creator-side[hidden]{display:none}
-.side-btn{position:relative;width:58px;padding:6px 2px 4px;background:#fff;border:3px solid var(--ink);border-radius:14px;box-shadow:3px 3px 0 var(--ink);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--ink)}
-.side-btn img{width:36px;height:36px;object-fit:contain}
+.side-btn{position:relative;width:84px;padding:6px 2px 4px;background:#fff;border:3px solid var(--ink);border-radius:14px;box-shadow:3px 3px 0 var(--ink);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--ink)}
+.side-btn img{width:74px;height:auto;max-height:70px;object-fit:contain}
+.side-btn span[hidden]{display:none}
 .side-btn span{font-family:var(--font-title);font-size:.42rem;line-height:1.1;text-align:center}
 .side-btn b{position:absolute;top:-8px;left:-8px;min-width:22px;height:22px;border-radius:11px;background:var(--red);color:#fff;border:2px solid var(--ink);font:900 .7rem/18px var(--font-title);text-align:center;padding:0 4px}
 .side-btn b[hidden],.side-btn[hidden]{display:none}
@@ -903,9 +904,9 @@ body.ttt-full{overflow:hidden}
 </footer>
 
 <div class="creator-side" id="creatorSide" hidden>
-  <button type="button" class="side-btn" id="xmasPreview" title="Preview Christmas mode"><img src="images/xmas/hat.png" alt=""><span>XMAS</span></button>
-  <button type="button" class="side-btn" id="acctListBtn" title="Accounts"><img src="images/find/mr-face-man.png" alt=""><span>ACCOUNTS</span><b id="waitCount" hidden></b></button>
-  <button type="button" class="side-btn" id="switchBtn" title="Switch account"><img src="images/find/cloudini.png" alt=""><span id="switchLabel">NOT ADMIN</span></button>
+  <button type="button" class="side-btn" id="xmasPreview" title="Preview Christmas mode" aria-label="Preview Christmas"><img src="images/side-xmas.png" alt=""></button>
+  <button type="button" class="side-btn" id="acctListBtn" title="Accounts" aria-label="Accounts"><img src="images/side-accounts.png" alt=""><b id="waitCount" hidden></b></button>
+  <button type="button" class="side-btn" id="switchBtn" title="Switch account" aria-label="Definitely not an admin"><img src="images/side-notadmin.png" alt=""><span id="switchLabel" hidden>BACK TO ADMIN</span></button>
 </div>
 
 <dialog id="altDialog">
@@ -1342,8 +1343,8 @@ function updateCreatorSide() {
   const creator = !!ME && ME.admin, back = altMode && creatorBehind;
   $('#creatorSide').hidden = !(creator || back);
   $('#xmasPreview').hidden = !creator; $('#acctListBtn').hidden = !creator;
-  $('#switchLabel').textContent = back ? 'BACK TO ADMIN' : 'NOT ADMIN';
-  $('#switchBtn').querySelector('img').src = back ? 'images/find/mr-face-man.png' : 'images/find/cloudini.png';
+  $('#switchLabel').hidden = !back;
+  $('#switchBtn').querySelector('img').src = back ? 'images/find/mr-face-man.png' : 'images/side-notadmin.png';
 }
 
 function updateAccountUI() {
