@@ -1305,12 +1305,12 @@ let ME = null;   // { uid, username, status, admin } when logged in
 const emailFor = name => name.trim().toLowerCase() + '@' + CONFIG.accountDomain;
 
 // Game progress saves to your account when you're logged in
-const SAVE_KEYS = ['ttt_progress', 'found', 'pokes'];
+const SAVE_KEYS = ['ttt_progress', 'found', 'pokes', 'foundAll'];
 const rawSet = store.set.bind(store);
 store.set = (k, v) => { const ok = rawSet(k, v); if (ME && SAVE_KEYS.includes(k)) scheduleSave(); return ok; };
 let saveTimer;
 function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(pushSave, 1200); }
-function localSave() { return { ttt_progress: store.get('ttt_progress', {}), found: store.get('found', []), pokes: store.get('pokes', 0) }; }
+function localSave() { return { ttt_progress: store.get('ttt_progress', {}), found: store.get('found', []), pokes: store.get('pokes', 0), foundAll: !!store.get('foundAll', false) }; }
 function pushSave() { if (typeof syncProfile === 'function') syncProfile(); return ME && db ? db.collection('users').doc(ME.uid).update({ save: localSave() }).catch(e => console.warn('save failed', e)) : Promise.resolve(); }
 function mergeSave(a = {}, b = {}) {
   const ta = a.ttt_progress || {}, tb = b.ttt_progress || {};
@@ -1321,6 +1321,7 @@ function mergeSave(a = {}, b = {}) {
       coins: Math.max(ta.coins || 0, tb.coins || 0), bought: [...new Set([...(ta.bought || []), ...(tb.bought || [])])] },
     found: [...new Set([...(a.found || []), ...(b.found || [])])],
     pokes: Math.max(a.pokes || 0, b.pokes || 0),
+    foundAll: !!(a.foundAll || b.foundAll),   // Master Finder stays even after starting over
   };
 }
 function refreshGames() {
@@ -2039,6 +2040,7 @@ function renderFindBoard() {
   const found = findFound();
   $('#findCount').textContent = `${found.length} / ${CONFIG.findGame.length}`;
   $('#findWin').hidden = !findWon();
+  if (findWon() && !store.get('foundAll', false)) store.set('foundAll', true);
   $('#findGrid').innerHTML = CONFIG.findGame.map(c => {
     const got = found.includes(c.id);
     return `<div class="find-slot ${got ? 'found' : ''}">${hatted(`<img src="${esc(c.img || 'images/find/' + c.id + '.png')}" alt="${got ? esc(c.name) : 'not found yet'}">`)}<span>${got ? esc(c.name) : '???'}</span></div>`;
@@ -2079,7 +2081,7 @@ document.addEventListener('click', e => {
   else toast(`You found ${c.name}! (${found.length}/${CONFIG.findGame.length})`);
 }, true);
 $('#findReset').addEventListener('click', async () => {
-  if (!(await ask('Hide everyone again and start over?'))) return;
+  if (!(await ask(store.get('foundAll', false) ? 'Hide everyone again and start over? (You keep your Master Finder badge.)' : 'Hide everyone again and start over?'))) return;
   store.set('found', []); renderFindBoard(); placeHiders(); renderSnailToy();
   $('#snailSays').textContent = "he's waiting.";
 });
@@ -2736,7 +2738,7 @@ const isCreatorUid = uid => !!DB.profiles[uid] && isCreatorName(DB.profiles[uid]
 // my own numbers (fresh from this browser)
 function myStats() {
   const P = tttProgress();
-  return { best: Math.floor(P.best.endless || 0), pokes: store.get('pokes', 0), foundAll: findWon(), rich: (P.bought || []).includes('diamond') };
+  return { best: Math.floor(P.best.endless || 0), pokes: store.get('pokes', 0), foundAll: findWon() || !!store.get('foundAll', false), rich: (P.bought || []).includes('diamond') };
 }
 const statsOf = uid => (ME && uid === ME.uid) ? myStats() : ((DB.profiles[uid] || {}).stats || {});
 // hearts from the theories board
