@@ -427,6 +427,11 @@ body.gated{overflow:hidden}
 .acct-btn{font-family:var(--font-title);font-weight:900;font-size:.6rem;background:var(--yellow,#ffd84d);color:var(--ink);border:3px solid var(--ink);border-radius:20px;padding:7px 12px;cursor:pointer;order:3;flex:0 0 auto;max-width:44vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-shadow:3px 3px 0 var(--ink)}
 .acct-btn.in{background:#bdf5c8}
 .acct-btn{display:flex;align-items:center;gap:6px}
+.acct-btn:has(.acct-badges){max-width:min(62vw,560px)}
+.acct-name{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.acct-badges{display:flex;gap:2px;flex:0 1 auto;min-width:0;overflow:hidden}
+.acct-badges img{height:22px;width:auto;max-width:30px;object-fit:contain;flex:0 0 auto}
+@media (max-width:820px){.acct-btn:has(.acct-badges){max-width:38vw;flex-wrap:wrap;justify-content:center;row-gap:4px;border-radius:14px}.acct-badges{flex-wrap:wrap;flex-basis:100%;justify-content:center}.acct-badges img{height:15px;max-width:20px}}
 .acct-pic{width:22px;height:22px;border-radius:5px;border:2px solid var(--ink);object-fit:cover;background:#fff}
 #profileDialog .own-only{display:none}
 #profileDialog:has(#profOwn:not([hidden])) .own-only{display:inline-block}
@@ -1331,7 +1336,7 @@ function startLiveData() {
   if (!db) return;
   const oops = what => e => console.warn(what, e);
   db.collection('comments').orderBy('time', 'desc').limit(400).onSnapshot(q => {
-    DB.comments = q.docs.map(d => ({ id: d.id, ...d.data() })); renderComments();
+    DB.comments = q.docs.map(d => ({ id: d.id, ...d.data() })); renderComments(); updateAccountUI();
   }, oops('comments'));
   db.collection('pics').where('status', '==', 'approved').onSnapshot(q => {
     DB.picsApproved = {}; q.docs.forEach(d => { DB.picsApproved[d.id] = d.data(); }); renderComments();
@@ -1401,7 +1406,12 @@ function updateAccountUI() {
   b.classList.toggle('waiting', !!ME && !ME.admin && ME.status !== 'approved');
   b.textContent = ME ? (ME.admin ? '⭐ ' : '👤 ') + ME.username : 'LOG IN';
   $('#cAs').textContent = ME ? ME.username + (ME.admin || ME.status === 'approved' ? '' : ' (waiting for approval)') : 'not logged in — tap LOG IN at the top';
-  if (ME) b.innerHTML = `<img class="acct-pic" src="${pfpSrc(myPfp())}" alt=""> ${esc(ME.username)}`;
+  if (ME) {
+    const mine = (ME.admin || ME.status === 'approved') ? badgesOf(ME.uid) : [];
+    b.innerHTML = `<img class="acct-pic" src="${pfpSrc(myPfp())}" alt=""><span class="acct-name">${esc(ME.username)}</span>` +
+      (mine.length ? `<span class="acct-badges">${mine.map(id => `<img src="${badgeSrc(id)}" alt="" title="${esc(badgeById(id).name)}">`).join('')}</span>` : '');
+    b.title = mine.length ? ME.username + ' — ' + mine.length + ' badge' + (mine.length > 1 ? 's' : '') : ME.username;
+  }
 }
 // Can I post? Opens the login box if needed.
 let afterUnlock = null;
@@ -2789,6 +2799,7 @@ function syncProfile(now) {
 }
 // little "new badge!" pop-up
 function checkNewBadges() {
+  updateAccountUI();
   if (!ME || ME.admin || ME.status !== 'approved') return;
   const have = badgesOf(ME.uid), key = 'seenBadges_' + ME.uid, seen = store.get(key, null);
   if (seen) have.filter(b => !seen.includes(b)).forEach((b, i) => setTimeout(() => toast(`🏅 NEW BADGE: ${badgeById(b).name}!`), 600 + i * 2600));
