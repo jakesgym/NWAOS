@@ -2712,6 +2712,7 @@ const BADGES = [
   { id: 'number-one-clicker', name: '#1 Clicker',        how: 'Have the most snail pokes of everyone', one: true },
   { id: 'master-finder',      name: 'Master Finder',     how: 'Find all the characters on the Home page' },
   { id: 'artist',             name: 'Artist',            how: 'Get your fan art picked for the Fan Art tab' },
+  { id: 'creators-pick',      name: "Creator's Pick",    how: "Get a post picked as a Creator's Pick" },
 ];
 const PFPS = [
   { id: 'shaded-spikester', name: 'Shaded Spikester' }, { id: 'spikester', name: 'Spikester' },
@@ -2740,13 +2741,14 @@ function myStats() {
 const statsOf = uid => (ME && uid === ME.uid) ? myStats() : ((DB.profiles[uid] || {}).stats || {});
 // hearts from the theories board
 function heartTotals() {
-  const total = {}, best = {}, artist = {};
+  const total = {}, best = {}, artist = {}, picked = {};
   for (const c of DB.comments) {
     const n = Object.keys(c.likes || {}).length;
     total[c.uid] = (total[c.uid] || 0) + n; best[c.uid] = Math.max(best[c.uid] || 0, n);
     if (c.fanart) artist[c.uid] = true;
+    if (c.starred) picked[c.uid] = true;
   }
-  return { total, best, artist };
+  return { total, best, artist, picked };
 }
 // who holds each "only one person" badge right now (creator never counts; needs an approved account = a profile)
 function badgeHolders() {
@@ -2777,6 +2779,7 @@ function badgesOf(uid, holders = badgeHolders()) {
   if (holders['number-one-clicker'] === uid) got.push('number-one-clicker');
   if (s.foundAll) got.push('master-finder');
   if (H.artist[uid]) got.push('artist');
+  if (H.picked[uid]) got.push('creators-pick');
   return got;
 }
 function pfpUnlocked(p, badges) {
