@@ -6,6 +6,8 @@ service cloud.firestore {
 
     function signedIn() { return request.auth != null; }
     function isAdmin() { return signedIn() && request.auth.token.email == 'nwaosmaker372@fans.nwaos.com'; }
+    // DefinitelyNotAdmin273: the creator's normal fan account, approved from the start
+    function isAlt() { return signedIn() && request.auth.token.email == 'definitelynotadmin273@fans.nwaos.com'; }
     function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
     function hasAccount() { return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)); }
     function approved() { return isAdmin() || (hasAccount() && me().status == 'approved'); }
@@ -18,7 +20,7 @@ service cloud.firestore {
       allow create: if signedIn() && request.auth.uid == uid
         && request.resource.data.username is string
         && request.auth.token.email == request.resource.data.username.lower() + '@fans.nwaos.com'
-        && request.resource.data.status == (isAdmin() ? 'approved' : 'new')
+        && request.resource.data.status == (isAdmin() || isAlt() ? 'approved' : 'new')
         && request.resource.data.keys().hasOnly(['username', 'status', 'created', 'save']);
       // You can update your own saved games; only the creator can approve or ban.
       allow update: if (signedIn() && request.auth.uid == uid && onlyChanged(['save']))
