@@ -34,7 +34,7 @@
 button,input,textarea,select{color:var(--ink)}
 .yt-link{font-size:.85rem;font-weight:700}
 /* Orbitron (closest match to Eli's Floating Text font) runs smaller than the old pixel font, so bump it up */
-h1,h2,h3,.btn,.tab,.logo-mark,.badge,.chip,.vote-card .name,.ep-num,.ep-len,.now-playing,.player-empty,.poll-closed,.locked-banner,.counter,.char-body h4,.soon-tag,.admin-bar{font-weight:900;font-size-adjust:.62}
+h1,h2,h3,.btn,.tab,.logo-mark,.badge,.chip,.vote-card .name,.ep-num,.ep-len,.now-playing,.player-empty,.poll-closed,.locked-banner,.counter,.char-body h4,.soon-tag,.side-btn span{font-weight:900;font-size-adjust:.62}
 .facts dt,label,.char-status{font-family:var(--font-title);font-weight:700}
 #scene{position:fixed;inset:0;z-index:-1;background:center/cover no-repeat;opacity:.2;pointer-events:none;transition:opacity .3s}
 [hidden]{display:none !important}
@@ -283,6 +283,10 @@ textarea{min-height:110px;resize:vertical}
 .game-card svg{width:100%;max-width:220px;height:auto}
 .lock{position:absolute;top:14px;right:-38px;transform:rotate(35deg);background:var(--red);color:#fff;font-family:var(--font-title);font-size:.5rem;padding:6px 44px;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)}
 .snail-toy{text-align:center}
+.snail-toy .snail-set{display:none;margin:12px auto 0;gap:8px;justify-content:center;align-items:center;font-family:var(--font-title);font-weight:900;font-size:.6rem}
+body.is-admin .snail-toy .snail-set{display:flex !important}
+.snail-toy .snail-set input{width:120px;padding:6px 8px}
+.snail-toy .snail-set button{background:#fff;border:3px solid var(--ink);padding:6px 12px}
 .snail-toy button{background:none;border:0;cursor:pointer;padding:0}
 .snail-toy svg{width:160px;height:auto;transition:transform .15s}
 .snail-toy button:active svg{transform:scale(.9) rotate(-6deg)}
@@ -322,8 +326,14 @@ body.is-admin .admin-only{display:block !important}
 body.is-admin .admin-only.flex{display:flex !important}
 .admin-panel{background:#ffe9e7;border-style:dashed;margin-top:26px}
 .admin-panel h3::before{content:'🔒 '}
-.admin-bar{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:60;background:var(--red);color:#fff;padding:8px 14px;border:3px solid var(--ink);border-radius:30px;font-family:var(--font-title);font-size:.55rem;align-items:center;gap:10px;box-shadow:var(--shadow)}
-.admin-bar button{font:inherit;background:#fff;border:2px solid var(--ink);border-radius:20px;padding:5px 8px;cursor:pointer}
+.creator-side{position:fixed;right:8px;top:50%;transform:translateY(-50%);z-index:60;display:flex;flex-direction:column;gap:10px}
+.creator-side[hidden]{display:none}
+.side-btn{position:relative;width:58px;padding:6px 2px 4px;background:#fff;border:3px solid var(--ink);border-radius:14px;box-shadow:3px 3px 0 var(--ink);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--ink)}
+.side-btn img{width:36px;height:36px;object-fit:contain}
+.side-btn span{font-family:var(--font-title);font-size:.42rem;line-height:1.1;text-align:center}
+.side-btn b{position:absolute;top:-8px;left:-8px;min-width:22px;height:22px;border-radius:11px;background:var(--red);color:#fff;border:2px solid var(--ink);font:900 .7rem/18px var(--font-title);text-align:center;padding:0 4px}
+.side-btn b[hidden],.side-btn[hidden]{display:none}
+.side-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
 dialog{border:3px solid var(--ink);border-radius:var(--sketch);box-shadow:8px 8px 0 var(--ink);padding:24px;width:min(92vw,420px);background:var(--paper)}
 dialog::backdrop{background:rgba(0,0,0,.55)}
 
@@ -516,8 +526,17 @@ img.hat{position:absolute;left:50%;top:0;width:44%;max-width:84px;min-width:16px
 .ttt-modes small{display:block;font-family:var(--font-body);font-weight:400;font-size:.7rem;color:var(--muted);margin-top:3px}
 .ttt-stage{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px}
 .ttt-stage[hidden]{display:none}
-.ttt-stage{scroll-margin-top:86px}
-#tttCanvas{display:block;border:4px solid var(--ink);border-radius:14px;touch-action:none;cursor:pointer;max-width:100%;background:#fff}
+.ttt-stage{position:fixed;inset:0;z-index:150;display:block;background:#111}
+body.ttt-full{overflow:hidden}
+#tttCanvas{position:absolute;inset:0;border:0 !important;border-radius:0 !important}
+.ttt-quit{position:absolute;left:10px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:3}
+.ttt-power{position:absolute;left:10px;top:50%;transform:translateY(-50%);z-index:3;line-height:1.25;padding:10px 8px}
+.ttt-power.on{background:var(--yellow);color:var(--ink)}
+.ttt-speed{position:absolute;right:8px;top:50%;transform:translateY(-50%);z-index:3;flex-direction:column;background:rgba(255,255,255,.85);border:3px solid var(--ink);border-radius:14px;padding:8px 4px;width:64px}
+.ttt-speed[hidden]{display:none}
+.ttt-speed input{width:150px !important;transform:rotate(-90deg);margin:70px 0 !important}
+@media (max-width:600px){.ttt-power{top:118px;transform:none;font-size:.5rem;padding:8px 6px}.ttt-speed{top:112px;transform:none;width:54px;right:6px;padding:6px 2px}.ttt-speed input{width:110px !important;margin:50px 0 !important}}
+#tttCanvas{display:block;touch-action:none;cursor:pointer;background:#fff}
 .ttt-bar{display:flex;gap:10px}
 .ttt-end{position:absolute;top:30%;left:50%;transform:translateX(-50%) rotate(-1deg);width:min(92%,360px);text-align:center;z-index:5}
 .ttt-end[hidden]{display:none}
@@ -533,8 +552,8 @@ img.hat{position:absolute;left:50%;top:0;width:44%;max-width:84px;min-width:16px
 .ttt-chars button.locked{color:var(--muted)}
 .ttt-chars button.shop{border-color:#b8860b;background:#fff7d6}
 .ttt-chars button.shop img{filter:brightness(0) opacity(.45)}
-.ttt-speed{display:flex;align-items:center;gap:8px;font-family:var(--font-title);font-weight:900;font-size:.7rem;margin:0}
-.ttt-speed input{width:140px;padding:0;border:0}
+.ttt-speed{display:flex;align-items:center;gap:8px;font-family:var(--font-title);font-weight:900;font-size:.6rem;margin:0}
+.ttt-speed input{padding:0;border:0}
 .ttt-bar{flex-wrap:wrap;justify-content:center;align-items:center}
 .coin-ico{height:1.3em;width:auto;vertical-align:-.3em}
 .ttt-chars button small .coin-ico{height:1.5em;width:auto;display:inline;margin:0;filter:none;vertical-align:-.45em}
@@ -636,6 +655,11 @@ img.hat{position:absolute;left:50%;top:0;width:44%;max-width:84px;min-width:16px
       <button id="snailBtn" aria-label="Poke the snail"></button>
       <p class="counter" id="snailCount">0</p>
       <p class="hand muted" id="snailSays">he's waiting.</p>
+      <form class="snail-set admin-only" id="snailSet">
+        <label for="snailSetN">Set pokes</label>
+        <input id="snailSetN" type="number" min="0" max="99999999" step="1" inputmode="numeric">
+        <button class="btn small" type="submit">SET</button>
+      </form>
     </div>
 
     <div class="box find-board" style="margin-top:28px">
@@ -826,7 +850,7 @@ img.hat{position:absolute;left:50%;top:0;width:44%;max-width:84px;min-width:16px
     <div id="ttt" hidden>
       <div class="box ttt-setup" id="tttSetup">
         <h3>TO THE TOP: PICK YOUR CLIMBER</h3>
-        <p class="ttt-wallet"><img class="coin-ico" src="images/ttt/coin.png" alt=""> <strong id="tttCoins">0</strong> coins <span class="form-note">· grab coins between two obstacles on the same side, and beat levels for bonus coins</span></p>
+        <p class="ttt-wallet"><img class="coin-ico" src="images/ttt/coin.png" alt=""> <strong id="tttCoins">0</strong> coins <span class="form-note">· grab coins between two obstacles on the same side, knock obstacles off for a coin each, and beat levels for bonus coins</span></p>
         <div class="ttt-chars" id="tttChars"></div>
         <h3>PICK A MODE</h3>
         <div class="ttt-modes" id="tttModes"></div>
@@ -838,11 +862,9 @@ img.hat{position:absolute;left:50%;top:0;width:44%;max-width:84px;min-width:16px
       </div>
       <div class="ttt-stage" id="tttStage" hidden>
         <canvas id="tttCanvas" aria-label="To The Top game. Press space or tap to switch sides."></canvas>
-        <div class="ttt-bar">
-          <button class="btn small white" id="tttQuit">✕ QUIT</button>
-          <button class="btn small blue" id="tttPower" hidden>⚡ POWER: OFF</button>
-          <label class="ttt-speed" id="tttSpeedWrap" hidden>SPEED <input type="range" id="tttSpeed" min="0.5" max="10" step="0.5" value="1"> <span id="tttSpeedVal">1x</span></label>
-        </div>
+        <button class="btn small white ttt-quit" id="tttQuit">✕ QUIT</button>
+        <button class="btn small blue ttt-power" id="tttPower" hidden>⚡ POWER<br>OFF</button>
+        <label class="ttt-speed" id="tttSpeedWrap" hidden><span>SPEED</span> <input type="range" id="tttSpeed" min="0.5" max="10" step="0.5" value="1" aria-label="Speed"> <span id="tttSpeedVal">1x</span></label>
         <div class="ttt-end box" id="tttEnd" hidden>
           <h3 id="tttEndTitle"></h3>
           <p class="hand" id="tttEndText"></p>
@@ -880,9 +902,24 @@ img.hat{position:absolute;left:50%;top:0;width:44%;max-width:84px;min-width:16px
   <p class="hand">Made with markers, stick figures, and one real garden snail.</p>
 </footer>
 
-<div class="admin-bar admin-only flex">
-  CREATOR MODE <button id="acctListBtn" type="button">👥 ACCOUNTS <span id="waitCount"></span></button> <button id="xmasPreview" type="button">🎄 PREVIEW CHRISTMAS</button> <button id="adminExit">LOG OUT</button>
+<div class="creator-side" id="creatorSide" hidden>
+  <button type="button" class="side-btn" id="xmasPreview" title="Preview Christmas mode"><img src="images/xmas/hat.png" alt=""><span>XMAS</span></button>
+  <button type="button" class="side-btn" id="acctListBtn" title="Accounts"><img src="images/find/mr-face-man.png" alt=""><span>ACCOUNTS</span><b id="waitCount" hidden></b></button>
+  <button type="button" class="side-btn" id="switchBtn" title="Switch account"><img src="images/find/cloudini.png" alt=""><span id="switchLabel">NOT ADMIN</span></button>
 </div>
+
+<dialog id="altDialog">
+  <form id="altForm">
+    <h3>DefinitelyNotAdmin273</h3>
+    <p class="form-note">Your totally normal, definitely-not-the-creator account. Pick a password for it the first time. After that, switching is one tap.</p>
+    <div class="field"><label for="altCode">Password for DefinitelyNotAdmin273</label><input id="altCode" type="password" minlength="6" autocomplete="new-password" required></div>
+    <div class="row">
+      <button class="btn green" type="submit" id="altGo">SWITCH</button>
+      <button class="btn white" type="button" id="altCancel">CANCEL</button>
+    </div>
+    <p class="msg err" id="altMsg" role="status"></p>
+  </form>
+</dialog>
 
 <dialog id="askDialog">
   <form method="dialog">
@@ -1201,8 +1238,16 @@ const store = {
    SHARED DATABASE + ACCOUNTS (Firebase)
    ========================================================= */
 let db = null, auth = null;
-try { firebase.initializeApp(CONFIG.firebase); auth = firebase.auth(); db = firebase.firestore(); }
-catch (e) { console.warn('Database offline', e); }
+// The creator can keep two accounts signed in at once and flip between them:
+// the main one, and "DefinitelyNotAdmin273" (a normal fan account that starts approved).
+const ALT_NAME = 'DefinitelyNotAdmin273';
+let mainAuth = null, altAuth = null, creatorBehind = false;
+const altMode = (() => { try { return localStorage.getItem('nwaos_mode') === 'alt'; } catch { return false; } })();
+try {
+  const main = firebase.initializeApp(CONFIG.firebase), alt = firebase.initializeApp(CONFIG.firebase, 'alt');
+  mainAuth = main.auth(); altAuth = alt.auth();
+  auth = altMode ? altAuth : mainAuth; db = (altMode ? alt : main).firestore();
+} catch (e) { console.warn('Database offline', e); }
 const FV = () => firebase.firestore.FieldValue;
 const DB = { comments: [], picsApproved: {}, picsMine: {}, posts: [], votes: {}, poll: {}, users: [] };
 let ME = null;   // { uid, username, status, admin } when logged in
@@ -1215,7 +1260,7 @@ store.set = (k, v) => { const ok = rawSet(k, v); if (ME && SAVE_KEYS.includes(k)
 let saveTimer;
 function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(pushSave, 1200); }
 function localSave() { return { ttt_progress: store.get('ttt_progress', {}), found: store.get('found', []), pokes: store.get('pokes', 0) }; }
-function pushSave() { if (ME && db) db.collection('users').doc(ME.uid).update({ save: localSave() }).catch(e => console.warn('save failed', e)); }
+function pushSave() { return ME && db ? db.collection('users').doc(ME.uid).update({ save: localSave() }).catch(e => console.warn('save failed', e)) : Promise.resolve(); }
 function mergeSave(a = {}, b = {}) {
   const ta = a.ttt_progress || {}, tb = b.ttt_progress || {};
   const best = { ...(ta.best || {}) };
@@ -1256,15 +1301,20 @@ let pendingName = '';   // the username typed when making a new account
 if (auth) auth.onAuthStateChanged(async user => {
   [picsUnsub, usersUnsub, meUnsub].forEach(f => f && f());
   picsUnsub = usersUnsub = meUnsub = null; DB.picsMine = {}; DB.users = [];
-  if (!user) { ME = null; document.body.classList.remove('is-admin'); renderAll(); return; }
+  if (!user) {
+    ME = null; document.body.classList.remove('is-admin');
+    if (altMode) { setMode('main'); location.reload(); return; }   // the not-admin account logged out: back to the creator
+    renderAll(); updateCreatorSide(); return;
+  }
   const admin = user.email === emailFor(CONFIG.creatorNickname);
+  const isAlt = user.email === emailFor(ALT_NAME);
   const ref = db.collection('users').doc(user.uid);
   try {
     let snap = await ref.get();
     if (!snap.exists) {
-      const name = admin ? CONFIG.creatorNickname
+      const name = admin ? CONFIG.creatorNickname : isAlt ? ALT_NAME
         : (pendingName && emailFor(pendingName) === user.email ? pendingName.trim() : user.email.split('@')[0]);
-      await ref.set({ username: name, status: admin ? 'approved' : 'new', created: Date.now(), save: localSave() });
+      await ref.set({ username: name, status: admin || isAlt ? 'approved' : 'new', created: Date.now(), save: localSave() });
       snap = await ref.get();
     }
     const data = snap.data();
@@ -1283,8 +1333,18 @@ if (auth) auth.onAuthStateChanged(async user => {
   if (admin) usersUnsub = db.collection('users').onSnapshot(q => {
     DB.users = q.docs.map(d => ({ id: d.id, ...d.data() })); renderAccounts();
   }, e => console.warn('users', e));
-  refreshGames(); renderAll();
+  refreshGames(); renderAll(); updateCreatorSide();
 });
+if (altMode && mainAuth) mainAuth.onAuthStateChanged(u => { creatorBehind = !!u && u.email === emailFor(CONFIG.creatorNickname); updateCreatorSide(); });
+function setMode(m) { try { if (m === 'alt') localStorage.setItem('nwaos_mode', 'alt'); else localStorage.removeItem('nwaos_mode'); } catch {} }
+// Side picture buttons: only for the creator (and the "switch back" button while being DefinitelyNotAdmin273)
+function updateCreatorSide() {
+  const creator = !!ME && ME.admin, back = altMode && creatorBehind;
+  $('#creatorSide').hidden = !(creator || back);
+  $('#xmasPreview').hidden = !creator; $('#acctListBtn').hidden = !creator;
+  $('#switchLabel').textContent = back ? 'BACK TO ADMIN' : 'NOT ADMIN';
+  $('#switchBtn').querySelector('img').src = back ? 'images/find/mr-face-man.png' : 'images/find/cloudini.png';
+}
 
 function updateAccountUI() {
   const b = $('#acctBtn'); if (!b) return;
@@ -2068,33 +2128,41 @@ $('#tttModes').addEventListener('click', e => { const b = e.target.closest('[dat
 let ttt = null;   // the game in progress
 function tttStart() {
   const mode = TTT.modes.find(m => m.id === TTT.pick.mode);
-  const cv = $('#tttCanvas');
-  const W = Math.min(440, $('#games').clientWidth - 8);
-  const H = Math.max(380, Math.min(680, window.innerHeight - 160));
-  const dpr = window.devicePixelRatio || 1;
-  cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
-  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ttt = { g, W, H, CH: Math.round(H / 9), mode, climber: TTT.pick.climber,
+  $('#tttSetup').hidden = true; $('#tttStage').hidden = false; document.body.classList.add('ttt-full');
+  const { g, W, H } = tttSize();
+  ttt = { g, W, H, CH: Math.round(H / 9), mode, climber: TTT.pick.climber, best: tttProgress().best[mode.id] || 0,
     alt: 0, side: -1, sideX: -1, hearts: 3, inv: 0, obstacles: [], spawnIn: 1.2, lastLane: 0, lastObs: null,
     coins: [], coinCount: 0, orbs: [], orbAt: TTT.orbEvery(), powerLeft: 0, speed: 1,
     power: false, state: 'play', fall: 0, flash: 0, last: performance.now(), t: 0 };
-  $('#tttSetup').hidden = true; $('#tttStage').hidden = false; $('#tttEnd').hidden = true;
+  $('#tttEnd').hidden = true;
   const ft = ttt.climber === 'floating-text';
-  $('#tttPower').hidden = !ft; $('#tttPower').textContent = '⚡ POWER: OFF';
+  $('#tttPower').hidden = !ft; tttPowerLabel();
   $('#tttSpeedWrap').hidden = !ft; $('#tttSpeed').value = 1; $('#tttSpeedVal').textContent = '1x';
   ['piece2', 'cloudini'].forEach(id => tttImg(TTT.enemySrc(id))); tttImg(TTT.src(ttt.climber)); tttImg('images/ttt/coin.png'); tttImg('images/ttt/orb.png'); tttImg('images/xmas/hat.png');
   requestAnimationFrame(tttLoop);
-  $('#tttStage').scrollIntoView({ block: 'start', behavior: 'smooth' });
 }
+// The game fills the whole screen
+function tttSize() {
+  const cv = $('#tttCanvas'), W = window.innerWidth, H = window.innerHeight, dpr = window.devicePixelRatio || 1;
+  cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { g, W, H };
+}
+window.addEventListener('resize', () => {
+  if (!ttt || $('#tttStage').hidden) return;
+  const { g, W, H } = tttSize(); Object.assign(ttt, { g, W, H, CH: Math.round(H / 9) }); tttDraw(ttt);
+});
+function tttClose() { ttt = null; $('#tttStage').hidden = true; document.body.classList.remove('ttt-full'); $('#tttSetup').hidden = false; tttRenderSetup(); $('#ttt').scrollIntoView({ block: 'start' }); }
+function tttPowerLabel() { const on = !!(ttt && ttt.power); $('#tttPower').innerHTML = `⚡ POWER<br>${on ? 'ON' : 'OFF'}`; $('#tttPower').classList.toggle('on', on); }
 $('#tttStart').addEventListener('click', tttStart);
 $('#tttAgain').addEventListener('click', tttStart);
-$('#tttChange').addEventListener('click', () => { ttt = null; $('#tttStage').hidden = true; $('#tttSetup').hidden = false; tttRenderSetup(); });
-$('#tttQuit').addEventListener('click', () => { ttt = null; $('#tttStage').hidden = true; $('#tttSetup').hidden = false; tttRenderSetup(); });
+$('#tttChange').addEventListener('click', tttClose);
+$('#tttQuit').addEventListener('click', tttClose);
 $('#tttSpeed').addEventListener('input', () => {
   const v = +$('#tttSpeed').value; $('#tttSpeedVal').textContent = v + 'x'; if (ttt) ttt.speed = v;
 });
 $('#tttSpeed').addEventListener('pointerdown', e => e.stopPropagation());
-$('#tttPower').addEventListener('click', e => { e.stopPropagation(); if (ttt) { ttt.power = !ttt.power; $('#tttPower').textContent = `⚡ POWER: ${ttt.power ? 'ON' : 'OFF'}`; } });
+$('#tttPower').addEventListener('click', e => { e.stopPropagation(); if (ttt) { ttt.power = !ttt.power; tttPowerLabel(); } });
 function tttFlip() { if (ttt && ttt.state === 'play') ttt.side = -ttt.side; }
 $('#tttCanvas').addEventListener('pointerdown', e => { e.preventDefault(); tttFlip(); });
 document.addEventListener('keydown', e => {
@@ -2104,13 +2172,14 @@ document.addEventListener('keydown', e => {
     if (e.code === 'Space') tttFlip(); else ttt.side = e.key === 'ArrowLeft' ? -1 : 1;
   }
   if ((e.key === 'p' || e.key === 'P') && !$('#tttPower').hidden) $('#tttPower').click();
+  if (e.key === 'Escape') tttClose();
 });
 
 const tttPowerLeft = G => G.powerLeft;   // heights of orb power left (only climbing uses it up; falling never gives it back)
 function tttZone(alt) { return Math.floor(alt / TTT.zoneLength) % TTT.zones.length; }
 function tttLoop(now) {
   const G = ttt; if (!G) return;
-  let dt = Math.min(0.05, (now - G.last) / 1000); G.last = now;
+  let dt = Math.max(0, Math.min(0.05, (now - G.last) / 1000)); G.last = Math.max(G.last, now);   // never go backwards in time
   if (!$('#games').classList.contains('active') || document.hidden) dt = 0;   // pause when you leave the page
   if (G.state !== 'over') tttUpdate(G, dt);
   tttDraw(G);
@@ -2126,7 +2195,7 @@ function tttUpdate(G, dt) {
   G.inv = Math.max(0, G.inv - dt);
   if (G.alt >= G.mode.goal) return tttEnd(G, true);
   // spawn
-  G.spawnIn -= dt;
+  G.spawnIn -= dt * G.speed;   // speed slider: obstacles come per height climbed, so the same amount at any speed
   const live = G.obstacles.filter(o => !o.knock);
   const topMost = live.reduce((m, o) => Math.max(m, o.alt), -Infinity);
   const gapNow = TTT.minGap(G.mode, G.alt) + TTT.obstacleSize;       // centre-to-centre distance needed
@@ -2169,7 +2238,7 @@ function tttUpdate(G, dt) {
     const sameSide = Math.abs(G.sideX - o.lane) < 0.6;
     if (!o.hit && sameSide && Math.abs(o.alt - G.alt) < 0.7) {
       o.hit = true;
-      if ((G.climber === 'floating-text' && G.power) || tttPowerLeft(G) > 0) { o.knock = { x: 0, y: 0, vx: o.lane * 380, vy: -260, r: 0 }; G.knocks = (G.knocks || 0) + 1; continue; }
+      if ((G.climber === 'floating-text' && G.power) || tttPowerLeft(G) > 0) { o.knock = { x: 0, y: 0, vx: o.lane * 380, vy: -260, r: 0 }; G.knocks = (G.knocks || 0) + 1; G.coinCount++; G.coinPop = 0.5; continue; }
       if (G.inv > 0) continue;
       G.hearts--; G.flash = 0.25;
       if (G.hearts === 2) { G.alt = Math.max(0, G.alt - 5); G.inv = 1.3; }
@@ -2216,7 +2285,7 @@ const TTT_BG = { white: [252, 252, 250], sky: [126, 200, 240], space: [29, 22, 6
 function tttMix(a, b, t) { return a.map((v, i) => Math.round(v + (b[i] - v) * t)); }
 function tttDraw(G) {
   const { g, W, H, CH } = G;
-  const zf = G.alt / TTT.zoneLength, zi = Math.floor(zf) % 4, frac = zf - Math.floor(zf);
+  const zf = Math.max(0, G.alt) / TTT.zoneLength, zi = Math.floor(zf) % 4, frac = zf - Math.floor(zf);
   const here = TTT.zones[zi], next = TTT.zones[(zi + 1) % 4];
   const blend = frac > 0.85 ? (frac - 0.85) / 0.15 : 0;
   const col = tttMix(TTT_BG[here], TTT_BG[next], blend);
@@ -2225,7 +2294,7 @@ function tttDraw(G) {
   // stars
   if (dark > 0.05) {
     g.fillStyle = `rgba(255,255,255,${0.8 * dark * (here === 'black' ? 0.35 : 1)})`;
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0, n = Math.round(W * H / 4500); i < n; i++) {
       const x = (i * 97.3) % W, y = ((i * 57.1) + G.alt * CH * 0.15) % H;
       g.fillRect(x, y, 2, 2);
     }
@@ -2289,6 +2358,7 @@ function tttDraw(G) {
   g.save();
   const snail = G.climber === 'giant-snail';
   let x = touch(G.sideX, tttDrawnSize(tttImg(TTT.src(G.climber)), CH, snail).w), y = py;
+  if (G.climber === 'floating-text') { x += G.sideX * CH * 0.4; y += Math.sin(G.t * 3) * CH * 0.06; }   // floats next to the pole, never touching it
   if (G.state === 'falling' || (G.state === 'over' && G.hearts <= 0)) { y += G.fall * G.fall * 500; x += G.side * G.fall * 120; g.translate(x, y); g.rotate(G.fall * 6 * G.side); }
   else g.translate(x, y);
   if (G.inv > 0 && Math.floor(G.t * 12) % 2) g.globalAlpha = 0.3;
@@ -2309,6 +2379,10 @@ function tttDraw(G) {
   const h = Math.floor(G.alt), goal = G.mode.goal;
   g.fillText(`${h.toLocaleString()}${goal === Infinity ? '' : ' / ' + goal.toLocaleString()}`, 12, 12);
   g.font = '700 11px Orbitron, sans-serif'; g.fillText(`${G.mode.name}  ·  HEIGHT`, 12, 36);
+  const newBest = G.alt > G.best && G.best > 0;
+  g.font = '900 13px Orbitron, sans-serif'; g.fillStyle = newBest ? '#18b84a' : txt;
+  g.fillText(newBest ? '★ NEW BEST!' : `BEST: ${Math.floor(G.best).toLocaleString()}`, 12, goal === Infinity ? 56 : 68);
+  g.fillStyle = txt;
   for (let i = 0; i < 3; i++) tttHeart(g, W - 26 - i * 28, 22, i < G.hearts);
   g.fillStyle = txt; g.font = '900 14px Orbitron, sans-serif'; g.textAlign = 'right';
   const ctext = `${G.coinCount}${G.coinPop > 0 ? '  +1!' : ''}`, cw = g.measureText(ctext).width;
@@ -2383,6 +2457,13 @@ const SWEATER_LINES = [
   'Sweater: This is what alliances are for!',
   'Sweater: Poke all you want, we are UNSTOPPABLE.',
 ];
+// Creator only: set the poke count to any number
+$('#snailSet').addEventListener('submit', e => {
+  e.preventDefault(); if (!isAdmin()) return;
+  const n = Math.max(0, Math.floor(+$('#snailSetN').value || 0));
+  store.set('pokes', n); renderSnailToy(); $('#snailSetN').value = '';
+  toast(`Pokes set to ${n.toLocaleString()}.`);
+});
 $('#snailBtn').addEventListener('click', () => {
   const n = store.get('pokes', 0) + 1;
   store.set('pokes', n);
@@ -2463,17 +2544,50 @@ $('#gateForm').addEventListener('submit', async e => {
 async function logOut() {
   clearTimeout(saveTimer); pushSave();
   SAVE_KEYS.forEach(k => { try { localStorage.removeItem('nwaos_' + k); } catch {} });
-  try { await auth.signOut(); } catch {}
+  try {
+    if (altMode) { await altAuth.signOut(); setMode('main'); }          // back to the creator account
+    else { await auth.signOut(); if (ME && ME.admin && altAuth) await altAuth.signOut(); }
+  } catch {}
   location.reload();
 }
 $('#meLogout').addEventListener('click', logOut);
-$('#adminExit').addEventListener('click', logOut);
+
+/* ---------- switching between the creator and DefinitelyNotAdmin273 ---------- */
+async function switchTo(mode) {
+  clearTimeout(saveTimer); await pushSave();
+  SAVE_KEYS.forEach(k => { try { localStorage.removeItem('nwaos_' + k); } catch {} });   // each account keeps its own games
+  setMode(mode); location.reload();
+}
+const altUser = () => new Promise(res => { const stop = altAuth.onAuthStateChanged(u => { stop(); res(u); }); });
+$('#switchBtn').addEventListener('click', async () => {
+  if (altMode) return switchTo('main');
+  if (!ME || !ME.admin || !altAuth) return;
+  const u = await altUser();
+  if (u && u.email === emailFor(ALT_NAME)) return switchTo('alt');
+  $('#altMsg').textContent = ''; $('#altCode').value = ''; $('#altDialog').showModal();
+});
+$('#altCancel').addEventListener('click', () => $('#altDialog').close());
+$('#altForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const pw = $('#altCode').value, email = emailFor(ALT_NAME);
+  if (pw.length < 6) return flash($('#altMsg'), 'At least 6 characters.', 'err');
+  $('#altGo').disabled = true; flash($('#altMsg'), 'Switching...');
+  try { await altAuth.signInWithEmailAndPassword(email, pw); }
+  catch (err) {
+    try { await altAuth.createUserWithEmailAndPassword(email, pw); }   // first time: make it
+    catch (err2) {
+      $('#altGo').disabled = false;
+      return flash($('#altMsg'), err2.code === 'auth/email-already-in-use' ? 'Wrong password for DefinitelyNotAdmin273.' : 'Couldn\'t switch. Try again!', 'err');
+    }
+  }
+  switchTo('alt');
+});
 
 /* ---------- the Account of Awesomeness (creator only) ---------- */
 let acctFilter = 'new';
 function renderAccounts() {
   const waiting = DB.users.filter(u => u.status === 'new').length;
-  $('#waitCount').textContent = waiting ? `(${waiting} waiting)` : '';
+  $('#waitCount').textContent = waiting; $('#waitCount').hidden = !waiting;
   const list = DB.users.filter(u => acctFilter === 'all' || u.status === acctFilter)
     .sort((a, b) => (b.created || 0) - (a.created || 0));
   const label = { new: '⏳ waiting', approved: '✅ approved', banned: '🚫 banned' };
