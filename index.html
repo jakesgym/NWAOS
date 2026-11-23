@@ -1343,8 +1343,7 @@ function updateCreatorSide() {
   const creator = !!ME && ME.admin, back = altMode && creatorBehind;
   $('#creatorSide').hidden = !(creator || back);
   $('#xmasPreview').hidden = !creator; $('#acctListBtn').hidden = !creator;
-  $('#switchLabel').hidden = !back;
-  $('#switchBtn').querySelector('img').src = back ? 'images/find/mr-face-man.png' : 'images/side-notadmin.png';
+  $('#switchBtn').title = back ? 'Back to admin' : 'Switch account';   // same grin picture both ways
 }
 
 function updateAccountUI() {
