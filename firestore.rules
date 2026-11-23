@@ -28,6 +28,17 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // ---------- public profiles: picture, game numbers for badges (approved accounts only) ----------
+    match /profiles/{uid} {
+      allow read: if true;
+      allow create, update: if isAdmin() || (approved() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['username', 'pfp', 'stats', 'friend', 'updated'])
+        && request.resource.data.username == me().username
+        && request.resource.data.get('friend', false) == (resource == null ? false : resource.data.get('friend', false))
+        && request.resource.data.pfp is string && request.resource.data.pfp != 'snail-palooza');
+      allow delete: if isAdmin();
+    }
+
     // ---------- news posts (creator only) ----------
     match /posts/{id} {
       allow read: if true;
@@ -45,7 +56,8 @@ service cloud.firestore {
         && request.resource.data.likes == {}
         && request.resource.data.replies == []
         && request.resource.data.starred == false && request.resource.data.fanart == false
-        && request.resource.data.keys().hasOnly(['uid', 'name', 'tag', 'text', 'time', 'likes', 'replies', 'creator', 'starred', 'fanart', 'pic']);
+        && request.resource.data.get('badges', []) is list && request.resource.data.get('badges', []).size() <= 3
+        && request.resource.data.keys().hasOnly(['uid', 'name', 'tag', 'text', 'time', 'likes', 'replies', 'creator', 'starred', 'fanart', 'pic', 'pfp', 'badges']);
       allow update: if isAdmin()
         // like / unlike: only your own heart changes
         || (notBanned() && onlyChanged(['likes'])

@@ -92,6 +92,7 @@ p{margin:0 0 1em}
 .btn.blue{background:var(--blue);color:#fff}
 .btn.green{background:var(--green);color:#fff}
 .btn.white{background:#fff}
+.btn.yellow{background:var(--yellow);color:var(--ink)}
 .btn.small{font-size:.55rem;padding:8px 10px}
 .btn[disabled]{opacity:.5;cursor:not-allowed;transform:none;box-shadow:2px 2px 0 var(--ink)}
 
@@ -378,7 +379,7 @@ body{background:var(--paper) url("images/paper.jpg") center/cover fixed}
 .admin-panel{--fill:#ffe9e7}
 .admin-panel::after{border-style:dashed}
 .section-head h2,.btn{--fill:var(--yellow)}
-.btn.red{--fill:var(--red)} .btn.blue{--fill:var(--blue)} .btn.green{--fill:var(--green)} .btn.white{--fill:#fff}
+.btn.red{--fill:var(--red)} .btn.blue{--fill:var(--blue)} .btn.green{--fill:var(--green)} .btn.white{--fill:#fff} .btn.yellow{--fill:var(--yellow)}
 .vote-card.picked{--fill:var(--yellow)}
 .chip{--fill:#fff;--lw:2px}
 .chip[aria-pressed="true"]{--fill:var(--ink);color:var(--yellow)}
@@ -425,6 +426,10 @@ body.gated{overflow:hidden}
 #gate .field{text-align:left}
 .acct-btn{font-family:var(--font-title);font-weight:900;font-size:.6rem;background:var(--yellow,#ffd84d);color:var(--ink);border:3px solid var(--ink);border-radius:20px;padding:7px 12px;cursor:pointer;order:3;flex:0 0 auto;max-width:44vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-shadow:3px 3px 0 var(--ink)}
 .acct-btn.in{background:#bdf5c8}
+.acct-btn{display:flex;align-items:center;gap:6px}
+.acct-pic{width:22px;height:22px;border-radius:5px;border:2px solid var(--ink);object-fit:cover;background:#fff}
+#profileDialog .own-only{display:none}
+#profileDialog:has(#profOwn:not([hidden])) .own-only{display:inline-block}
 .acct-btn.waiting{background:#ffe9b0}
 .as-name{font-family:var(--font-title);font-weight:900;padding:10px 0;font-size:.85rem}
 dialog.wide{width:min(94vw,620px)}
@@ -433,6 +438,35 @@ dialog.wide{width:min(94vw,620px)}
 .acct-row strong{flex:1 1 140px;word-break:break-all}
 .acct-row .muted{font-size:.8rem}
 .acct-filter{gap:6px;flex-wrap:wrap}
+.avatar{flex:0 0 auto;width:38px;height:38px;padding:0;border:2px solid var(--ink);border-radius:9px;overflow:hidden;background:#fff;cursor:pointer}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.reply .avatar{width:28px;height:28px;border-radius:7px}
+.mini-badge{height:26px;width:auto;max-width:44px;object-fit:contain;vertical-align:middle}
+.mini-badge.old{filter:grayscale(1) opacity(.45)}
+.prof-head{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+.prof-head h3{margin:0 0 4px;word-break:break-all}
+.prof-pic{width:84px;height:84px;border:3px solid var(--ink);border-radius:14px;object-fit:cover;background:#fff}
+#profileDialog h4{font-family:var(--font-title);font-size:.7rem;margin:14px 0 8px}
+.pfp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:8px}
+.pfp-pick{background:#fff;border:3px solid var(--ink);border-radius:12px;padding:4px;cursor:pointer;font-size:.6rem;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--ink)}
+.pfp-pick img{width:60px;height:60px;border-radius:8px;object-fit:cover}
+.pfp-pick small{font-size:.55rem;color:var(--muted)}
+.pfp-pick.locked img{filter:grayscale(1) brightness(.6) opacity(.5)}
+.pfp-pick[aria-pressed="true"]{background:var(--yellow);transform:rotate(-2deg)}
+.badge-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+.badge-card{margin:0;background:#fff;border:2px solid var(--ink);border-radius:12px;padding:8px;text-align:center}
+.badge-card img{height:64px;width:100%;object-fit:contain}
+.badge-card figcaption strong{display:block;font-size:.75rem}
+.badge-card figcaption small{display:block;font-size:.65rem;color:var(--muted);margin-top:2px}
+.badge-card.locked img{filter:grayscale(1) opacity(.35)}
+.badge-card.locked{border-style:dashed}
+.badge-picker{display:flex;flex-wrap:wrap;gap:8px}
+.badge-pick{background:#fff;border:3px solid var(--ink);border-radius:10px;padding:4px;cursor:pointer;height:52px}
+.badge-pick img{height:40px;width:auto;max-width:70px;object-fit:contain}
+.badge-pick[aria-pressed="false"]{opacity:.45}
+.badge-pick[aria-pressed="true"]{background:var(--yellow)}
+.ttt-shop{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin:0 0 16px}
+.ttt-shop img{height:46px;width:auto}
 .offline-note{background:#fff3c4;border:2px dashed var(--ink);border-radius:12px;padding:8px 12px;margin:0 0 16px;font-size:.9rem}
 
 /* ---------- find the characters ---------- */
@@ -801,6 +835,7 @@ body.ttt-full{overflow:hidden}
           <img id="cImagePreview" class="post-img" alt="" hidden>
           <p class="form-note">Pictures show up after Eli approves them.</p>
         </div>
+        <div class="field" id="cBadgesWrap" hidden><label>Show your badges (pick up to 3)</label><div class="badge-picker" id="cBadges"></div></div>
         <button class="btn blue" type="submit">POST IT</button>
         <p class="form-note" style="margin-top:10px">Keep it friendly! Use a nickname — never post your real name, address, school or contact info.</p>
         <p class="form-note">🔒 You need an account to post. New accounts can post once Eli approves them.</p>
@@ -852,6 +887,7 @@ body.ttt-full{overflow:hidden}
       <div class="box ttt-setup" id="tttSetup">
         <h3>TO THE TOP: PICK YOUR CLIMBER</h3>
         <p class="ttt-wallet"><img class="coin-ico" src="images/ttt/coin.png" alt=""> <strong id="tttCoins">0</strong> coins <span class="form-note">· grab coins between two obstacles on the same side, knock obstacles off for a coin each, and beat levels for bonus coins</span></p>
+        <div class="ttt-shop" id="tttShop"></div>
         <div class="ttt-chars" id="tttChars"></div>
         <h3>PICK A MODE</h3>
         <div class="ttt-modes" id="tttModes"></div>
@@ -947,13 +983,22 @@ body.ttt-full{overflow:hidden}
   </form>
 </dialog>
 
-<dialog id="meDialog">
+<dialog id="profileDialog" class="wide">
   <form method="dialog">
-    <h3 id="meName">YOU</h3>
-    <p id="meStatus"></p>
-    <p class="form-note">Your To The Top coins and characters, the find game and your snail pokes are saved to this account.</p>
+    <div class="prof-head">
+      <img id="profPic" class="prof-pic" src="images/pfp/giant-snail.jpg" alt="">
+      <div><h3 id="profName">SOMEONE</h3><span class="badge creator" id="profCreator" hidden>★ CREATOR</span></div>
+    </div>
+    <div id="profOwn" hidden>
+      <p id="profStatus"></p>
+      <h4>PROFILE PICTURE</h4>
+      <div class="pfp-grid" id="profPfps"></div>
+      <p class="form-note" id="profPfpNote"></p>
+    </div>
+    <h4>BADGES</h4>
+    <div class="badge-grid" id="profBadges"></div>
     <div class="row">
-      <button class="btn red" type="button" id="meLogout">LOG OUT</button>
+      <button class="btn red own-only" type="button" id="meLogout">LOG OUT</button>
       <button class="btn white" value="close">CLOSE</button>
     </div>
   </form>
@@ -1250,7 +1295,7 @@ try {
   auth = altMode ? altAuth : mainAuth; db = (altMode ? alt : main).firestore();
 } catch (e) { console.warn('Database offline', e); }
 const FV = () => firebase.firestore.FieldValue;
-const DB = { comments: [], picsApproved: {}, picsMine: {}, posts: [], votes: {}, poll: {}, users: [] };
+const DB = { comments: [], picsApproved: {}, picsMine: {}, posts: [], votes: {}, poll: {}, users: [], profiles: {} };
 let ME = null;   // { uid, username, status, admin } when logged in
 const emailFor = name => name.trim().toLowerCase() + '@' + CONFIG.accountDomain;
 
@@ -1261,7 +1306,7 @@ store.set = (k, v) => { const ok = rawSet(k, v); if (ME && SAVE_KEYS.includes(k)
 let saveTimer;
 function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(pushSave, 1200); }
 function localSave() { return { ttt_progress: store.get('ttt_progress', {}), found: store.get('found', []), pokes: store.get('pokes', 0) }; }
-function pushSave() { return ME && db ? db.collection('users').doc(ME.uid).update({ save: localSave() }).catch(e => console.warn('save failed', e)) : Promise.resolve(); }
+function pushSave() { if (typeof syncProfile === 'function') syncProfile(); return ME && db ? db.collection('users').doc(ME.uid).update({ save: localSave() }).catch(e => console.warn('save failed', e)) : Promise.resolve(); }
 function mergeSave(a = {}, b = {}) {
   const ta = a.ttt_progress || {}, tb = b.ttt_progress || {};
   const best = { ...(ta.best || {}) };
@@ -1291,6 +1336,10 @@ function startLiveData() {
   db.collection('pics').where('status', '==', 'approved').onSnapshot(q => {
     DB.picsApproved = {}; q.docs.forEach(d => { DB.picsApproved[d.id] = d.data(); }); renderComments();
   }, oops('pics'));
+  db.collection('profiles').onSnapshot(q => {
+    DB.profiles = {}; q.docs.forEach(d => { DB.profiles[d.id] = d.data(); });
+    renderComments(); renderPostBadgePicker(); checkNewBadges();
+  }, oops('profiles'));
   db.collection('posts').onSnapshot(q => { DB.posts = q.docs.map(d => ({ id: d.id, ...d.data() })); renderNews(); }, oops('posts'));
   db.collection('polls').doc(String(CONFIG.poll.id)).onSnapshot(d => { DB.poll = d.exists ? d.data() : {}; renderPoll(); }, oops('poll'));
   db.collection('polls').doc(String(CONFIG.poll.id)).collection('votes').onSnapshot(q => {
@@ -1328,13 +1377,13 @@ if (auth) auth.onAuthStateChanged(async user => {
     ME = { uid: user.uid, username: user.email.split('@')[0], status: 'new', admin };
   }
   document.body.classList.toggle('is-admin', admin);
-  meUnsub = ref.onSnapshot(d => { if (d.exists && ME) { ME.status = d.data().status; updateAccountUI(); } }, () => {});
+  meUnsub = ref.onSnapshot(d => { if (d.exists && ME) { ME.status = d.data().status; updateAccountUI(); syncProfile(true); renderPostBadgePicker(); checkNewBadges(); } }, () => {});
   const picsQuery = admin ? db.collection('pics') : db.collection('pics').where('uid', '==', user.uid);
   picsUnsub = picsQuery.onSnapshot(q => { DB.picsMine = {}; q.docs.forEach(d => { DB.picsMine[d.id] = d.data(); }); renderComments(); }, () => {});
   if (admin) usersUnsub = db.collection('users').onSnapshot(q => {
     DB.users = q.docs.map(d => ({ id: d.id, ...d.data() })); renderAccounts();
   }, e => console.warn('users', e));
-  refreshGames(); renderAll(); updateCreatorSide();
+  refreshGames(); renderAll(); updateCreatorSide(); syncProfile(true); renderPostBadgePicker();
 });
 if (altMode && mainAuth) mainAuth.onAuthStateChanged(u => { creatorBehind = !!u && u.email === emailFor(CONFIG.creatorNickname); updateCreatorSide(); });
 function setMode(m) { try { if (m === 'alt') localStorage.setItem('nwaos_mode', 'alt'); else localStorage.removeItem('nwaos_mode'); } catch {} }
@@ -1352,13 +1401,7 @@ function updateAccountUI() {
   b.classList.toggle('waiting', !!ME && !ME.admin && ME.status !== 'approved');
   b.textContent = ME ? (ME.admin ? '⭐ ' : '👤 ') + ME.username : 'LOG IN';
   $('#cAs').textContent = ME ? ME.username + (ME.admin || ME.status === 'approved' ? '' : ' (waiting for approval)') : 'not logged in — tap LOG IN at the top';
-  if (ME) {
-    $('#meName').textContent = (ME.admin ? '⭐ ' : '👤 ') + ME.username;
-    $('#meStatus').innerHTML = ME.admin ? 'You are the creator!'
-      : ME.status === 'approved' ? '✅ Approved! You can post theories, replies and pictures.'
-      : ME.status === 'banned' ? '🚫 This account can\'t post, like or vote.'
-      : '⏳ Waiting for Eli to approve your account. You can still play, like and vote!';
-  }
+  if (ME) b.innerHTML = `<img class="acct-pic" src="${pfpSrc(myPfp())}" alt=""> ${esc(ME.username)}`;
 }
 // Can I post? Opens the login box if needed.
 let afterUnlock = null;
@@ -1742,6 +1785,7 @@ function renderComments() {
   list.sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0)); // Creator's Picks float to the top
   const tagLabel = { theory: 'THEORY', chat: 'CHAT', fanart: 'FAN IDEA' };
   const offline = !db ? '<p class="offline-note">⚠️ The theories board can\'t connect right now. Try again in a bit!</p>' : '';
+  const holders = badgeHolders();
   $('#commentList').innerHTML = offline + (list.length ? list.map(c => {
     const liked = !!meId && !!c.likesMap[meId];
     return `
@@ -1749,8 +1793,8 @@ function renderComments() {
       ${c.starred ? '<span class="pick-ribbon">★ CREATOR\'S PICK</span>' : ''}
       <div class="comment-head">
         <span class="badge ${c.tag === 'theory' ? 'teaser' : c.tag === 'fanart' ? 'update' : ''}">${tagLabel[c.tag] || 'CHAT'}</span>
-        <span class="comment-name">${esc(c.name)}</span>${c.creator ? '<span class="badge creator">★ CREATOR</span>' : ''}
-        <span class="comment-time">${timeAgo(c.time)}</span>
+        ${avatarHtml(c.uid, c.pfp)}<span class="comment-name">${esc(c.name)}</span>${c.creator ? '<span class="badge creator">★ CREATOR</span>' : ''}
+        ${postBadgesHtml(c, holders)}<span class="comment-time">${timeAgo(c.time)}</span>
       </div>
       <p class="comment-text">${emojify(esc(c.text))}</p>
       ${commentImage(c)}
@@ -1763,7 +1807,7 @@ function renderComments() {
       </div>
       ${c.replies.length ? `<div class="replies">${c.replies.map(r => `
         <div class="reply">
-          <div class="comment-head"><span class="comment-name">↳ ${esc(r.name)}</span>${r.creator ? '<span class="badge creator">★ CREATOR</span>' : ''}<span class="comment-time">${timeAgo(r.time)}</span>
+          <div class="comment-head">↳ ${avatarHtml(r.uid, '')}<span class="comment-name">${esc(r.name)}</span>${r.creator ? '<span class="badge creator">★ CREATOR</span>' : ''}<span class="comment-time">${timeAgo(r.time)}</span>
             <button class="linkish admin-only reply-del" data-del-reply="${c.id}|${esc(r.id)}">delete</button></div>
           <p class="comment-text">${emojify(esc(r.text))}</p>
         </div>`).join('')}</div>` : ''}
@@ -1838,7 +1882,8 @@ $('#commentForm').addEventListener('submit', async e => {
   posting = true; flash(msg, 'Posting...');
   try {
     await commentDoc(id).set({ uid: ME.uid, name: ME.username, tag: $('#cTag').value, text, time: Date.now(),
-      likes: {}, replies: [], creator: !!ME.admin, starred: false, fanart: false, pic: !!image });
+      likes: {}, replies: [], creator: !!ME.admin, starred: false, fanart: false, pic: !!image,
+      pfp: myPfp(), badges: store.get('postBadges', []).filter(b => badgesOf(ME.uid).includes(b)).slice(0, 3) });
     if (image) await db.collection('pics').doc(id).set({ uid: ME.uid, image, status: ME.admin ? 'approved' : 'pending', time: Date.now() });
   } catch (err) {
     console.warn(err); posting = false;
@@ -2099,6 +2144,9 @@ function tttRenderSetup() {
   const list = TTT.climbers.filter(c => (!c.creatorOnly || isAdmin()) && (!c.secret || tttUnlocked(c, P)));
   if (!tttUnlocked(TTT.climbers.find(c => c.id === TTT.pick.climber), P)) TTT.pick.climber = 'sweater';
   $('#tttCoins').textContent = P.coins.toLocaleString();
+  const hasDiamond = (P.bought || []).includes('diamond');
+  $('#tttShop').innerHTML = `<img src="images/badges/diamond-item.png" alt="Diamond"> <strong>DIAMOND</strong>
+    ${hasDiamond ? '<span class="form-note">✓ yours! (Rich badge)</span>' : `<button type="button" class="btn small yellow" id="buyDiamond"><img class="coin-ico" src="images/ttt/coin.png" alt=""> 100 · BUY</button>`}`;
   $('#tttChars').innerHTML = list.map(c => {
     const open = tttUnlocked(c, P);
     const label = c.creatorOnly ? 'creator only' : open ? '' : c.price ? `<img class="coin-ico" src="images/ttt/coin.png" alt=""> ${c.price} · BUY` : '🔒 ' + esc(c.how);
@@ -2122,6 +2170,14 @@ $('#tttChars').addEventListener('click', async e => {
     toast(`🎉 You bought ${c.name}!`); TTT.pick.climber = c.id; return tttRenderSetup();
   }
   toast(`🔒 ${c.name}: ${c.how} to unlock.`);
+});
+$('#tttShop').addEventListener('click', async e => {
+  if (!e.target.closest('#buyDiamond')) return;
+  const P = tttProgress();
+  if (P.coins < 100) return toast(`The Diamond costs 100 coins. You have ${P.coins}. Keep climbing!`);
+  if (!(await ask('Buy the Diamond for 100 coins? You get the RICH badge!'))) return;
+  P.coins -= 100; P.bought = [...(P.bought || []), 'diamond']; tttSaveProgress(P);
+  toast('💎 You bought the Diamond!'); tttRenderSetup();
 });
 $('#tttModes').addEventListener('click', e => { const b = e.target.closest('[data-mode]'); if (b) { TTT.pick.mode = b.dataset.mode; tttRenderSetup(); } });
 
@@ -2500,7 +2556,7 @@ $('#tabSignup').addEventListener('click', () => openGate('signup'));
 $('#gateCancel').addEventListener('click', () => { afterUnlock = null; closeGate(); });
 $('#acctBtn').addEventListener('click', () => {
   if (!ME) return openGate('login');
-  updateAccountUI(); $('#meDialog').showModal();
+  openProfile(ME.uid);
 });
 function usernameProblem(name) {
   if (!/^[A-Za-z0-9_]{3,20}$/.test(name)) return 'Usernames are 3 to 20 letters, numbers or _ (no spaces).';
@@ -2597,6 +2653,7 @@ function renderAccounts() {
       <strong>${creator ? '⭐ ' : ''}${esc(u.username || '?')}</strong>
       <span class="muted">${label[u.status] || esc(u.status)}${u.created ? ' · joined ' + timeAgo(u.created) : ''}</span>
       ${creator ? '' : `${u.status !== 'approved' ? `<button type="button" class="btn small green" data-acct="${u.id}" data-to="approved">APPROVE</button>` : ''}
+      <button type="button" class="btn small ${(DB.profiles[u.id] || {}).friend ? 'yellow' : 'white'}" data-friend="${u.id}">${(DB.profiles[u.id] || {}).friend ? "★ CREATOR'S FRIEND" : "☆ MAKE FRIEND"}</button>
       ${u.status !== 'banned' ? `<button type="button" class="btn small red" data-acct="${u.id}" data-to="banned">BAN</button>`
                               : `<button type="button" class="btn small white" data-acct="${u.id}" data-to="new">UNBAN</button>`}`}
     </div>`;
@@ -2610,12 +2667,201 @@ $('#acctFilter').addEventListener('click', e => {
   renderAccounts();
 });
 $('#acctList').addEventListener('click', async e => {
+  const f = e.target.closest('[data-friend]');
+  if (f && isAdmin()) {
+    const on = !(DB.profiles[f.dataset.friend] || {}).friend, u = DB.users.find(x => x.id === f.dataset.friend);
+    db.collection('profiles').doc(f.dataset.friend).set({ friend: on }, { merge: true })
+      .then(() => { toast(on ? `★ ${u ? u.username : 'They'} got the Creator's Friend badge!` : "Creator's Friend badge removed."); renderAccounts(); })
+      .catch(oops('Couldn\'t change that.'));
+    return;
+  }
   const b = e.target.closest('[data-acct]'); if (!b || !isAdmin()) return;
   const u = DB.users.find(x => x.id === b.dataset.acct);
   if (b.dataset.to === 'banned' && !(await ask(`Ban ${u ? u.username : 'this account'}? They won't be able to post, like or vote.`))) return;
+  if (b.dataset.to === 'banned') db.collection('profiles').doc(b.dataset.acct).delete().catch(() => {});
   db.collection('users').doc(b.dataset.acct).update({ status: b.dataset.to })
     .then(() => toast(b.dataset.to === 'approved' ? '✅ Approved!' : b.dataset.to === 'banned' ? '🚫 Banned.' : 'Unbanned.'))
     .catch(oops('Couldn\'t change that account.'));
+});
+
+/* =========================================================
+   BADGES + PROFILE PICTURES (Eli's designs)
+   Badges are only earned by approved accounts. NWAOSmaker372 has every badge,
+   but never counts for the "only one person" badges (DefinitelyNotAdmin273 does).
+   ========================================================= */
+const BADGES = [
+  { id: 'creators-friend',    name: "Creator's Friend",  how: 'Given by the creator to friends and family' },
+  { id: 'pole-master',        name: 'Pole Master',       how: 'Climb 5,000 in To The Top (Endless)' },
+  { id: 'rich',               name: 'Rich',              how: 'Buy the Diamond in the To The Top shop (100 coins)' },
+  { id: 'pole-champion',      name: 'Pole Champion',     how: 'Have the highest To The Top score of everyone', one: true },
+  { id: 'beloved-post',       name: 'Beloved Post',      how: 'Get 10 hearts on one post' },
+  { id: 'celebrity',          name: 'Celebrity',         how: 'Get 50 hearts on all your posts together' },
+  { id: 'number-one',         name: '#1 Most Loved',     how: 'Have the most hearts of everyone', one: true },
+  { id: 'snail-clicker',      name: 'Snail Clicker',     how: 'Poke Giant Snail 1,000 times' },
+  { id: 'clicking-surprise',  name: 'Clicking Surprise', how: 'Find the surprise at 3,729 pokes' },
+  { id: 'number-one-clicker', name: '#1 Clicker',        how: 'Have the most snail pokes of everyone', one: true },
+  { id: 'master-finder',      name: 'Master Finder',     how: 'Find all the characters on the Home page' },
+  { id: 'artist',             name: 'Artist',            how: 'Get your fan art picked for the Fan Art tab' },
+];
+const PFPS = [
+  { id: 'shaded-spikester', name: 'Shaded Spikester' }, { id: 'spikester', name: 'Spikester' },
+  { id: 'giant-snail', name: 'Giant Snail' }, { id: 'bba', name: 'BBA' }, { id: 'sweater', name: 'Sweater' },
+  { id: 'pieces-plain', name: 'Piece 1 & 2 (No Color)' }, { id: 'pieces-color', name: 'Piece 1 & 2 (Color)' },
+  { id: 'heart-balloon', name: 'Heart Balloon' },
+  { id: 'rich', name: 'Rich', badge: 'rich' },
+  { id: 'snail-clicker', name: 'Snail Clicker', badge: 'snail-clicker' },
+  { id: 'floating-text', name: 'Floating Text', badge: 'creators-friend' },
+  { id: 'cyfatg', name: 'CYFATG Paper', badge: 'master-finder' },
+  { id: 'pole-master', name: 'Pole Master', badge: 'pole-master' },
+  { id: 'snail-palooza', name: 'Snail Palooza', creatorOnly: true },
+];
+const DEFAULT_PFP = 'giant-snail';
+const badgeById = id => BADGES.find(b => b.id === id);
+const badgeSrc = id => `images/badges/${id}.png`;
+const pfpSrc = id => `images/pfp/${(PFPS.find(p => p.id === id) || PFPS.find(p => p.id === DEFAULT_PFP)).id}.jpg`;
+const isCreatorName = n => (n || '').toLowerCase() === CONFIG.creatorNickname.toLowerCase();
+const isCreatorUid = uid => !!DB.profiles[uid] && isCreatorName(DB.profiles[uid].username);
+
+// my own numbers (fresh from this browser)
+function myStats() {
+  const P = tttProgress();
+  return { best: Math.floor(P.best.endless || 0), pokes: store.get('pokes', 0), foundAll: findWon(), rich: (P.bought || []).includes('diamond') };
+}
+const statsOf = uid => (ME && uid === ME.uid) ? myStats() : ((DB.profiles[uid] || {}).stats || {});
+// hearts from the theories board
+function heartTotals() {
+  const total = {}, best = {}, artist = {};
+  for (const c of DB.comments) {
+    const n = Object.keys(c.likes || {}).length;
+    total[c.uid] = (total[c.uid] || 0) + n; best[c.uid] = Math.max(best[c.uid] || 0, n);
+    if (c.fanart) artist[c.uid] = true;
+  }
+  return { total, best, artist };
+}
+// who holds each "only one person" badge right now (creator never counts; needs an approved account = a profile)
+function badgeHolders() {
+  const H = heartTotals(), people = Object.keys(DB.profiles).filter(uid => !isCreatorUid(uid));
+  if (ME && !ME.admin && ME.status === 'approved' && !people.includes(ME.uid)) people.push(ME.uid);
+  const top = score => { let who = null, hi = 0; for (const uid of people) { const v = score(uid) || 0; if (v > hi) { hi = v; who = uid; } } return who; };
+  return {
+    'pole-champion': top(uid => statsOf(uid).best),
+    'number-one-clicker': top(uid => statsOf(uid).pokes),
+    'number-one': top(uid => H.total[uid]),
+    H,
+  };
+}
+function badgesOf(uid, holders = badgeHolders()) {
+  if ((ME && uid === ME.uid && ME.admin) || isCreatorUid(uid)) return BADGES.map(b => b.id);
+  const mine = ME && uid === ME.uid;
+  if (mine ? ME.status !== 'approved' : !DB.profiles[uid]) return [];
+  const s = statsOf(uid), p = DB.profiles[uid] || {}, H = holders.H, got = [];
+  if (p.friend) got.push('creators-friend');
+  if (s.best >= 5000) got.push('pole-master');
+  if (s.rich) got.push('rich');
+  if (holders['pole-champion'] === uid) got.push('pole-champion');
+  if ((H.best[uid] || 0) >= 10) got.push('beloved-post');
+  if ((H.total[uid] || 0) >= 50) got.push('celebrity');
+  if (holders['number-one'] === uid) got.push('number-one');
+  if (s.pokes >= 1000) got.push('snail-clicker');
+  if (s.pokes >= 3729) got.push('clicking-surprise');
+  if (holders['number-one-clicker'] === uid) got.push('number-one-clicker');
+  if (s.foundAll) got.push('master-finder');
+  if (H.artist[uid]) got.push('artist');
+  return got;
+}
+function pfpUnlocked(p, badges) {
+  if (p.creatorOnly) return !!(ME && ME.admin);
+  return !p.badge || badges.includes(p.badge);
+}
+const myPfp = () => (ME && DB.profiles[ME.uid] && DB.profiles[ME.uid].pfp) || store.get('pfp', DEFAULT_PFP);
+const pfpOf = (uid, fallback) => (ME && uid === ME.uid) ? myPfp() : ((DB.profiles[uid] || {}).pfp || fallback || DEFAULT_PFP);
+
+// keep my public profile (picture + numbers) up to date — approved accounts only
+let profileTimer;
+function syncProfile(now) {
+  clearTimeout(profileTimer);
+  const go = () => {
+    if (!ME || !db || !(ME.admin || ME.status === 'approved')) return;
+    db.collection('profiles').doc(ME.uid).set({ username: ME.username, pfp: myPfp(), stats: myStats(), updated: Date.now() }, { merge: true })
+      .catch(e => console.warn('profile', e));
+  };
+  if (now) go(); else profileTimer = setTimeout(go, 1500);
+}
+// little "new badge!" pop-up
+function checkNewBadges() {
+  if (!ME || ME.admin || ME.status !== 'approved') return;
+  const have = badgesOf(ME.uid), key = 'seenBadges_' + ME.uid, seen = store.get(key, null);
+  if (seen) have.filter(b => !seen.includes(b)).forEach((b, i) => setTimeout(() => toast(`🏅 NEW BADGE: ${badgeById(b).name}!`), 600 + i * 2600));
+  rawSet(key, have);
+}
+
+function avatarHtml(uid, fallback, cls = '') {
+  return `<button type="button" class="avatar ${cls}" data-profile="${esc(uid || '')}" aria-label="See this account"><img src="${pfpSrc(pfpOf(uid, fallback))}" alt=""></button>`;
+}
+function postBadgesHtml(c, holders) {
+  return (c.badges || []).filter(badgeById).slice(0, 3).map(id => {
+    const old = badgeById(id).one && holders[id] !== c.uid && !isCreatorName(c.name);
+    return `<img class="mini-badge ${old ? 'old' : ''}" src="${badgeSrc(id)}" alt="${esc(badgeById(id).name)}" title="${esc(badgeById(id).name)}${old ? ' (not anymore)' : ''}">`;
+  }).join('');
+}
+
+/* ---------- account page (tap a profile picture) ---------- */
+function openProfile(uid) {
+  const own = ME && uid === ME.uid, prof = DB.profiles[uid] || {};
+  const name = own ? ME.username : (prof.username || 'Someone');
+  const holders = badgeHolders(), got = badgesOf(uid, holders);
+  $('#profPic').src = pfpSrc(pfpOf(uid));
+  $('#profName').textContent = name;
+  $('#profCreator').hidden = !isCreatorName(name);
+  const list = own ? BADGES : BADGES.filter(b => got.includes(b.id));
+  $('#profBadges').innerHTML = list.length ? list.map(b => `<figure class="badge-card ${got.includes(b.id) ? '' : 'locked'}">
+      <img src="${badgeSrc(b.id)}" alt=""><figcaption><strong>${esc(b.name)}</strong>${own && !got.includes(b.id) ? `<small>${esc(b.how)}</small>` : ''}</figcaption></figure>`).join('')
+    : '<p class="form-note">No badges yet!</p>';
+  $('#profOwn').hidden = !own;
+  if (own) {
+    const waiting = !ME.admin && ME.status !== 'approved';
+    $('#profStatus').innerHTML = ME.admin ? 'You are the creator! You have every badge.'
+      : ME.status === 'approved' ? '✅ Approved! You can post, and earn badges.'
+      : ME.status === 'banned' ? '🚫 This account can\'t post, like or vote.'
+      : '⏳ Waiting for Eli to approve your account. You can still play, like and vote! Badges start once you\'re approved.';
+    $('#profPfps').innerHTML = PFPS.filter(p => !p.creatorOnly || ME.admin).map(p => {
+      const open = pfpUnlocked(p, got), on = myPfp() === p.id;
+      return `<button type="button" class="pfp-pick ${open ? '' : 'locked'}" data-pfp="${p.id}" aria-pressed="${on}" title="${esc(p.name)}">
+        <img src="${pfpSrc(p.id)}" alt=""><span>${esc(p.name)}</span>${open ? '' : `<small>🔒 ${esc(badgeById(p.badge).name)} badge</small>`}</button>`;
+    }).join('');
+    $('#profPfpNote').textContent = waiting ? 'You can pick one now. It shows on your posts once you\'re approved.' : '';
+  }
+  if (!$('#profileDialog').open) $('#profileDialog').showModal();
+}
+$('#profPfps').addEventListener('click', e => {
+  const b = e.target.closest('[data-pfp]'); if (!b || !ME) return;
+  const p = PFPS.find(x => x.id === b.dataset.pfp);
+  if (!pfpUnlocked(p, badgesOf(ME.uid))) return toast(`🔒 Get the ${badgeById(p.badge).name} badge to unlock this picture.`);
+  rawSet('pfp', p.id);
+  if (DB.profiles[ME.uid]) DB.profiles[ME.uid].pfp = p.id;
+  syncProfile(true); openProfile(ME.uid); updateAccountUI(); renderComments();
+  toast(`Picture changed to ${p.name}!`);
+});
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-profile]'); if (!a || !a.dataset.profile) return;
+  e.preventDefault(); openProfile(a.dataset.profile);
+});
+
+/* ---------- pick up to 3 badges to show on a post ---------- */
+function renderPostBadgePicker() {
+  const box = $('#cBadges'); if (!box) return;
+  const got = ME ? badgesOf(ME.uid) : [];
+  const picked = store.get('postBadges', []).filter(id => got.includes(id)).slice(0, 3);
+  $('#cBadgesWrap').hidden = !got.length;
+  box.innerHTML = got.map(id => `<button type="button" class="badge-pick" data-pick="${id}" aria-pressed="${picked.includes(id)}" title="${esc(badgeById(id).name)}"><img src="${badgeSrc(id)}" alt="${esc(badgeById(id).name)}"></button>`).join('');
+}
+$('#cBadges').addEventListener('click', e => {
+  const b = e.target.closest('[data-pick]'); if (!b) return;
+  let picked = store.get('postBadges', []).filter(id => badgesOf(ME.uid).includes(id));
+  if (picked.includes(b.dataset.pick)) picked = picked.filter(x => x !== b.dataset.pick);
+  else if (picked.length >= 3) return toast('You can show up to 3 badges on a post.');
+  else picked.push(b.dataset.pick);
+  rawSet('postBadges', picked); renderPostBadgePicker();
 });
 
 /* =========================================================
