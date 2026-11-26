@@ -32,9 +32,10 @@ service cloud.firestore {
     match /profiles/{uid} {
       allow read: if true;
       allow create, update: if isAdmin() || (approved() && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['username', 'pfp', 'stats', 'friend', 'updated'])
+        && request.resource.data.keys().hasOnly(['username', 'pfp', 'stats', 'friend', 'special', 'updated'])
         && request.resource.data.username == me().username
         && request.resource.data.get('friend', false) == (resource == null ? false : resource.data.get('friend', false))
+        && request.resource.data.get('special', false) == (resource == null ? false : resource.data.get('special', false))
         && request.resource.data.pfp is string && request.resource.data.pfp != 'snail-palooza');
       allow delete: if isAdmin();
     }
