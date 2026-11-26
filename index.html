@@ -458,6 +458,12 @@ dialog.wide{width:min(94vw,620px)}
 .quick-box .row{gap:8px;flex-wrap:wrap}
 #pinInput{font-size:2rem;letter-spacing:.5em;text-align:center;width:8.5ch;padding:6px 0 6px .5em;font-family:monospace}
 .climber-special small{color:#8a5a00}
+.login-log{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px;font-size:.8rem}
+.login-log li{background:#fff;border:2px solid var(--ink);border-radius:8px;padding:5px 8px}
+.login-log li.here{background:#e6f7ff}
+.name-req{border:3px solid var(--ink);border-radius:12px;padding:8px 10px;background:#fff6cc;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px}
+.name-req strong{flex:1 1 160px}
+#nameInput{font-size:1.1rem;width:100%;max-width:260px;text-align:center}
 .prof-head h3{margin:0 0 4px;word-break:break-all}
 .prof-pic{width:84px;height:84px;border:3px solid var(--ink);border-radius:14px;object-fit:cover;background:#fff}
 #profileDialog h4{font-family:var(--font-title);font-size:.7rem;margin:14px 0 8px}
@@ -993,6 +999,7 @@ body.ttt-full{overflow:hidden}
       <button type="button" class="chip" data-af="banned" aria-pressed="false">BANNED</button>
       <button type="button" class="chip" data-af="all" aria-pressed="false">ALL</button>
     </div>
+    <div id="nameReqs"></div>
     <div id="acctList" class="acct-list"></div>
     <div class="row"><button class="btn white" value="close">CLOSE</button></div>
   </form>
@@ -1010,6 +1017,10 @@ body.ttt-full{overflow:hidden}
       <div class="pfp-grid" id="profPfps"></div>
       <p class="form-note" id="profPfpNote"></p>
       <div class="quick-box" id="quickBox"></div>
+      <div class="quick-box" id="nameBox"></div>
+      <div class="quick-box"><strong>🔐 LOGIN LOG</strong>
+        <p class="form-note">Every time someone gets into this account (with the password or a quick sign-in code). See one you don't know? Change your code.</p>
+        <button type="button" class="btn small white" id="logShow">SHOW LOGIN LOG</button><ul class="login-log" id="loginLog"></ul></div>
     </div>
     <h4>BADGES</h4>
     <div class="badge-grid" id="profBadges"></div>
@@ -1017,6 +1028,19 @@ body.ttt-full{overflow:hidden}
       <button class="btn blue own-only" type="button" id="meSwitch">SWITCH ACCOUNT</button>
       <button class="btn red own-only" type="button" id="meLogout">LOG OUT</button>
       <button class="btn white" value="close">CLOSE</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="nameDialog">
+  <form method="dialog" id="nameForm" style="text-align:center">
+    <h3>ASK FOR A NEW USERNAME</h3>
+    <p class="form-note">Eli has to say yes. You can only ask once a month, so pick carefully! Letters, numbers and _ only, never your real name.</p>
+    <input id="nameInput" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="New username">
+    <p class="msg err" id="nameMsg" role="status"></p>
+    <div class="row" style="justify-content:center">
+      <button class="btn red" type="submit">SEND TO ELI</button>
+      <button class="btn white" type="button" id="nameCancel">CANCEL</button>
     </div>
   </form>
 </dialog>
@@ -1402,7 +1426,7 @@ if (auth) auth.onAuthStateChanged(async user => {
       snap = await ref.get();
     }
     const data = snap.data();
-    ME = { uid: user.uid, username: data.username, status: data.status, admin };
+    ME = { uid: user.uid, username: data.username, status: data.status, admin, nameRequest: data.nameRequest || null };
     const merged = mergeSave(data.save, localSave());
     SAVE_KEYS.forEach(k => rawSet(k, merged[k]));
     ref.update({ save: merged }).catch(() => {});
@@ -1411,13 +1435,15 @@ if (auth) auth.onAuthStateChanged(async user => {
     ME = { uid: user.uid, username: user.email.split('@')[0], status: 'new', admin };
   }
   document.body.classList.toggle('is-admin', admin);
-  meUnsub = ref.onSnapshot(d => { if (d.exists && ME) { ME.status = d.data().status; updateAccountUI(); syncProfile(true); renderPostBadgePicker(); checkNewBadges(); } }, () => {});
+  meUnsub = ref.onSnapshot(d => { if (d.exists && ME) { const dd = d.data(); ME.status = dd.status; ME.nameRequest = dd.nameRequest || null;
+    if (dd.username && dd.username !== ME.username) { ME.username = dd.username; toast(`✅ Eli said yes! You're now ${dd.username}.`); } updateAccountUI(); syncProfile(true); renderPostBadgePicker(); checkNewBadges(); } }, () => {});
   const picsQuery = admin ? db.collection('pics') : db.collection('pics').where('uid', '==', user.uid);
   picsUnsub = picsQuery.onSnapshot(q => { DB.picsMine = {}; q.docs.forEach(d => { DB.picsMine[d.id] = d.data(); }); renderComments(); }, () => {});
   if (admin) usersUnsub = db.collection('users').onSnapshot(q => {
-    DB.users = q.docs.map(d => ({ id: d.id, ...d.data() })); renderAccounts();
+    DB.users = q.docs.map(d => ({ id: d.id, ...d.data() })); renderAccounts(); reserveAllNames();
   }, e => console.warn('users', e));
   refreshGames(); renderAll(); updateCreatorSide(); syncProfile(true); renderPostBadgePicker();
+  afterLogin(user);
 });
 if (altMode && mainAuth) mainAuth.onAuthStateChanged(u => { creatorBehind = !!u && u.email === emailFor(CONFIG.creatorNickname); updateCreatorSide(); });
 function setMode(m) { try { if (m === 'alt') localStorage.setItem('nwaos_mode', 'alt'); else localStorage.removeItem('nwaos_mode'); } catch {} }
@@ -2623,10 +2649,17 @@ $('#gateForm').addEventListener('submit', async e => {
   } else if (!name || !pw) return flash(msg, 'Type your username and password.', 'err');
   go.disabled = true; flash(msg, gateMode === 'signup' ? 'Making your account...' : 'Logging in...');
   try {
-    if (gateMode === 'signup') { pendingName = name; await auth.createUserWithEmailAndPassword(emailFor(name), pw); }
-    else await auth.signInWithEmailAndPassword(emailFor(name), pw);
+    const taken = db ? await db.collection('usernames').doc(name.toLowerCase()).get().catch(() => null) : null;
+    if (gateMode === 'signup') {
+      if (taken && taken.exists) throw { code: 'auth/email-already-in-use' };
+      pendingName = name; rawSet('pendingLogin', 'new account'); await auth.createUserWithEmailAndPassword(emailFor(name), pw);
+    } else {
+      // someone who changed their username still logs in with their first one behind the scenes
+      const login = taken && taken.exists && taken.data().login ? taken.data().login : name;
+      rawSet('pendingLogin', 'password'); await auth.signInWithEmailAndPassword(emailFor(login), pw);
+    }
   } catch (err) {
-    go.disabled = false;
+    go.disabled = false; rawSet('pendingLogin', null);
     const code = err && err.code || '';
     return flash(msg,
       code === 'auth/email-already-in-use' ? 'That username is taken! Try another one.'
@@ -2718,7 +2751,7 @@ async function quickSignIn(uid) {
   if (!u) { await quickForget(uid); renderQuickList(); return toast('That quick sign-in ran out. Log in with your password, then turn it on again.'); }
   try {
     SAVE_KEYS.forEach(k => { try { localStorage.removeItem('nwaos_' + k); } catch {} });   // each account keeps its own games
-    setMode('main'); await mainAuth.updateCurrentUser(u);
+    setMode('main'); rawSet('pendingLogin', 'quick code'); await mainAuth.updateCurrentUser(u);
     location.reload();
   } catch (e) { console.warn('quick switch', e); toast("Couldn't switch. Log in with your password."); }
 }
@@ -2750,6 +2783,121 @@ $('#meSwitch').addEventListener('click', async () => {
   SAVE_KEYS.forEach(k => { try { localStorage.removeItem('nwaos_' + k); } catch {} });
   try { if (altMode) setMode('main'); await mainAuth.signOut(); } catch {}
   location.reload();
+});
+
+/* ---------- LOGIN LOG: which devices got into your account ---------- */
+const deviceId = (() => { let d = store.get('device', ''); if (!d) { d = Math.random().toString(36).slice(2, 6).toUpperCase(); rawSet('device', d); } return d; })();
+function deviceName() {
+  const u = navigator.userAgent;
+  const kind = /iPad/.test(u) || (/Macintosh/.test(u) && navigator.maxTouchPoints > 1) ? 'iPad' : /iPhone/.test(u) ? 'iPhone' : /Android/.test(u) ? (/Mobile/.test(u) ? 'Android phone' : 'Android tablet')
+    : /CrOS/.test(u) ? 'Chromebook' : /Mac/.test(u) ? 'Mac' : /Windows/.test(u) ? 'Windows computer' : /Linux/.test(u) ? 'Linux computer' : 'Device';
+  const app = /Claude/.test(u) ? 'Claude app' : /Edg\//.test(u) ? 'Edge' : /Firefox|FxiOS/.test(u) ? 'Firefox' : /CriOS|Chrome/.test(u) ? 'Chrome' : /Safari/.test(u) ? 'Safari' : 'browser';
+  return `${kind} · ${app}`;
+}
+async function afterLogin(user) {
+  const how = store.get('pendingLogin', null);
+  if (how) {
+    rawSet('pendingLogin', null);
+    db.collection('users').doc(user.uid).collection('logins').add({ time: FV().serverTimestamp(), device: deviceName(), how, dev: deviceId })
+      .catch(e => console.warn('login log', e));
+  }
+  // keep this username saved so nobody else can take it, and so log-in works after a name change
+  if (ME && ME.username) {
+    const r = db.collection('usernames').doc(ME.username.toLowerCase());
+    r.get().then(d => { if (!d.exists) return r.set({ uid: user.uid, login: user.email.split('@')[0] }); }).catch(() => {});
+  }
+  const q = quickMine(); if (q && q.name !== ME.username) { q.name = ME.username; quickSet(quickList().map(x => x.uid === q.uid ? q : x)); }
+}
+$('#logShow').addEventListener('click', async () => {
+  if (!ME) return;
+  const ul = $('#loginLog'); ul.innerHTML = '<li>Loading...</li>';
+  try {
+    const q = await db.collection('users').doc(ME.uid).collection('logins').orderBy('time', 'desc').limit(20).get();
+    ul.innerHTML = q.docs.length ? q.docs.map(d => { const x = d.data(), t = x.time && x.time.toMillis ? x.time.toMillis() : Date.now();
+      return `<li class="${x.dev === deviceId ? 'here' : ''}"><strong>${esc(x.device || 'Device')}</strong> · ${x.how === 'quick code' ? '⚡ quick code' : x.how === 'new account' ? '🐣 made the account' : '🔑 password'} · ${timeAgo(t)}${x.dev === deviceId ? ' · <em>this device</em>' : ''}</li>`; }).join('')
+      : '<li>Nothing yet. Log-ins from now on show up here.</li>';
+  } catch (e) { console.warn(e); ul.innerHTML = "<li>Couldn't load the log. Try again!</li>"; }
+});
+
+/* ---------- ASK FOR A NEW USERNAME (Eli says yes or no, once a month) ---------- */
+const MONTH = 30 * 24 * 3600 * 1000;
+const reqTime = r => r && r.time && r.time.toMillis ? r.time.toMillis() : 0;
+function renderNameBox() {
+  const box = $('#nameBox'); if (!box || !ME) return;
+  const r = ME.nameRequest, next = reqTime(r) + MONTH;
+  let state = '';
+  if (r && r.status === 'waiting') state = `<p class="form-note">⏳ You asked to be called <strong>${esc(r.name)}</strong>. Waiting for Eli.</p>`;
+  else if (r && r.status === 'no') state = `<p class="form-note">Eli said no to <strong>${esc(r.name)}</strong>.</p>`;
+  const can = !(r && r.status === 'waiting') && Date.now() > next;
+  box.innerHTML = `<strong>✏️ USERNAME</strong>${state}
+    ${can ? `<div class="row"><button type="button" class="btn small white" id="nameAsk">ASK FOR A NEW USERNAME</button></div>`
+          : r && r.status !== 'waiting' ? `<p class="form-note">You can ask again ${new Date(next).toLocaleDateString()}.</p>` : ''}`;
+}
+$('#nameBox').addEventListener('click', e => {
+  if (!e.target.closest('#nameAsk')) return;
+  $('#nameInput').value = ''; $('#nameMsg').textContent = ''; $('#nameDialog').showModal();
+});
+$('#nameCancel').addEventListener('click', () => $('#nameDialog').close());
+$('#nameForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const name = $('#nameInput').value.trim(), msg = $('#nameMsg');
+  const problem = usernameProblem(name);
+  if (problem) return void (msg.textContent = problem);
+  if (name.toLowerCase() === ME.username.toLowerCase()) return void (msg.textContent = "That's already your name!");
+  const taken = await db.collection('usernames').doc(name.toLowerCase()).get().catch(() => null);
+  if (taken && taken.exists) return void (msg.textContent = 'That username is taken! Try another one.');
+  if (!(await ask(`Ask Eli to change your name to ${name}? You can only ask once a month.`))) return;
+  try {
+    await db.collection('users').doc(ME.uid).update({ nameRequest: { name, time: FV().serverTimestamp(), status: 'waiting' } });
+    $('#nameDialog').close(); toast('Sent to Eli! ✏️'); ME.nameRequest = { name, status: 'waiting', time: { toMillis: () => Date.now() } }; renderNameBox();
+  } catch (err) { console.warn(err); msg.textContent = "Couldn't send that. You might have asked already this month."; }
+});
+// the creator's device makes sure every account's name is saved as taken (for accounts made before name changes existed)
+let namesChecked = false;
+async function reserveAllNames() {
+  if (namesChecked || !isAdmin() || !DB.users.length) return; namesChecked = true;
+  try {
+    const have = new Set((await db.collection('usernames').get()).docs.map(d => d.id));
+    for (const u of DB.users) {
+      const n = (u.username || '').toLowerCase();
+      if (n && !have.has(n)) await db.collection('usernames').doc(n).set({ uid: u.id, login: u.login || n }).catch(() => {});
+    }
+  } catch (e) { console.warn('names', e); }
+}
+// the creator's side: name requests at the top of the Accounts list
+function renderNameRequests() {
+  const box = $('#nameReqs'); if (!box) return;
+  const reqs = DB.users.filter(u => u.nameRequest && u.nameRequest.status === 'waiting');
+  box.innerHTML = reqs.map(u => `<div class="name-req"><strong>✏️ ${esc(u.username)} wants to be called ${esc(u.nameRequest.name)}</strong>
+    <button type="button" class="btn small green" data-name-yes="${u.id}">YES</button><button type="button" class="btn small red" data-name-no="${u.id}">NO</button></div>`).join('');
+}
+$('#nameReqs').addEventListener('click', async e => {
+  const yes = e.target.closest('[data-name-yes]'), no = e.target.closest('[data-name-no]');
+  if (!(yes || no) || !isAdmin()) return;
+  const u = DB.users.find(x => x.id === (yes || no).dataset[yes ? 'nameYes' : 'nameNo']); if (!u) return;
+  const ref = db.collection('users').doc(u.id), newName = u.nameRequest.name;
+  if (no) return ref.update({ 'nameRequest.status': 'no' }).then(() => toast('Said no.')).catch(oops());
+  const taken = await db.collection('usernames').doc(newName.toLowerCase()).get();
+  const clash = DB.users.some(x => x.id !== u.id && ((x.username || '').toLowerCase() === newName.toLowerCase() || (x.login || '') === newName.toLowerCase()));
+  if (clash || (taken.exists && taken.data().uid !== u.id)) { await ref.update({ 'nameRequest.status': 'no' }).catch(() => {}); return toast('Someone else has that name now, so it was turned down.'); }
+  if (!(await ask(`Change ${u.username} to ${newName}?`))) return;
+  try {
+    const login = u.login || u.username.toLowerCase();
+    const b = db.batch();
+    b.update(ref, { username: newName, login, 'nameRequest.status': 'yes' });
+    b.set(db.collection('usernames').doc(newName.toLowerCase()), { uid: u.id, login });
+    if (u.username.toLowerCase() !== newName.toLowerCase()) b.delete(db.collection('usernames').doc(u.username.toLowerCase()));
+    if (DB.profiles[u.id]) b.set(db.collection('profiles').doc(u.id), { username: newName }, { merge: true });
+    await b.commit();
+    // old posts and replies show the new name too
+    for (const c of DB.comments) {
+      const upd = {};
+      if (c.uid === u.id) upd.name = newName;
+      if ((c.replies || []).some(r => r.uid === u.id)) upd.replies = c.replies.map(r => r.uid === u.id ? { ...r, name: newName } : r);
+      if (Object.keys(upd).length) await commentDoc(c.id).update(upd).catch(() => {});
+    }
+    toast(`✅ ${u.username} is now ${newName}!`);
+  } catch (err) { console.warn(err); toast("Couldn't change the name. Try again!"); }
 });
 
 /* ---------- switching between the creator and DefinitelyNotAdmin273 ---------- */
@@ -2786,7 +2934,8 @@ $('#altForm').addEventListener('submit', async e => {
 /* ---------- the Account of Awesomeness (creator only) ---------- */
 let acctFilter = 'new';
 function renderAccounts() {
-  const waiting = DB.users.filter(u => u.status === 'new').length;
+  renderNameRequests();
+  const waiting = DB.users.filter(u => u.status === 'new' || (u.nameRequest && u.nameRequest.status === 'waiting')).length;
   $('#waitCount').textContent = waiting; $('#waitCount').hidden = !waiting;
   const list = DB.users.filter(u => acctFilter === 'all' || u.status === acctFilter)
     .sort((a, b) => (b.created || 0) - (a.created || 0));
@@ -2992,7 +3141,7 @@ function openProfile(uid) {
         <img src="${pfpSrc(p.id)}" alt=""><span>${esc(p.name)}</span>${open ? '' : `<small>🔒 ${esc(badgeById(p.badge).name)} badge</small>`}</button>`;
     }).join('');
     $('#profPfpNote').textContent = waiting ? 'You can pick one now. It shows on your posts once you\'re approved.' : '';
-    renderQuickBox();
+    renderQuickBox(); renderNameBox(); $('#loginLog').innerHTML = '';
     const q = quickMine(); if (q && q.pfp !== myPfp()) { q.pfp = myPfp(); quickSet(quickList().map(x => x.uid === q.uid ? q : x)); }
   }
   if (!$('#profileDialog').open) $('#profileDialog').showModal();

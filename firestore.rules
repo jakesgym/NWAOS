@@ -22,10 +22,42 @@ service cloud.firestore {
         && request.auth.token.email == request.resource.data.username.lower() + '@fans.nwaos.com'
         && request.resource.data.status == (isAdmin() || isAlt() ? 'approved' : 'new')
         && request.resource.data.keys().hasOnly(['username', 'status', 'created', 'save']);
-      // You can update your own saved games; only the creator can approve or ban.
+      // You can update your own saved games, and ask for a new username once a month.
+      // Only the creator can approve, ban, or change a username.
       allow update: if (signedIn() && request.auth.uid == uid && onlyChanged(['save']))
-        || (isAdmin() && onlyChanged(['status']) && request.resource.data.status in ['new', 'approved', 'banned']);
+        || (signedIn() && request.auth.uid == uid && onlyChanged(['nameRequest']) && me().status != 'banned'
+            && request.resource.data.nameRequest.keys().hasOnly(['name', 'time', 'status'])
+            && request.resource.data.nameRequest.status == 'waiting'
+            && request.resource.data.nameRequest.name is string
+            && request.resource.data.nameRequest.name.matches('^[A-Za-z0-9_]{3,20}$')
+            && request.resource.data.nameRequest.time == request.time
+            && (!('nameRequest' in resource.data) || request.time > resource.data.nameRequest.time + duration.value(30, 'd')))
+        || (isAdmin() && onlyChanged(['status', 'username', 'login', 'nameRequest'])
+            && request.resource.data.status in ['new', 'approved', 'banned']);
       allow delete: if isAdmin();
+
+      // login log: you add your own log-ins; only you (and the creator) can see them
+      match /logins/{id} {
+        allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+        allow create: if signedIn() && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['time', 'device', 'how', 'dev'])
+          && request.resource.data.time == request.time
+          && request.resource.data.device is string && request.resource.data.device.size() <= 60
+          && request.resource.data.how in ['password', 'quick code', 'new account']
+          && request.resource.data.dev is string && request.resource.data.dev.size() <= 12;
+        allow delete: if signedIn() && request.auth.uid == uid;
+      }
+    }
+
+    // ---------- taken usernames (so log-in works after a name change, and nobody takes a used name) ----------
+    match /usernames/{name} {
+      allow read: if true;
+      allow create: if signedIn() && hasAccount() && name == me().username.lower()
+        && request.resource.data.uid == request.auth.uid
+        && request.auth.token.email == request.resource.data.login + '@fans.nwaos.com'
+        && request.resource.data.keys().hasOnly(['uid', 'login']);
+      allow update, delete: if isAdmin();
+      allow create: if isAdmin();
     }
 
     // ---------- public profiles: picture, game numbers for badges (approved accounts only) ----------
