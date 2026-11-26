@@ -1318,7 +1318,7 @@ function mergeSave(a = {}, b = {}) {
   Object.entries(tb.best || {}).forEach(([k, v]) => { best[k] = Math.max(best[k] || 0, v || 0); });
   return {
     ttt_progress: { beat: { ...(ta.beat || {}), ...(tb.beat || {}) }, best,
-      coins: Math.max(ta.coins || 0, tb.coins || 0), bought: [...new Set([...(ta.bought || []), ...(tb.bought || [])])] },
+      coins: Math.max(ta.coins || 0, tb.coins || 0), orbs: Math.max(ta.orbs || 0, tb.orbs || 0), knocked: Math.max(ta.knocked || 0, tb.knocked || 0), bought: [...new Set([...(ta.bought || []), ...(tb.bought || [])])] },
     found: [...new Set([...(a.found || []), ...(b.found || [])])],
     pokes: Math.max(a.pokes || 0, b.pokes || 0),
     foundAll: !!(a.foundAll || b.foundAll),   // Master Finder stays even after starting over
@@ -2323,7 +2323,7 @@ function tttUpdate(G, dt) {
   G.coins = G.coins.filter(c => !c.got && c.alt > G.alt - below);
   for (const o of G.orbs) {
     o.alt -= 0.8 * dt;
-    if (!o.got && Math.abs(G.sideX - o.lane) < 0.6 && Math.abs(o.alt - G.alt) < 0.7) { o.got = true; G.powerLeft = TTT.orbPower; }
+    if (!o.got && Math.abs(G.sideX - o.lane) < 0.6 && Math.abs(o.alt - G.alt) < 0.7) { o.got = true; G.powerLeft = TTT.orbPower; G.orbsGot = (G.orbsGot || 0) + 1; }
   }
   G.orbs = G.orbs.filter(o => !o.got && o.alt > G.alt - below);
   G.coinPop = Math.max(0, (G.coinPop || 0) - dt);
@@ -2337,6 +2337,8 @@ function tttEnd(G, won) {
   const bonus = won ? (TTT.winCoins[G.mode.id] || 0) : 0;
   if (won) P.beat[G.mode.id] = true;
   P.coins += G.coinCount + bonus;
+  P.orbs = (P.orbs || 0) + (G.orbsGot || 0);         // for the Powered Up badge
+  P.knocked = (P.knocked || 0) + (G.knocks || 0);    // for the Pole Wrecker badge
   tttSaveProgress(P);
   const fresh = TTT.climbers.filter(c => !c.creatorOnly && !c.price && tttUnlocked(c, P) && !before.includes(c.id)).map(c => c.name);
   const who = TTT.climbers.find(c => c.id === G.climber).name;
@@ -2715,6 +2717,8 @@ const BADGES = [
   { id: 'master-finder',      name: 'Master Finder',     how: 'Find all the characters on the Home page' },
   { id: 'artist',             name: 'Artist',            how: 'Get your fan art picked for the Fan Art tab' },
   { id: 'creators-pick',      name: "Creator's Pick",    how: "Get a post picked as a Creator's Pick" },
+  { id: 'powered-up',         name: 'Powered Up',        how: 'Grab 10 SUPER POWERS orbs in To The Top' },
+  { id: 'pole-wrecker',       name: 'Pole Wrecker',      how: 'Knock 100 things off the pole in To The Top' },
 ];
 const PFPS = [
   { id: 'shaded-spikester', name: 'Shaded Spikester' }, { id: 'spikester', name: 'Spikester' },
@@ -2726,6 +2730,7 @@ const PFPS = [
   { id: 'floating-text', name: 'Floating Text', badge: 'creators-friend' },
   { id: 'cyfatg', name: 'CYFATG Paper', badge: 'master-finder' },
   { id: 'pole-master', name: 'Pole Master', badge: 'pole-master' },
+  { id: 'super-powers', name: 'Super Powers', badge: 'powered-up' },
   { id: 'snail-palooza', name: 'Snail Palooza', creatorOnly: true },
 ];
 const DEFAULT_PFP = 'giant-snail';
@@ -2738,7 +2743,7 @@ const isCreatorUid = uid => !!DB.profiles[uid] && isCreatorName(DB.profiles[uid]
 // my own numbers (fresh from this browser)
 function myStats() {
   const P = tttProgress();
-  return { best: Math.floor(P.best.endless || 0), pokes: store.get('pokes', 0), foundAll: findWon() || !!store.get('foundAll', false), rich: (P.bought || []).includes('diamond') };
+  return { best: Math.floor(P.best.endless || 0), pokes: store.get('pokes', 0), foundAll: findWon() || !!store.get('foundAll', false), rich: (P.bought || []).includes('diamond'), orbs: P.orbs || 0, knocked: P.knocked || 0 };
 }
 const statsOf = uid => (ME && uid === ME.uid) ? myStats() : ((DB.profiles[uid] || {}).stats || {});
 // hearts from the theories board
@@ -2782,6 +2787,8 @@ function badgesOf(uid, holders = badgeHolders()) {
   if (s.foundAll) got.push('master-finder');
   if (H.artist[uid]) got.push('artist');
   if (H.picked[uid]) got.push('creators-pick');
+  if ((s.orbs || 0) >= 10) got.push('powered-up');
+  if ((s.knocked || 0) >= 100) got.push('pole-wrecker');
   return got;
 }
 function pfpUnlocked(p, badges) {
