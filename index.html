@@ -2824,6 +2824,8 @@ const MONTH = 30 * 24 * 3600 * 1000;
 const reqTime = r => r && r.time && r.time.toMillis ? r.time.toMillis() : 0;
 function renderNameBox() {
   const box = $('#nameBox'); if (!box || !ME) return;
+  box.hidden = ME.admin || ME.username === ALT_NAME;   // the creator's names stay the same (the site depends on them)
+  if (box.hidden) return;
   const r = ME.nameRequest, next = reqTime(r) + MONTH;
   let state = '';
   if (r && r.status === 'waiting') state = `<p class="form-note">⏳ You asked to be called <strong>${esc(r.name)}</strong>. Waiting for Eli.</p>`;
