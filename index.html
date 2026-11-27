@@ -239,6 +239,10 @@ textarea{min-height:110px;resize:vertical}
 .post-img{display:block;width:100%;max-width:640px;border:3px solid var(--ink);border-radius:8px;margin:4px 0 14px}
 .hero-art img{display:block;width:100%;height:auto;padding:30px 10px}
 .snail-toy img{width:220px;height:auto;display:block;transition:transform .15s}
+/* fast tapping shouldn't zoom the page (double-tap zoom) or pop up the copy/save menu */
+html{touch-action:manipulation}
+.snail-toy,.snail-toy *,.lava-stage,.lava-stage *,.ttt-stage,.ttt-stage *{touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.lava-stage,.lava-stage canvas,.lava-pad,.lava-btns button{touch-action:none !important}
 .snail-toy button:active img{transform:scale(.9) rotate(-6deg)}
 .vote-card .name{font-family:var(--font-title);font-size:.7rem}
 .results{display:grid;gap:14px}
@@ -602,11 +606,11 @@ body.ttt-full{overflow:hidden}
 .lava-bots{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:8px 0 18px}
 .lava-bots button{background:#fff;border:3px solid var(--ink);border-radius:10px;padding:6px 12px;font-family:var(--font-title);font-weight:900;cursor:pointer}
 .lava-bots button[aria-pressed="true"]{background:var(--yellow)}
-.lava-stage{position:fixed;inset:0;z-index:150;background:#2a1712;touch-action:none;user-select:none;-webkit-user-select:none}
+.lava-stage{position:fixed;inset:0;z-index:150;background:#6e6660;touch-action:none;user-select:none;-webkit-user-select:none}
 .lava-stage[hidden]{display:none}
 #lavaCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
 .lava-quit{position:absolute;right:10px;top:calc(10px + env(safe-area-inset-top));z-index:3}
-.lava-pad{position:absolute;left:18px;bottom:calc(22px + env(safe-area-inset-bottom));width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.18);border:3px solid rgba(255,255,255,.55);z-index:3;touch-action:none}
+.lava-pad{position:absolute;left:18px;bottom:calc(22px + env(safe-area-inset-bottom));width:130px;height:130px;border-radius:50%;background:rgba(0,0,0,.12);border:3px solid rgba(0,0,0,.4);z-index:3;touch-action:none}
 .lava-knob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:rgba(255,255,255,.85);border:3px solid var(--ink)}
 .lava-btns{position:absolute;right:16px;bottom:calc(22px + env(safe-area-inset-bottom));display:flex;gap:12px;align-items:flex-end;z-index:3}
 .lava-btns button{width:84px;height:84px;border-radius:50%;border:4px solid var(--ink);font-family:var(--font-title);font-weight:900;font-size:.72rem;box-shadow:3px 3px 0 var(--ink);touch-action:none}
@@ -2788,7 +2792,7 @@ function lavaStart() {
     return { ...c, x, y, vx: 0, vy: 0, kx: 0, ky: 0, fx: -Math.cos(a), fy: -Math.sin(a), alive: true, cd: 0, swing: 0,
       hitBy: null, hitAt: -9, kills: 0, coins: 0, think: 0, goal: null, sprinting: false, skill: 0.6 + Math.random() * 0.4 };
   });
-  lavaImg('images/ttt/coin.png');
+  lavaImg('images/ttt/coin.png'); lavaImg('images/games/lava-paper.jpg'); lavaImg('images/games/lava-ball-ball.png');
   lava = { players, me: players[0], wall: LAVA.wallStart, wallTo: LAVA.wallStart, t: 0, nextShrink: LAVA.shrinkEvery, coins: [], coinT: 4,
     pops: [], state: 'play', watch: players[0], last: performance.now(), msg: 'GO!', msgT: 1.5, flash: 0 };
   $('#lavaSetup').hidden = true; $('#lavaStage').hidden = false; $('#lavaEnd').hidden = true; document.body.classList.add('ttt-full');
@@ -2840,6 +2844,18 @@ addEventListener('blur', () => { Object.assign(LK, { up: false, down: false, lef
   ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => sp.addEventListener(ev, () => { LK.sprint = false; sp.classList.remove('on'); }));
   $('#lavaPush').addEventListener('pointerdown', e => { e.preventDefault(); lavaPushPress(); });
 })();
+// stop the phone zooming in while tapping fast in the games or on the snail
+['dblclick', 'gesturestart'].forEach(ev => document.addEventListener(ev, e => {
+  if (e.target.closest && e.target.closest('.snail-toy, #lavaStage, #tttStage')) e.preventDefault();
+}, { passive: false }));
+let lastTouchEnd = 0;
+document.addEventListener('touchend', e => {
+  const now = Date.now();
+  if (now - lastTouchEnd < 350 && e.target.closest && e.target.closest('.snail-toy, #lavaStage, #tttStage') && !e.target.closest('input, select, textarea')) {
+    e.preventDefault(); e.target.click && e.target.closest('button') && e.target.closest('button').click();   // a quick second tap still counts
+  }
+  lastTouchEnd = now;
+}, { passive: false });
 function lavaPushPress() { if (lava && lava.me.alive && lava.state === 'play') lavaPush(lava.me); }
 
 // ----- the rules -----
@@ -2992,26 +3008,20 @@ function lavaDraw(time) {
   const U = Math.min(W, H) / (W < 700 ? 9 : 12);      // pixels per character
   const cam = L.watch, ox = W / 2 - cam.x * U, oy = H / 2 - cam.y * U;
   const P = (x, y) => [ox + x * U, oy + y * U];
-  g.fillStyle = '#2a1712'; g.fillRect(0, 0, W, H);
-  // the floor
+  // paper floor + the hand-drawn lava ball (both from the Lava Ball picture on the Games page)
+  const paper = lavaImg('images/games/lava-paper.jpg'), ball = lavaImg('images/games/lava-ball-ball.png');
+  if (paper.complete && paper.naturalWidth && !lava.pattern) lava.pattern = g.createPattern(paper, 'repeat');
+  const pat = lava.pattern; if (pat && pat.setTransform) pat.setTransform(new DOMMatrix().translate(ox, oy).scale(U / 110));
+  g.fillStyle = pat || '#f4f2ee'; g.fillRect(0, 0, W, H);
+  g.fillStyle = 'rgba(40,30,25,.55)'; g.fillRect(0, 0, W, H);          // outside the wall is darker
   const [cx, cy] = P(0, 0);
-  g.save(); g.beginPath(); g.arc(cx, cy, L.wall * U, 0, 7); g.fillStyle = '#efe3c8'; g.fill(); g.clip();
-  g.strokeStyle = 'rgba(120,90,50,.13)'; g.lineWidth = 1;
-  for (let r = 2; r < LAVA.wallStart + 1; r += 2) { g.beginPath(); g.arc(cx, cy, r * U, 0, 7); g.stroke(); }
-  for (let i = 0; i < 16; i++) { const a = i / 16 * 6.283; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a) * LAVA.wallStart * U, cy + Math.sin(a) * LAVA.wallStart * U); g.stroke(); }
-  // heat glow around the lava
-  const glow = g.createRadialGradient(cx, cy, LAVA.lavaR * U, cx, cy, (LAVA.lavaR + 2.2) * U);
-  glow.addColorStop(0, 'rgba(255,90,20,.45)'); glow.addColorStop(1, 'rgba(255,90,20,0)'); g.fillStyle = glow; g.fillRect(0, 0, W, H);
-  g.restore();
-  // the wall
-  g.beginPath(); g.arc(cx, cy, L.wall * U, 0, 7); g.lineWidth = Math.max(6, U * 0.28); g.strokeStyle = L.flash > 0 ? '#ff3b1f' : '#5b3b2c'; g.stroke();
-  g.lineWidth = 3; g.strokeStyle = '#111'; g.beginPath(); g.arc(cx, cy, L.wall * U + Math.max(3, U * 0.14), 0, 7); g.stroke();
+  g.beginPath(); g.arc(cx, cy, L.wall * U, 0, 7); g.fillStyle = pat || '#f4f2ee'; g.fill();
+  // the wall: a plain black line (flashes red when it moves)
+  g.lineWidth = Math.max(4, U * 0.12); g.strokeStyle = L.flash > 0 ? '#e8432d' : '#111'; g.stroke();
   // the lava ball
-  const lr = LAVA.lavaR * U, lg = g.createRadialGradient(cx - lr * 0.3, cy - lr * 0.3, lr * 0.1, cx, cy, lr);
-  lg.addColorStop(0, '#ffd54a'); lg.addColorStop(0.45, '#ff6a14'); lg.addColorStop(1, '#c4160b');
-  g.beginPath(); g.arc(cx, cy, lr, 0, 7); g.fillStyle = lg; g.fill(); g.lineWidth = 3; g.strokeStyle = '#111'; g.stroke();
-  for (let i = 0; i < 6; i++) { const a = time * 0.6 + i * 1.05, r = lr * (0.35 + 0.35 * Math.sin(time * 1.3 + i)), br = lr * (0.1 + 0.05 * Math.sin(time * 2 + i * 2));
-    g.beginPath(); g.arc(cx + Math.cos(a) * r, cy + Math.sin(a) * r, Math.max(1, br), 0, 7); g.fillStyle = 'rgba(255,230,120,.55)'; g.fill(); }
+  const lr = LAVA.lavaR * U;
+  if (ball.complete && ball.naturalWidth) { const bs = lr * 2.06; g.drawImage(ball, cx - bs / 2, cy - bs / 2, bs, bs); }
+  else { g.beginPath(); g.arc(cx, cy, lr, 0, 7); g.fillStyle = '#e8432d'; g.fill(); }
   // coins
   const ci = lavaImg('images/ttt/coin.png');
   for (const k of L.coins) { const [x, y] = P(k.x, k.y), w = U * 0.5 * Math.abs(Math.cos(time * 3 + k.spin)) + 2;
@@ -3042,8 +3052,8 @@ function lavaDraw(time) {
   // mini map
   const mm = Math.min(70, W * 0.16), mx = 14 + mm, my = 14 + mm, s = mm / LAVA.wallStart;
   g.beginPath(); g.arc(mx, my, mm + 4, 0, 7); g.fillStyle = 'rgba(0,0,0,.45)'; g.fill();
-  g.beginPath(); g.arc(mx, my, L.wall * s, 0, 7); g.fillStyle = '#efe3c8'; g.fill();
-  g.beginPath(); g.arc(mx, my, LAVA.lavaR * s, 0, 7); g.fillStyle = '#ff4a14'; g.fill();
+  g.beginPath(); g.arc(mx, my, L.wall * s, 0, 7); g.fillStyle = '#f4f2ee'; g.fill();
+  g.beginPath(); g.arc(mx, my, LAVA.lavaR * s, 0, 7); g.fillStyle = '#e8432d'; g.fill();
   for (const p of L.players) if (p.alive) { g.beginPath(); g.arc(mx + p.x * s, my + p.y * s, p === L.me ? 4 : 3, 0, 7); g.fillStyle = p === L.me ? '#1e88ff' : '#222'; g.fill(); }
   // info
   const left = L.players.filter(p => p.alive).length;
