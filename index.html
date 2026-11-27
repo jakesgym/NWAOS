@@ -1529,7 +1529,7 @@ if (auth) auth.onAuthStateChanged(async user => {
   const picsQuery = admin ? db.collection('pics') : db.collection('pics').where('uid', '==', user.uid);
   picsUnsub = picsQuery.onSnapshot(q => { DB.picsMine = {}; q.docs.forEach(d => { DB.picsMine[d.id] = d.data(); }); renderComments(); }, () => {});
   if (admin) usersUnsub = db.collection('users').onSnapshot(q => {
-    DB.users = q.docs.map(d => ({ id: d.id, ...d.data() })); renderAccounts(); reserveAllNames();
+    DB.users = q.docs.map(d => ({ id: d.id, ...d.data() })); renderAccounts(); reserveAllNames(); finishGifts();
   }, e => console.warn('users', e));
   refreshGames(); renderAll(); updateCreatorSide(); syncProfile(true); renderPostBadgePicker();
   afterLogin(user);
@@ -2248,8 +2248,8 @@ const TTT = {
     { id: 'gd', name: 'GD', price: 5 },
     { id: 'skibidi', name: 'Skibidi', price: 25 },
     { id: 'floating-text', name: 'Floating Text', creatorOnly: true, special: true },   // creator, or anyone given it
-    // only these accounts (by account id, so it keeps working if they change their username): piece2763, bob, Tregster
-    { id: 'piece2763', name: 'Piece 2763', onlyFor: ['Jw8Q90FYWfWETAzSNZtvkHYNrya2', 'KdFwcEPy3RadC3UzGCALIWHLUP53', 'Diw3uXa5GehR5qo2zX38kBDcN9y2'] },
+    // only these accounts (by account id, or by username): piece2763, bob, Tregster
+    { id: 'piece2763', name: 'Piece 2763', onlyFor: ['Jw8Q90FYWfWETAzSNZtvkHYNrya2', 'KdFwcEPy3RadC3UzGCALIWHLUP53', 'piece2763', 'bob', 'tregster'] },
   ],
   winCoins: { easy: 3, medium: 4, hard: 5 },        // free coins for beating a level
   orbPower: 20,                                      // HEIGHTS a power orb lasts (Endless only); fades for the last 3
@@ -2290,7 +2290,7 @@ const hasSpecial = () => !!(ME && (DB.profiles[ME.uid] || {}).special);
 function tttUnlocked(c, P = tttProgress()) {
   if (isAdmin()) return true;                    // the creator can play as anyone
   if (c.creatorOnly) return !!c.special && hasSpecial();
-  if (c.onlyFor) return !!ME && c.onlyFor.includes(ME.uid);
+  if (c.onlyFor) return !!ME && (c.onlyFor.includes(ME.uid) || c.onlyFor.includes(ME.username.toLowerCase()));
   if (c.price) return P.bought.includes(c.id);
   if (!c.unlock) return true;
   if (c.unlock.beat) return !!P.beat[c.unlock.beat];
@@ -3213,6 +3213,32 @@ $('#meSwitch').addEventListener('click', async () => {
   location.reload();
 });
 
+/* ---------- GIFTS: old progress waiting for a username (used when an account had to be remade) ---------- */
+async function claimGift(user) {
+  if (!ME || !ME.username || ME.admin) return;
+  const ref = db.collection('gifts').doc(ME.username.toLowerCase());
+  try {
+    const d = await ref.get(); if (!d.exists || d.data().claimedBy) return;
+    const merged = mergeSave(d.data().save || {}, localSave());
+    SAVE_KEYS.forEach(k => rawSet(k, merged[k]));
+    await db.collection('users').doc(user.uid).update({ save: merged });
+    await ref.update({ claimedBy: user.uid });
+    refreshGames(); syncProfile(true);
+    toast('🎁 Your old progress is back!');
+  } catch (e) { console.warn('gift', e); }
+}
+// the creator's device finishes a claimed gift (things only the creator can give, like Creator's Friend)
+let giftsChecked = 0;
+async function finishGifts() {
+  if (!isAdmin() || Date.now() - giftsChecked < 30000) return; giftsChecked = Date.now();
+  try {
+    const q = await db.collection('gifts').get();
+    for (const d of q.docs) { const g = d.data(); if (!g.claimedBy) continue;
+      if (g.friend) await db.collection('profiles').doc(g.claimedBy).set({ friend: true }, { merge: true });
+      await d.ref.delete(); }
+  } catch (e) { console.warn('gifts', e); }
+}
+
 /* ---------- LOGIN LOG: which devices got into your account ---------- */
 const deviceId = (() => { let d = store.get('device', ''); if (!d) { d = Math.random().toString(36).slice(2, 6).toUpperCase(); rawSet('device', d); } return d; })();
 function deviceName() {
@@ -3234,6 +3260,7 @@ async function afterLogin(user) {
     const r = db.collection('usernames').doc(ME.username.toLowerCase());
     r.get().then(d => { if (!d.exists) return r.set({ uid: user.uid, login: user.email.split('@')[0] }); }).catch(() => {});
   }
+  claimGift(user);
   const q = quickMine(); if (q && q.name !== ME.username) { q.name = ME.username; quickSet(quickList().map(x => x.uid === q.uid ? q : x)); }
 }
 $('#logShow').addEventListener('click', async () => {

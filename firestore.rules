@@ -132,6 +132,14 @@ service cloud.firestore {
       }
     }
 
+    // ---------- gifts: saved progress for a username (when an account has to be remade) ----------
+    match /gifts/{name} {
+      allow read: if isAdmin() || (hasAccount() && name == me().username.lower());
+      allow update: if hasAccount() && name == me().username.lower()
+        && onlyChanged(['claimedBy']) && request.resource.data.claimedBy == request.auth.uid && !('claimedBy' in resource.data);
+      allow create, delete: if isAdmin();
+    }
+
     // ---------- creator-only secrets (DefinitelyNotAdmin273's password, so switching works on any device) ----------
     match /secret/{doc} {
       allow read, write: if isAdmin();
