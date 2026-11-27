@@ -526,6 +526,7 @@ function drawIcon(c,k,x,y,sz){sz=sz||22;c.save();c.translate(x,y);c.scale(sz/32,
  }c.restore();}
 const ICONURL={};function iconURL(k){if(!ICONURL[k]){const cv=document.createElement('canvas');cv.width=cv.height=64;const g=cv.getContext('2d');drawIcon(g,k,32,32,56);ICONURL[k]=cv.toDataURL();}return ICONURL[k];}
 const iconImg=(k,sz)=>`<img src="${iconURL(k)}" style="width:${sz||22}px;height:${sz||22}px;vertical-align:middle">`;
+const FILL={sandwich:45,pizza:40,meat:30,breadC:35,breadP:30,lettuce:15,bread:10};
 const isWeapon=k=>k&&['gun','flame','melee','tranq'].includes(ITEMS[k].kind);
 const AD={
  ee1:{name:'EE1 Mayo House',room:'ee1',r:34,hp:1e9,speed:0,inv:1},
@@ -885,7 +886,11 @@ function updPlayerHuman(e,dt){
  const busy=uiOpen()||e.sleep>0||e.cage>0||e.spinT>0||e.insideT>0;
  let ax=0,ay=0;if(!busy)[ax,ay]=axes();
  e.stam=e.stam===undefined?3:e.stam;const spr=(K.shift||K.sprint)&&e.stam>0&&(ax||ay);e.stam=clamp(e.stam+(spr?-dt:dt*.5),0,3);
- const sp=e.speed*(e.duck?.6:1)*(spr?1.6:1)*(e.sad?.5:1);if(ax||ay){const l=Math.max(1,Math.hypot(ax,ay));move(e,ax/l*sp*dt,ay/l*sp*dt);e.walk+=dt*10;}
+ if(!e.sticky){if(e.hunger===undefined)e.hunger=100;const h0=e.hunger;e.hunger=Math.max(0,e.hunger-dt/3);
+  if(h0>25&&e.hunger<=25)msg('🍔 You\'re getting hungry. Eat something (free sandwiches and meat in the Cafeteria).','#ffcf7a');
+  if(h0>0&&e.hunger<=0)msg('😵 You\'re STARVING! You\'re slower and losing health until you eat.','#ff9a9a');
+  if(e.hunger<=0){e.starveT=(e.starveT||0)+dt;if(e.starveT>=2){e.starveT=0;hurt(e,2,null,'starved to death');}}else e.starveT=0;}
+ const sp=e.speed*(e.duck?.6:1)*(spr?1.6:1)*(e.sad?.5:1)*(e.hunger<=0&&!e.sticky?.6:1);if(ax||ay){const l=Math.max(1,Math.hypot(ax,ay));move(e,ax/l*sp*dt,ay/l*sp*dt);e.walk+=dt*10;}
  e.aim=Math.atan2(MW.y-e.y,MW.x-e.x);e.face=e.aim;
  if(e.role==='dclass'&&!e.rogue&&(e.card>0||e.items.some(isWeapon)))makeRogue(e);giveKey(e);
  updTests(e,dt);
@@ -899,7 +904,7 @@ function updPlayerHuman(e,dt){
    else if(ITEMS[it].kind==='paint'){takeItem(e,it);e.color='#ff8a1e';msg('🎨 You sprayed your uniform ORANGE. EE2 likes you now.','#ff9a3c');puff(e.x,e.y,'#ff8a1e',16,90,.6,3);}
    else if(it==='goggles'){e.goggles=!e.goggles;msg(e.goggles?'🥽 Goggles on. Everything is scrambled... but your eyes are hidden.':'Goggles off.');}
    else if(it==='earplugs')msg('🎧 Earplugs work automatically while you carry them (banana calls).');
-   else if(ITEMS[it].kind==='food'){if(it==='yeast'){msg('You can\'t eat raw yeast. Someone might, though...');}else if(it==='breadR'){takeItem(e,it);kill(e,null,'killed by eating raw person-bread (cook it first!)');}else if(it==='breadG'){takeItem(e,it);hurt(e,15,null,'chipped teeth on metal bread');msg('OW. Metal bread. -15 HP');}else if(it==='breadGl'){takeItem(e,it);hurt(e,35,null,'killed by eating glass bread');msg('OUCH! There was GLASS in that bread! -35 HP','#ff9a9a');}else{takeItem(e,it);e.hp=Math.min(e.maxhp,e.hp+20);msg('Ate '+ITEMS[it].n+'. +20 HP');}}}}
+   else if(ITEMS[it].kind==='food'){if(it==='yeast'){msg('You can\'t eat raw yeast. Someone might, though...');}else if(it==='breadR'){takeItem(e,it);kill(e,null,'killed by eating raw person-bread (cook it first!)');}else if(it==='breadG'){takeItem(e,it);e.hunger=Math.min(100,(e.hunger||0)+10);hurt(e,15,null,'chipped teeth on metal bread');msg('OW. Metal bread. -15 HP');}else if(it==='breadGl'){takeItem(e,it);hurt(e,35,null,'killed by eating glass bread');msg('OUCH! There was GLASS in that bread! -35 HP','#ff9a9a');}else{takeItem(e,it);e.hp=Math.min(e.maxhp,e.hp+20);const fill=FILL[it]||20;e.hunger=Math.min(100,(e.hunger===undefined?100:e.hunger)+fill);msg('Ate '+ITEMS[it].n+'. +20 HP, +'+fill+' food');}}}}
  if(pressed.has('g')&&it==='keycard')msg('You can\'t drop your keycard.');else if(pressed.has('g')&&it){{takeItem(e,it);pickups.push({x:e.x+Math.cos(e.aim)*20,y:e.y+Math.sin(e.aim)*20,item:it,life:90});}}
  if(pressed.has('p')&&!e.duck&&e.cd<=0){e.cd=.45;let tg=null,bd=60;for(const t of ents){if(t===e||t.dead||t.kind!=='h'&&t.kind!=='a')continue;const d=dist(t,e);if(d<bd){bd=d;tg=t;}}melee(e,tg?Math.atan2(tg.y-e.y,tg.x-e.x):e.aim,8,30,'punched by '+e.name);}
  if(pressed.has('c'))tryCage(e);
@@ -1434,12 +1439,13 @@ function drawSlide(){const c=ctx,s=P.inSlide;const g=c.createLinearGradient(0,0,
 function drawBanana(){const c=ctx,b=P.banana;c.fillStyle='rgba(10,8,0,.88)';c.fillRect(0,0,VW,VH);c.textAlign='center';c.font='120px system-ui';c.fillText('🍌',VW/2,VH/2-20);c.fillStyle='#ffe14a';c.font='bold 22px system-ui';
  if(b.t<1.5)c.fillText('*click* ...hello?',VW/2,VH/2+70);else{const syl=['blorb','grnn','mmf','vvsh','krr','oolo','zzt','hnnngh','wub','fff'];let s='';const n=Math.floor(b.t*7);for(let k=0;k<5;k++)s+=syl[(n+k*3)%syl.length]+' ';c.fillText('"'+s.trim()+'..."',VW/2,VH/2+70);c.font='15px system-ui';c.fillStyle='#bba';c.fillText('You can\'t put it down. ('+Math.max(0,Math.ceil(11.5-b.t))+')',VW/2,VH/2+104);}}
 function drawHUD(){const c=ctx;if(!P)return;c.textAlign='left';c.textBaseline='alphabetic';
- const pw=270,ph=P.kind==='h'?118:100;c.fillStyle='rgba(12,16,21,.82)';rrect(c,14,14,pw,ph,12);c.fill();c.strokeStyle='#2b3440';c.lineWidth=1;c.stroke();
+ const hy=P.kind==='h'&&!P.sticky?10:0,pw=270,ph=(P.kind==='h'?118:100)+hy;c.fillStyle='rgba(12,16,21,.82)';rrect(c,14,14,pw,ph,12);c.fill();c.strokeStyle='#2b3440';c.lineWidth=1;c.stroke();
  c.fillStyle='#ffe14a';c.font='bold 16px system-ui';c.fillText(P.kind==='h'?P.name:AD[P.type].name,26,38);c.fillStyle='#9fb0c2';c.font='12px system-ui';
  c.fillText(P.kind==='h'?((P.steven?'Doctor Steven · ':'')+{dclass:'D-Class',janitor:'Janitor',scientist:'Scientist',guard:'Guard',sticky:'E22 Sticky Notes'}[P.role]+(P.rogue?' · ROGUE':'')+' · Keycard L'+P.card):(CLS[P.type]||'Apollyon')+' class'+(P.disguised?' · disguised':''),26,56);
  if(P.maxhp<1e8){c.fillStyle='#000';c.fillRect(26,64,pw-24,8);c.fillStyle=P.hp/P.maxhp>.4?'#5fdc6a':'#ff5a5a';c.fillRect(26,64,(pw-24)*clamp(P.hp/P.maxhp,0,1),8);}
- c.fillStyle='#e8ecf1';c.font='bold 13px system-ui';c.fillText('💵 '+S.eb+' e-bucks',26,92);c.fillText('⭐ '+S.pts+' SEP pts',150,92);c.fillStyle='#000';c.fillRect(150,98,110,4);c.fillStyle='#ffe14a';c.fillRect(150,98,110*S.prog/600,4);
- if(P.kind==='h'){c.fillStyle='#9fb0c2';c.font='11px system-ui';c.fillText(P.sticky?'Click/WASD: hop · T: write · B: shop · R R: respawn':'B: shop · C: cage · G: drop · R R: respawn',26,118);}
+ if(P.kind==='h'&&!P.sticky&&P.hunger!==undefined){const hf=clamp(P.hunger/100,0,1);c.fillStyle='#000';c.fillRect(44,77,pw-42,6);c.fillStyle=P.hunger<=0?(Math.sin(gameT*8)>0?'#ff5a5a':'#7a2020'):P.hunger<=25?'#ffb14a':'#e8a64a';c.fillRect(44,77,(pw-42)*hf,6);c.font='11px system-ui';c.fillText('🍔',26,84);}
+ c.fillStyle='#e8ecf1';c.font='bold 13px system-ui';c.fillText('💵 '+S.eb+' e-bucks',26,92+hy);c.fillText('⭐ '+S.pts+' SEP pts',150,92+hy);c.fillStyle='#000';c.fillRect(150,98+hy,110,4);c.fillStyle='#ffe14a';c.fillRect(150,98+hy,110*S.prog/600,4);
+ if(P.kind==='h'){c.fillStyle='#9fb0c2';c.font='11px system-ui';c.fillText(P.sticky?'Click/WASD: hop · T: write · B: shop · R R: respawn':'B: shop · C: cage · G: drop · R R: respawn',26,118+hy);}
  // minimap
  const mw=W*2,mh=H*2,mxp=VW-mw-14;c.globalAlpha=.88;c.fillStyle='#0b0d10';c.fillRect(mxp-4,10,mw+8,mh+8);c.drawImage(mmC,mxp,14);c.globalAlpha=1;
  for(const e of ents){if(e.dead)continue;const show=e===P||(e.kind==='a'&&isOut(e)&&!e.disguised&&!AD[e.type].stat&&e.type!=='ee58');if(!show)continue;c.fillStyle=e===P?'#ffe14a':'#ff4d4d';c.fillRect(mxp+e.x/T*2-2,14+e.y/T*2-2,4,4);}
