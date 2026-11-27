@@ -2272,7 +2272,7 @@ function tttRenderSetup() {
     ${hasDiamond ? '<span class="form-note">✓ yours! (Rich badge)</span>' : `<button type="button" class="btn small yellow" id="buyDiamond"><img class="coin-ico" src="images/ttt/coin.png" alt=""> 100 · BUY</button>`}`;
   $('#tttChars').innerHTML = list.map(c => {
     const open = tttUnlocked(c, P);
-    const label = c.creatorOnly ? (isAdmin() ? 'creator only' : '✨ special') : open ? '' : c.price ? `<img class="coin-ico" src="images/ttt/coin.png" alt=""> ${c.price} · BUY` : '🔒 ' + esc(c.how);
+    const label = c.creatorOnly ? (isAdmin() ? 'creator only' : '✨ just for fun: no coins or badges') : open ? '' : c.price ? `<img class="coin-ico" src="images/ttt/coin.png" alt=""> ${c.price} · BUY` : '🔒 ' + esc(c.how);
     return `<button type="button" data-climber="${c.id}" aria-pressed="${open && c.id === TTT.pick.climber}"
       class="${c.creatorOnly ? (isAdmin() ? 'creator-only' : 'climber-special') : ''} ${open ? '' : 'locked'} ${!open && c.price ? 'shop' : ''}">
       <img src="${TTT.src(c.id)}" alt="">${esc(c.name)}${label ? `<small>${label}</small>` : ''}</button>`;
@@ -2444,20 +2444,24 @@ function tttEnd(G, won) {
   G.state = 'over';
   const h = Math.floor(won ? G.mode.goal : G.alt);
   const P = tttProgress(), before = TTT.climbers.filter(c => !c.creatorOnly && !c.price && tttUnlocked(c, P)).map(c => c.id);
-  P.best[G.mode.id] = Math.max(P.best[G.mode.id] || 0, h);
-  const bonus = won ? (TTT.winCoins[G.mode.id] || 0) : 0;
-  if (won) P.beat[G.mode.id] = true;
-  P.coins += G.coinCount + bonus;
-  P.orbs = (P.orbs || 0) + (G.orbsGot || 0);         // for the Powered Up badge
-  P.knocked = (P.knocked || 0) + (G.knocks || 0);    // for the Pole Wrecker badge
-  tttSaveProgress(P);
+  // Floating Text (given by the creator) is just for fun: those runs give no coins, scores, unlocks or badge progress
+  const counts = !(G.climber === 'floating-text' && !isAdmin());
+  const bonus = won && counts ? (TTT.winCoins[G.mode.id] || 0) : 0;
+  if (counts) {
+    P.best[G.mode.id] = Math.max(P.best[G.mode.id] || 0, h);
+    if (won) P.beat[G.mode.id] = true;
+    P.coins += G.coinCount + bonus;
+    P.orbs = (P.orbs || 0) + (G.orbsGot || 0);         // for the Powered Up badge
+    P.knocked = (P.knocked || 0) + (G.knocks || 0);    // for the Pole Wrecker badge
+    tttSaveProgress(P);
+  }
   const fresh = TTT.climbers.filter(c => !c.creatorOnly && !c.price && tttUnlocked(c, P) && !before.includes(c.id)).map(c => c.name);
   const who = TTT.climbers.find(c => c.id === G.climber).name;
-  const coinLine = (G.coinCount || bonus) ? ` <img class="coin-ico" src="images/ttt/coin.png" alt=""> +${G.coinCount + bonus} coin${G.coinCount + bonus === 1 ? '' : 's'}${bonus ? ` (${bonus} for beating ${G.mode.name})` : ''}.` : '';
+  const coinLine = !counts ? ' ✨ Floating Text runs are just for fun: no coins, scores or badges.' : (G.coinCount || bonus) ? ` <img class="coin-ico" src="images/ttt/coin.png" alt=""> +${G.coinCount + bonus} coin${G.coinCount + bonus === 1 ? '' : 's'}${bonus ? ` (${bonus} for beating ${G.mode.name})` : ''}.` : '';
   const unlockLine = fresh.length && !isAdmin() ? ` 🔓 UNLOCKED: ${fresh.join(', ')}!` : '';
   $('#tttEndTitle').textContent = won ? 'YOU MADE IT TO THE TOP!' : 'YOU FELL OFF!';
   $('#tttEndText').innerHTML = (won ? `${esc(who)} climbed all ${h.toLocaleString()} heights on ${G.mode.name}!`
-    : `${esc(who)} climbed ${h.toLocaleString()}${G.mode.goal === Infinity ? '' : ' of ' + G.mode.goal.toLocaleString()} heights. Best: ${P.best[G.mode.id].toLocaleString()}.`) + coinLine + unlockLine;
+    : `${esc(who)} climbed ${h.toLocaleString()}${G.mode.goal === Infinity ? '' : ' of ' + G.mode.goal.toLocaleString()} heights.${counts ? ` Best: ${(P.best[G.mode.id] || 0).toLocaleString()}.` : ''}`) + coinLine + unlockLine;
   $('#tttEnd').hidden = false;
   tttDraw(G);
 }
@@ -3062,7 +3066,9 @@ function lavaDraw(time) {
   g.fillStyle = 'rgba(20,10,6,.62)'; g.beginPath(); g.roundRect ? g.roundRect(6, ty - 18, 190, (!L.me.alive && L.state === 'play') ? 86 : 66, 10) : g.rect(6, ty - 18, 190, 66); g.fill(); g.fillStyle = '#fff';
   g.fillText(`👥 ${left} LEFT`, tx, ty);
   g.fillText(`🧱 WALL IN ${Math.ceil(L.nextShrink)}`, tx, ty + 20);
-  g.fillText(`💥 ${L.me.kills}   🪙 ${L.me.coins}`, tx, ty + 40);
+  g.fillText(`💥 ${L.me.kills}`, tx, ty + 40);
+  { const hc = lavaImg('images/ttt/coin.png'), kx = tx + g.measureText(`💥 ${L.me.kills}`).width + 14;
+    if (hc.complete && hc.naturalWidth) g.drawImage(hc, kx, ty + 26, 18, 18); g.fillText(String(L.me.coins), kx + 24, ty + 40); }
   if (!L.me.alive && L.state === 'play') { g.fillStyle = '#ffe14d'; g.fillText(`👀 WATCHING ${L.watch.label}`, tx, ty + 60); }
   if (L.msgT > 0) { g.textAlign = 'center'; g.font = `900 ${Math.min(42, W * 0.07)}px system-ui, sans-serif`; g.lineWidth = 6; g.strokeStyle = '#111';
     g.globalAlpha = Math.min(1, L.msgT * 2); g.strokeText(L.msg, W / 2, H * 0.2); g.fillStyle = '#ffe14d'; g.fillText(L.msg, W / 2, H * 0.2); g.globalAlpha = 1; }
