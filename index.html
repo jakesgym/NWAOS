@@ -606,7 +606,7 @@ body.ttt-full{overflow:hidden}
 .lava-bots{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:8px 0 18px}
 .lava-bots button{background:#fff;border:3px solid var(--ink);border-radius:10px;padding:6px 12px;font-family:var(--font-title);font-weight:900;cursor:pointer}
 .lava-bots button[aria-pressed="true"]{background:var(--yellow)}
-.lava-stage{position:fixed;inset:0;z-index:150;background:#6e6660;touch-action:none;user-select:none;-webkit-user-select:none}
+.lava-stage{position:fixed;inset:0;height:100dvh;z-index:150;background:#6e6660;touch-action:none;user-select:none;-webkit-user-select:none}
 .lava-stage[hidden]{display:none}
 #lavaCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
 .lava-quit{position:absolute;right:10px;top:calc(10px + env(safe-area-inset-top));z-index:3}
@@ -1356,7 +1356,7 @@ const CONFIG = {
     { id: 'bba',           name: 'BBA',            anchor: '#episodes .section-head',   style: 'left:42%;top:-4px', r: -6, size: 40 },
     { id: 'heart-balloon', name: 'Heart Balloon',  anchor: '#playerWrap',               style: 'left:6px;bottom:30px', r: -14 },
     { id: 'robot',         name: 'Robot Cube Thing Person', anchor: '#characters .section-head', style: 'right:34%;bottom:-14px', r: 6, size: 40 },
-    { id: 'mr-face-man',   name: 'Mr. Face Man Dude Guy Person', anchor: '#characters .char-intro', style: 'right:2px;top:-16px', r: 0, size: 38 },
+    { id: 'mr-face-man',   name: 'Mr. Face Man Dude Guy Person', img: 'images/find/mr-face-man-v2.png', anchor: '#characters .char-intro', style: 'right:2px;top:-16px', r: 0, size: 38 },
     { id: 'cyfatg-paper',  name: 'CYFATG Paper',   anchor: '#news .section-head',       style: 'right:30%;top:-10px', r: -8 },
     { id: 'find-the-fire', name: 'Find the Fire',  anchor: '#news',                     style: 'right:4px;bottom:-34px', r: 12 },
     { id: 'piece2763',     name: 'Piece 2763',     anchor: '#news',                     style: 'left:26%;bottom:-30px', r: -4, size: 44 },
@@ -1380,7 +1380,7 @@ const CONFIG = {
     spikester: 'images/find/spikester.png', heart: 'images/find/heart-balloon.png', paper: 'images/find/cyfatg-paper.png',
     text: 'images/find/floating-text.png', gd: 'images/find/gd.png', skibidi: 'images/find/skibidi.png',
     cloudini: 'images/find/cloudini.png', '2763': 'images/find/piece2763.png', fire: 'images/find/find-the-fire.png',
-    facemister: 'images/find/face-mister.png', faceman: 'images/find/mr-face-man.png', robot: 'images/find/robot.png',
+    facemister: 'images/find/face-mister.png', faceman: 'images/find/mr-face-man-v2.png', robot: 'images/find/robot.png',
   },
 
   // ★ CHRISTMAS SPECIAL ★  Everything Christmas switches on by itself on `start`
@@ -1454,7 +1454,7 @@ function mergeSave(a = {}, b = {}) {
   Object.entries(tb.best || {}).forEach(([k, v]) => { best[k] = Math.max(best[k] || 0, v || 0); });
   return {
     ttt_progress: { beat: { ...(ta.beat || {}), ...(tb.beat || {}) }, best,
-      coins: Math.max(ta.coins || 0, tb.coins || 0), climbed: Math.max(ta.climbed || 0, tb.climbed || 0), orbs: Math.max(ta.orbs || 0, tb.orbs || 0), knocked: Math.max(ta.knocked || 0, tb.knocked || 0), bought: [...new Set([...(ta.bought || []), ...(tb.bought || [])])] },
+      perfect: !!(ta.perfect || tb.perfect), coins: Math.max(ta.coins || 0, tb.coins || 0), climbed: Math.max(ta.climbed || 0, tb.climbed || 0), orbs: Math.max(ta.orbs || 0, tb.orbs || 0), knocked: Math.max(ta.knocked || 0, tb.knocked || 0), bought: [...new Set([...(ta.bought || []), ...(tb.bought || [])])] },
     found: [...new Set([...(a.found || []), ...(b.found || [])])],
     pokes: Math.max(a.pokes || 0, b.pokes || 0),
     foundAll: !!(a.foundAll || b.foundAll),   // Master Finder stays even after starting over
@@ -2492,7 +2492,8 @@ function tttEnd(G, won) {
     P.coins += G.coinCount + bonus;
     P.orbs = (P.orbs || 0) + (G.orbsGot || 0);         // for the Powered Up badge
     P.knocked = (P.knocked || 0) + (G.knocks || 0);    // for the Pole Wrecker badge
-    P.climbed = (P.climbed || 0) + h;                  // all-time heights, for the leaderboard (counted from Nov 26)
+    P.climbed = (P.climbed || 0) + h;
+    if (won && G.mode.id === 'hard' && G.hearts >= 3) P.perfect = true;   // Perfect Climb badge                  // all-time heights, for the leaderboard (counted from Nov 26)
     tttSaveProgress(P);
   }
   const fresh = TTT.climbers.filter(c => !c.creatorOnly && !c.onlyFor && !c.price && tttUnlocked(c, P) && !before.includes(c.id)).map(c => c.name);
@@ -2849,8 +2850,9 @@ function lavaClose() {
   $('#lavaSetup').hidden = false; lavaRenderSetup(); $('#lava').scrollIntoView({ block: 'start' });
 }
 function lavaSize() {
+  // size from the canvas itself (not the window): tablet browser bars slide in and out
   const c = $('#lavaCanvas'), dpr = Math.min(2, devicePixelRatio || 1);
-  c.width = Math.round(innerWidth * dpr); c.height = Math.round(innerHeight * dpr);
+  c.width = Math.round(c.clientWidth * dpr); c.height = Math.round(c.clientHeight * dpr); lava && (lava.dpr = dpr);
   c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 addEventListener('resize', () => { if (lava) lavaSize(); });
@@ -3048,7 +3050,9 @@ function lavaFrame(now) {
   requestAnimationFrame(lavaFrame);
 }
 function lavaDraw(time) {
-  const L = lava, c = $('#lavaCanvas'), g = c.getContext('2d'), W = innerWidth, H = innerHeight;
+  const L = lava, c = $('#lavaCanvas'), g = c.getContext('2d');
+  if (Math.abs(c.width - Math.round(c.clientWidth * (L.dpr || 1))) > 1 || Math.abs(c.height - Math.round(c.clientHeight * (L.dpr || 1))) > 1) lavaSize();   // screen changed size
+  const W = c.clientWidth, H = c.clientHeight;
   const U = Math.min(W, H) / (W < 700 ? 9 : 12);      // pixels per character
   const cam = L.watch, ox = W / 2 - cam.x * U, oy = H / 2 - cam.y * U;
   const P = (x, y) => [ox + x * U, oy + y * U];
@@ -3471,6 +3475,7 @@ const BADGES = [
   { id: 'creators-pick',      name: "Creator's Pick",    how: "Get a post picked as a Creator's Pick" },
   { id: 'powered-up',         name: 'Powered Up',        how: 'Grab 10 SUPER POWERS orbs in To The Top' },
   { id: 'pole-wrecker',       name: 'Pole Wrecker',      how: 'Knock 100 things off the pole in To The Top' },
+  { id: 'perfect-climb',      name: 'Perfect Climb',     how: 'Beat HARD in To The Top without losing a single heart' },
 ];
 const PFPS = [
   { id: 'shaded-spikester', name: 'Shaded Spikester' }, { id: 'spikester', name: 'Spikester' },
@@ -3496,7 +3501,7 @@ const isCreatorUid = uid => !!DB.profiles[uid] && isCreatorName(DB.profiles[uid]
 function myStats() {
   const P = tttProgress();
   return { best: Math.floor(P.best.endless || 0), pokes: store.get('pokes', 0), foundAll: findWon() || !!store.get('foundAll', false), rich: (P.bought || []).includes('diamond'), orbs: P.orbs || 0, knocked: P.knocked || 0,
-    coins: lbCoinsEarned(P), climbed: Math.floor(P.climbed || 0) };
+    coins: lbCoinsEarned(P), climbed: Math.floor(P.climbed || 0), perfect: !!P.perfect };
 }
 const statsOf = uid => (ME && uid === ME.uid) ? myStats() : ((DB.profiles[uid] || {}).stats || {});
 // hearts from the theories board
@@ -3542,6 +3547,7 @@ function badgesOf(uid, holders = badgeHolders()) {
   if (H.picked[uid]) got.push('creators-pick');
   if ((s.orbs || 0) >= 10) got.push('powered-up');
   if ((s.knocked || 0) >= 100) got.push('pole-wrecker');
+  if (s.perfect) got.push('perfect-climb');
   return got;
 }
 function pfpUnlocked(p, badges) {
