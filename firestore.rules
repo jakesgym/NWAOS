@@ -132,6 +132,11 @@ service cloud.firestore {
       }
     }
 
+    // ---------- creator-only secrets (DefinitelyNotAdmin273's password, so switching works on any device) ----------
+    match /secret/{doc} {
+      allow read, write: if isAdmin();
+    }
+
     // ---------- site settings (creator only) ----------
     match /site/{doc} {
       allow read: if true;

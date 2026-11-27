@@ -1047,7 +1047,7 @@ body.ttt-full{overflow:hidden}
 <dialog id="altDialog">
   <form id="altForm">
     <h3>DefinitelyNotAdmin273</h3>
-    <p class="form-note">Your totally normal, definitely-not-the-creator account. Pick a password for it the first time. After that, switching is one tap.</p>
+    <p class="form-note">Your totally normal, definitely-not-the-creator account. Type its password one last time. After this, switching is one tap on every device.</p>
     <div class="field"><label for="altCode">Password for DefinitelyNotAdmin273</label><input id="altCode" type="password" minlength="6" autocomplete="new-password" required></div>
     <div class="row">
       <button class="btn green" type="submit" id="altGo">SWITCH</button>
@@ -1302,6 +1302,12 @@ const CONFIG = {
       facts: { 'Seen in': 'NWAOS 5', 'Voice': 'Eli\'s brother (deep voice)', 'Made by': 'Eli\'s brother' },
       desc: "\"The most powerful piece\" (it's a joke). Heart Balloon held Piece 2763 up to CYFATG Paper to ask if they were a gem, and they looked tiny. But in the end-credits scene with Sweater, they explain they're actually HUGE. Heart Balloon was just holding them far away from the camera." },
 
+    { group: 'other', name: 'Ball', img: 'images/characters/ball.jpg',
+      status: ['other', 'Never competed'],
+      facts: { 'Seen in': 'NWAOS 2 and Ball the Movie', 'Voice': 'Never talks' },
+      desc: "Just a ball. Ball never competed: in NWAOS 2 they were the prize for the safe players on Team Grim. They even got their own movie, Ball the Movie, where Spikester was the villain. Nobody knows if Ball is actually conscious.",
+      fun: "Ball was the very first NWAOS character ever made!" },
+
     { group: 'other', name: 'Find the Fire', img: 'images/characters/find-the-fire.jpg',
       status: ['other', 'Never joined'],
       facts: { 'Seen in': 'NWAOS 5', 'Voice': 'Eli' },
@@ -1360,6 +1366,7 @@ const CONFIG = {
     { id: 'floating-text', name: 'Floating Text',  anchor: '#commentList .comment.mine', style: 'right:16px;bottom:14px', r: -3, size: 92, afterFirstPost: true }, // only appears next to your own theory after you post one
     { id: 'face-mister',   name: 'Person Guy Dude Man Face Mister', anchor: '#music',   style: 'right:6px;bottom:-40px', r: 0, size: 40 },
     { id: 'baby-giant-snail', name: 'Baby Giant Snail', anchor: '#charList .char-card', style: 'right:18px;top:-20px', r: 6, size: 42 }, // riding on Giant Snail's card
+    { id: 'ball',          name: 'Ball',           anchor: '#episodes .section-head',   style: 'right:4%;bottom:-26px', r: 0, size: 34, added: true },   // added Nov 27, 2026
     { id: 'giant-snail',   name: 'Giant Snail',    anchor: 'footer',                    style: 'right:7%;top:14px', r: 0, size: 58 },
   ],
 
@@ -2177,7 +2184,8 @@ function renderFindBoard() {
   const found = findFound();
   $('#findCount').textContent = `${found.length} / ${CONFIG.findGame.length}`;
   $('#findWin').hidden = !findWon();
-  if (findWon() && !store.get('foundAll', false)) store.set('foundAll', true);
+  const wonBefore = CONFIG.findGame.filter(c => !c.added).every(c => found.includes(c.id));   // found everyone before Ball was added
+  if ((findWon() || wonBefore) && !store.get('foundAll', false)) store.set('foundAll', true);
   $('#findGrid').innerHTML = CONFIG.findGame.map(c => {
     const got = found.includes(c.id);
     return `<div class="find-slot ${got ? 'found' : ''}">${hatted(`<img src="${esc(c.img || 'images/find/' + c.id + '.png')}" alt="${got ? esc(c.name) : 'not found yet'}">`)}<span>${got ? esc(c.name) : '???'}</span></div>`;
@@ -2287,7 +2295,7 @@ function tttUnlocked(c, P = tttProgress()) {
   if (!c.unlock) return true;
   if (c.unlock.beat) return !!P.beat[c.unlock.beat];
   if (c.unlock.endless) return (P.best.endless || 0) >= c.unlock.endless;
-  if (c.unlock.findAll) return findWon();
+  if (c.unlock.findAll) return findWon() || !!store.get('foundAll', false);   // once earned, kept
   return false;
 }
 const tttImgs = {};
@@ -3334,6 +3342,11 @@ $('#switchBtn').addEventListener('click', async () => {
   if (!ME || !ME.admin || !altAuth) return;
   const u = await altUser();
   if (u && u.email === emailFor(ALT_NAME)) return switchTo('alt');
+  // new device: use the password saved in the creator-only part of the database
+  try {
+    const d = await db.collection('secret').doc('alt').get();
+    if (d.exists && d.data().pw) { toast('Switching...'); await altAuth.signInWithEmailAndPassword(emailFor(ALT_NAME), d.data().pw); return switchTo('alt'); }
+  } catch (e) { console.warn('alt auto', e); }
   $('#altMsg').textContent = ''; $('#altCode').value = ''; $('#altDialog').showModal();
 });
 $('#altCancel').addEventListener('click', () => $('#altDialog').close());
@@ -3350,6 +3363,8 @@ $('#altForm').addEventListener('submit', async e => {
       return flash($('#altMsg'), err2.code === 'auth/email-already-in-use' ? 'Wrong password for DefinitelyNotAdmin273.' : 'Couldn\'t switch. Try again!', 'err');
     }
   }
+  // remember it (only the creator account can read this) so no device ever asks again
+  try { await db.collection('secret').doc('alt').set({ pw, updated: Date.now() }); } catch (e) { console.warn('alt save', e); }
   switchTo('alt');
 });
 
