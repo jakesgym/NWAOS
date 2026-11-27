@@ -3687,6 +3687,8 @@ const PFPS = [
   { id: 'super-powers', name: 'Super Powers', badge: 'powered-up' },
   { id: 'gd-voice', name: 'GD (voice actor)', badge: 'gd-voice' },
   { id: 'p2763-voice', name: 'Piece 2763 (voice actor)', badge: 'p2763-voice' },
+  // unlocks with the SEP Foundation badge (talk to Spikester in SEP Foundation). Hidden until that badge is on the site.
+  { id: 'sep-foundation', name: 'SEP Foundation', badge: 'sep-foundation' },
   { id: 'snail-palooza', name: 'Snail Palooza', creatorOnly: true },
 ];
 const DEFAULT_PFP = 'giant-snail';
@@ -3883,7 +3885,7 @@ function openProfile(uid) {
       : ME.status === 'approved' ? '✅ Approved! You can post, and earn badges.'
       : ME.status === 'banned' ? '🚫 This account can\'t post, like or vote.'
       : '⏳ Waiting for Eli to approve your account. You can still play, like and vote! Badges start once you\'re approved.';
-    $('#profPfps').innerHTML = PFPS.filter(p => (!p.creatorOnly || ME.admin) && (!(badgeById(p.badge) || {}).owner || pfpUnlocked(p, got))).map(p => {   // voice actor pictures only show for people who have them
+    $('#profPfps').innerHTML = PFPS.filter(p => (!p.creatorOnly || ME.admin) && (!p.badge || badgeById(p.badge)) && (!(badgeById(p.badge) || {}).owner || pfpUnlocked(p, got))).map(p => {   // voice actor pictures only show for people who have them
       const open = pfpUnlocked(p, got), on = myPfp() === p.id;
       return `<button type="button" class="pfp-pick ${open ? '' : 'locked'}" data-pfp="${p.id}" aria-pressed="${on}" title="${esc(p.name)}">
         <img src="${pfpSrc(p.id)}" alt=""><span>${esc(p.name)}</span>${open ? '' : `<small>🔒 ${esc(badgeById(p.badge).name)} badge</small>`}</button>`;
