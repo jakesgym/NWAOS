@@ -772,13 +772,13 @@ function npcAnom(e,dt){if(e.sleep>0||e.cage>0)return;const home=e.home;if(!['ee1
   else{e.mad=false;if(isOut(e))wanderRooms(e,dt,['hall'],70);else wanderIn(e,dt,home,50);}return;}
  case 'ee3':{if(e.aggro>0&&e.aggroBy&&!e.aggroBy.dead){goTo(e,e.aggroBy.x,e.aggroBy.y,dt,e.speed);if(dist(e,e.aggroBy)<40&&e.cd<=0){e.cd=1.4;e.stabT=.9;melee(e,Math.atan2(e.aggroBy.y-e.y,e.aggroBy.x-e.x),40,40,'stabbed by Spikester');}}else if(isOut(e))wanderRooms(e,dt,['hall','dblock','cafe'],70);else wanderIn(e,dt,home,60);return;}
  case 'ee7':{if(e.ringing>0){e.ringing-=dt;if(Math.floor(gameT*2)!==Math.floor((gameT-dt)*2))sfxAt(e.x,e.y,'ring');if(e.ringing<=0)e.ringT=rnd(30,75);}else{e.ringT-=dt;if(e.ringT<=0){e.ringing=10;if(P&&roomOf(P)===home)msg('📞 EE7 is ringing! (Press E to answer... if you dare.)','#ffe14a');}}return;}
- case 'ee8':{e.hunger=Math.max(0,e.hunger-dt*.3);if(eatFloor(e,dt))return;if(isOut(e))wanderRooms(e,dt,['hall'],40);else wanderIn(e,dt,home,38);e.gt=(e.gt||rnd(3,7))-dt;if(e.gt<=0){e.gt=rnd(4,8);say(e,'Glob!',1.6);sfxAt(e.x,e.y,'glob');}e.goo=(e.goo||140)-dt;if(e.goo<=0){e.goo=rnd(120,180);addMess(e.x+rnd(-10,10),e.y+12,'goo');}return;}
- case 'ee9':{e.hunger=Math.max(0,e.hunger-dt*.3);const t=nearestHuman(e,isOut(e)?10*T:2.6*T,h=>!h.duck);if(t&&(isOut(e)||e.hunger<50)){goTo(e,t.x,t.y,dt,e.speed);if(dist(e,t)<2.6*T&&(e.pcd||0)<=0)doPrank(e,t,pick(['duck','duck','spin','inside']));}else if(isOut(e))wanderRooms(e,dt,['hall'],80);else wanderIn(e,dt,home,50);return;}
- case 'ee12':{e.hunger=Math.max(0,e.hunger-dt*.4);const t=nearestHuman(e,isOut(e)?12*T:3.5*T);if(t&&(e.emCd||0)<=0&&!(e.emT>0)&&(e.hunger<60||isOut(e))&&los(e,t,false)){e.emT=7;e.emCd=15;say(e,'*rrrip*');}
+ case 'ee8':{e.hunger=Math.max(0,e.hunger-dt*.5);if(eatFloor(e,dt))return;if(isOut(e))wanderRooms(e,dt,['hall'],40);else wanderIn(e,dt,home,38);e.gt=(e.gt||rnd(3,7))-dt;if(e.gt<=0){e.gt=rnd(4,8);say(e,'Glob!',1.6);sfxAt(e.x,e.y,'glob');}e.goo=(e.goo||140)-dt;if(e.goo<=0){e.goo=rnd(120,180);addMess(e.x+rnd(-10,10),e.y+12,'goo');}return;}
+ case 'ee9':{e.hunger=Math.max(0,e.hunger-dt*.5);const t=nearestHuman(e,isOut(e)?10*T:2.6*T,h=>!h.duck);if(t&&(isOut(e)||e.hunger<50)){goTo(e,t.x,t.y,dt,e.speed);if(dist(e,t)<2.6*T&&(e.pcd||0)<=0)doPrank(e,t,pick(['duck','duck','spin','inside']));}else if(isOut(e))wanderRooms(e,dt,['hall'],80);else wanderIn(e,dt,home,50);return;}
+ case 'ee12':{e.hunger=Math.max(0,e.hunger-dt*.5);const t=nearestHuman(e,isOut(e)?12*T:3.5*T);if(t&&(e.emCd||0)<=0&&!(e.emT>0)&&(e.hunger<60||isOut(e))&&los(e,t,false)){e.emT=7;e.emCd=15;say(e,'*rrrip*');}
   if(e.emT>0&&t){goTo(e,t.x,t.y,dt,e.speed*1.15);if(dist(e,t)<e.r+t.r+8&&e.cd<=0){e.cd=1;hurt(t,45,e,'chomped by Emmett');if(t.dead)e.hunger=100;}}else if(isOut(e))wanderRooms(e,dt,['hall'],70);else wanderIn(e,dt,home,45);return;}
  case 'ee20':return updTwig(e,dt);
  case 'bsp':{const t=hunt(e,dt,isOut(e)?9*T:6*T,e.speed,h=>isOut(e)||roomOf(h)===roomOf(e)||(roomOf(h)&&roomOf(h).airlock==='ee24'));if(t){if(dist(e,t)<e.r+t.r+6&&e.cd<=0){e.cd=.7;hurt(t,5,e,'slowly ripped apart by a glass bread spider and fed to the Yeast');if(t.dead){const y=ents.find(a=>a.type==='ee24'&&!a.dead);if(y){y.hunger=100;say(y,'*nom* (thanks, spider)');}}}}else wanderIn(e,dt,e.home,30);return;}
- case 'ee24':{e.hunger=Math.max(0,e.hunger-dt*.6);
+ case 'ee24':{e.hunger=Math.max(0,e.hunger-dt*.5);
   if(e.yeastMode){const t=hunt(e,dt,50*T,250);if(t&&dist(e,t)<e.r+t.r+8){yeastEat(e,t);e.yeastMode=false;msg('E24 ate someone and calmed down... but it\'s loose!','#ffcf7a');}else if(!t)wanderRooms(e,dt,['hall'],120);return;}
   if(!isOut(e)&&e.hunger<25&&!home.door2.broken&&Math.random()<dt*.02){breakCell(home,0);alarm('E24 got too hungry and ATE ITS WAY OUT!');}
   {const y=yeastLure(e,14*T);if(y){if(!e.lureSaid||gameT-e.lureSaid>6){e.lureSaid=gameT;say(e,'*sniff sniff* YEAST?!',2);}goTo(e,y.x,y.y,dt,e.speed*1.25);
@@ -991,7 +991,7 @@ function updPlayerAnom(e,dt){const busy=uiOpen()||e.sleep>0||e.cage>0||e.stabT>0
  if(e.type==='ee3'){e.alive+=dt;if(e.alive>=15){e.alive=0;earn(1,'Spikester survived another 15s');}}
  if(e.bake){if(e.sleep>0)e.sleep=0;updBake(e,dt);return;}
  if(e.wall){e.wall.t+=dt;if(e.wall.t>=6){e.wall=null;wallPrank(e);}return;}
- if(['ee9','ee12','ee3','ee42'].includes(e.type))e.hunger=Math.max(0,e.hunger-dt*.25);
+ if(['ee9','ee12','ee3','ee42'].includes(e.type))e.hunger=Math.max(0,e.hunger-dt*.5);
  if(['ee24','ee12','ee9','ee3','ee42'].includes(e.type)){for(const p of pickups){if(dist(p,e)>e.r+14||(p.fresh||0)>gameT)continue;if(e.type==='ee24'||(e.type==='ee9'?p.pranked:accepts(e,p.item))){anomEats(e,p);if(e.type==='ee9')say(e,'*nom* hehehe');break;}else if(e.type==='ee9'&&!p.warned){p.warned=1;msg('Prank your food first (click it), then eat it.');}}}
  if(e.roarT>0)e.roarT-=dt;if(e.roarCd>0)e.roarCd-=dt;
  if(pressed.has('h')&&['ee24','ee12','ee9','ee3','ee42'].includes(e.type)){if(e.hunger>50)msg('You can only roar when you\'re hungry (hunger 50% or less).');else if(e.roarCd>0)msg('Catch your breath ('+Math.ceil(e.roarCd)+'s).');else{e.roarT=4;e.roarCd=8;e.roared=true;tone(90,.5,'sawtooth',.08,-30);msg(e.type==='ee3'?'😤 ARGH! Everyone knows you\'re hungry now.':'😡 You ROARED. Everyone knows you want food now.','#ffcf7a');}}
