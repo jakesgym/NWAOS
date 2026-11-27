@@ -431,11 +431,12 @@ body.gated{overflow:hidden}
 .acct-btn{font-family:var(--font-title);font-weight:900;font-size:.6rem;background:var(--yellow,#ffd84d);color:var(--ink);border:3px solid var(--ink);border-radius:20px;padding:7px 12px;cursor:pointer;order:3;flex:0 0 auto;max-width:44vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-shadow:3px 3px 0 var(--ink)}
 .acct-btn.in{background:#bdf5c8}
 .acct-btn{display:flex;align-items:center;gap:6px}
-.acct-btn:has(.acct-badges){max-width:min(62vw,560px)}
+.acct-btn:has(.acct-badges){max-width:min(62vw,560px);border-radius:16px;padding-top:5px;padding-bottom:5px}
 .acct-name{overflow:hidden;text-overflow:ellipsis;min-width:0}
-.acct-badges{display:flex;gap:2px;flex:0 1 auto;min-width:0;overflow:hidden}
-.acct-badges img{height:22px;width:auto;max-width:30px;object-fit:contain;flex:0 0 auto}
-@media (max-width:820px){.acct-btn:has(.acct-badges){max-width:38vw;flex-wrap:wrap;justify-content:center;row-gap:4px;border-radius:14px}.acct-badges{flex-wrap:wrap;flex-basis:100%;justify-content:center}.acct-badges img{height:15px;max-width:20px}}
+.acct-badges{display:grid;grid-template-columns:repeat(var(--cols,6),auto);gap:2px;flex:0 0 auto;align-items:center;justify-items:center}
+.acct-badges img{height:20px;width:auto;max-width:26px;object-fit:contain}
+.acct-badges.rows img{height:16px;max-width:22px}
+@media (max-width:820px){.acct-btn:has(.acct-badges){max-width:38vw;flex-wrap:wrap;justify-content:center;row-gap:4px;border-radius:14px}.acct-badges{flex-basis:100%;justify-content:center}.acct-badges img,.acct-badges.rows img{height:14px;max-width:19px}}
 .acct-pic{width:22px;height:22px;border-radius:5px;border:2px solid var(--ink);object-fit:cover;background:#fff}
 #profileDialog .own-only{display:none}
 #profileDialog:has(#profOwn:not([hidden])) .own-only{display:inline-block}
@@ -1578,7 +1579,7 @@ function updateAccountUI() {
   if (ME) {
     const mine = (ME.admin || ME.status === 'approved') ? badgesOf(ME.uid) : [];
     b.innerHTML = `<img class="acct-pic" src="${pfpSrc(myPfp())}" alt=""><span class="acct-name">${esc(ME.username)}</span>` +
-      (mine.length ? `<span class="acct-badges">${mine.map(id => `<img src="${badgeSrc(id)}" alt="" title="${esc(badgeById(id).name)}">`).join('')}</span>` : '');
+      (mine.length ? `<span class="acct-badges ${mine.length > 6 ? 'rows' : ''}" style="--cols:${mine.length <= 6 ? mine.length : Math.min(8, Math.ceil(mine.length / 3))}">${mine.map(id => `<img src="${badgeSrc(id)}" alt="" title="${esc(badgeById(id).name)}">`).join('')}</span>` : '');
     b.title = mine.length ? ME.username + ' — ' + mine.length + ' badge' + (mine.length > 1 ? 's' : '') : ME.username;
   }
 }
