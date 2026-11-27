@@ -2212,6 +2212,8 @@ const TTT = {
     { id: 'gd', name: 'GD', price: 5 },
     { id: 'skibidi', name: 'Skibidi', price: 25 },
     { id: 'floating-text', name: 'Floating Text', creatorOnly: true, special: true },   // creator, or anyone given it
+    // only these accounts (by account id, so it keeps working if they change their username): piece2763, bob, Tregster
+    { id: 'piece2763', name: 'Piece 2763', onlyFor: ['Jw8Q90FYWfWETAzSNZtvkHYNrya2', 'KdFwcEPy3RadC3UzGCALIWHLUP53', 'Diw3uXa5GehR5qo2zX38kBDcN9y2'] },
   ],
   winCoins: { easy: 3, medium: 4, hard: 5 },        // free coins for beating a level
   orbPower: 20,                                      // HEIGHTS a power orb lasts (Endless only); fades for the last 3
@@ -2252,6 +2254,7 @@ const hasSpecial = () => !!(ME && (DB.profiles[ME.uid] || {}).special);
 function tttUnlocked(c, P = tttProgress()) {
   if (isAdmin()) return true;                    // the creator can play as anyone
   if (c.creatorOnly) return !!c.special && hasSpecial();
+  if (c.onlyFor) return !!ME && c.onlyFor.includes(ME.uid);
   if (c.price) return P.bought.includes(c.id);
   if (!c.unlock) return true;
   if (c.unlock.beat) return !!P.beat[c.unlock.beat];
@@ -2264,7 +2267,7 @@ function tttImg(src) { if (!tttImgs[src]) { const i = new Image(); i.src = src; 
 
 function tttRenderSetup() {
   const P = tttProgress();
-  const list = TTT.climbers.filter(c => (!c.creatorOnly || isAdmin() || (c.special && hasSpecial())) && (!c.secret || tttUnlocked(c, P)));
+  const list = TTT.climbers.filter(c => (!c.creatorOnly || isAdmin() || (c.special && hasSpecial())) && ((!c.secret && !c.onlyFor) || tttUnlocked(c, P)));
   if (!tttUnlocked(TTT.climbers.find(c => c.id === TTT.pick.climber), P)) TTT.pick.climber = 'sweater';
   $('#tttCoins').textContent = P.coins.toLocaleString();
   const hasDiamond = (P.bought || []).includes('diamond');
@@ -2272,7 +2275,7 @@ function tttRenderSetup() {
     ${hasDiamond ? '<span class="form-note">✓ yours! (Rich badge)</span>' : `<button type="button" class="btn small yellow" id="buyDiamond"><img class="coin-ico" src="images/ttt/coin.png" alt=""> 100 · BUY</button>`}`;
   $('#tttChars').innerHTML = list.map(c => {
     const open = tttUnlocked(c, P);
-    const label = c.creatorOnly ? (isAdmin() ? 'creator only' : '✨ just for fun: no coins or badges') : open ? '' : c.price ? `<img class="coin-ico" src="images/ttt/coin.png" alt=""> ${c.price} · BUY` : '🔒 ' + esc(c.how);
+    const label = c.creatorOnly ? (isAdmin() ? 'creator only' : '✨ just for fun: no coins or badges') : c.onlyFor ? '⭐ only a few accounts' : open ? '' : c.price ? `<img class="coin-ico" src="images/ttt/coin.png" alt=""> ${c.price} · BUY` : '🔒 ' + esc(c.how);
     return `<button type="button" data-climber="${c.id}" aria-pressed="${open && c.id === TTT.pick.climber}"
       class="${c.creatorOnly ? (isAdmin() ? 'creator-only' : 'climber-special') : ''} ${open ? '' : 'locked'} ${!open && c.price ? 'shop' : ''}">
       <img src="${TTT.src(c.id)}" alt="">${esc(c.name)}${label ? `<small>${label}</small>` : ''}</button>`;
@@ -2443,7 +2446,7 @@ function tttUpdate(G, dt) {
 function tttEnd(G, won) {
   G.state = 'over';
   const h = Math.floor(won ? G.mode.goal : G.alt);
-  const P = tttProgress(), before = TTT.climbers.filter(c => !c.creatorOnly && !c.price && tttUnlocked(c, P)).map(c => c.id);
+  const P = tttProgress(), before = TTT.climbers.filter(c => !c.creatorOnly && !c.onlyFor && !c.price && tttUnlocked(c, P)).map(c => c.id);
   // Floating Text (given by the creator) is just for fun: those runs give no coins, scores, unlocks or badge progress
   const counts = !(G.climber === 'floating-text' && !isAdmin());
   const bonus = won && counts ? (TTT.winCoins[G.mode.id] || 0) : 0;
@@ -2455,7 +2458,7 @@ function tttEnd(G, won) {
     P.knocked = (P.knocked || 0) + (G.knocks || 0);    // for the Pole Wrecker badge
     tttSaveProgress(P);
   }
-  const fresh = TTT.climbers.filter(c => !c.creatorOnly && !c.price && tttUnlocked(c, P) && !before.includes(c.id)).map(c => c.name);
+  const fresh = TTT.climbers.filter(c => !c.creatorOnly && !c.onlyFor && !c.price && tttUnlocked(c, P) && !before.includes(c.id)).map(c => c.name);
   const who = TTT.climbers.find(c => c.id === G.climber).name;
   const coinLine = !counts ? ' ✨ Floating Text runs are just for fun: no coins, scores or badges.' : (G.coinCount || bonus) ? ` <img class="coin-ico" src="images/ttt/coin.png" alt=""> +${G.coinCount + bonus} coin${G.coinCount + bonus === 1 ? '' : 's'}${bonus ? ` (${bonus} for beating ${G.mode.name})` : ''}.` : '';
   const unlockLine = fresh.length && !isAdmin() ? ` 🔓 UNLOCKED: ${fresh.join(', ')}!` : '';
