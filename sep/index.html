@@ -59,6 +59,7 @@ input[type=color]{padding:2px;width:42px;height:32px}
 .swl{display:inline-flex;align-items:center;gap:5px;margin:4px 10px 4px 0;flex-wrap:wrap}.sw{width:26px;height:26px;border-radius:50%;border:2px solid #fff4;cursor:pointer;padding:0}.sw.on{border:3px solid #ffe14a;box-shadow:0 0 6px #ffe14a}
 .acct{background:#0f141b;border:1px solid #263142;border-radius:10px;padding:8px 12px;margin-bottom:6px}.acct .note{color:#8494a6;font-size:12.5px;margin:4px 0}.acct p{margin:5px 0}.acct a{color:#7fc4ff}.qlist{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
 #bar58{position:fixed;top:10px;left:0;right:0;margin:0 auto;width:fit-content;display:none;gap:6px;z-index:30;background:#0d1117e6;border:1px solid #3b2a55;border-radius:12px;padding:6px;flex-wrap:wrap;justify-content:center;max-width:96vw}.b58{background:#1b2230;color:#e8ecf1;border:1px solid #2d3645;border-radius:9px;padding:4px 9px;font:600 11px system-ui;display:flex;flex-direction:column;align-items:center;min-width:56px;cursor:pointer;touch-action:none}.b58 b{font-size:20px}.b58.on{background:#3b2a55;border-color:#b46bff;box-shadow:0 0 8px #b46bff88}#col58{width:44px;height:48px;border:none;background:none;padding:0;cursor:pointer}#trash58{position:fixed;right:24px;bottom:110px;width:96px;height:96px;border-radius:18px;background:#2a1220e6;border:3px dashed #ff5a7a;display:none;flex-direction:column;align-items:center;justify-content:center;font-size:44px;z-index:30;pointer-events:none;transition:transform .1s}#trash58 small{font:600 10px system-ui;color:#ffb3c2}#trash58.hot{transform:scale(1.18);background:#5a1230}
+#useBar{position:fixed;left:0;right:0;margin:0 auto;bottom:84px;width:fit-content;max-width:94vw;display:none;flex-wrap:wrap;gap:6px;justify-content:center;z-index:25}.useb{background:rgba(255,179,71,.95);color:#1a1206;border:none;border-radius:9px;padding:7px 12px;font:700 13px system-ui;cursor:pointer;touch-action:none;box-shadow:0 2px 8px #0006}.useb:not(.first){background:rgba(255,214,150,.92)}.useb kbd{background:#1a1206;color:#ffd27a;border-radius:4px;padding:0 4px;font-size:11px}
 </style>
 </head>
 <body>
@@ -80,7 +81,7 @@ input[type=color]{padding:2px;width:42px;height:32px}
 <div id="escape" class="ov"><div class="panel dlg" id="escapeP"></div></div>
 <div id="pbar" style="position:fixed;right:14px;top:50%;transform:translateY(-50%);display:none;z-index:5;background:rgba(12,16,21,.9);border:1px solid #2b3440;border-radius:12px;padding:10px;width:200px;font:13px system-ui;color:#e8ecf1"></div>
 <div id="testdlg" class="ov"><div class="panel dlg" id="testP"></div></div>
-<div id="notedlg" class="ov"><div class="panel dlg"><h2>Write on yourself</h2><p style="color:#9fb0c2">Everyone will be able to read it.</p><div class="row"><input id="noteIn" maxlength="60" placeholder="e.g. TWIG IS ABOUT TO BLOW!" style="flex:1"><button class="btn" id="noteGo">Write</button></div><div class="row" style="margin-top:10px"><button class="btn sec" onclick="closeOv('notedlg')">Cancel (Esc)</button></div></div></div>
+<div id="notedlg" class="ov"><div class="panel dlg"><h2>Draw on yourself</h2><p style="color:#9fb0c2">Everyone will see your drawing. When you stick a new note, the drawing stays behind on the old one.</p><canvas id="drawPad" width="240" height="240" style="background:#ffe45c;border-radius:8px;touch-action:none;display:block;margin:0 auto;cursor:crosshair;position:static;width:240px;height:240px;inset:auto"></canvas><div class="row" style="gap:6px;justify-content:center;margin-top:8px" id="padCols"></div><div class="row" style="margin-top:10px;justify-content:center"><button class="btn" id="noteGo">Stick it on</button><button class="btn sec" id="padClear">Clear</button><button class="btn sec" onclick="closeOv('notedlg')">Cancel (Esc)</button></div></div></div>
 
 <script>
 'use strict';
@@ -178,7 +179,7 @@ async function acctInit(){
  try{const b='https://www.gstatic.com/firebasejs/10.12.2/';await withTimeout(loadScript(b+'firebase-app-compat.js'),15000);
   await withTimeout(Promise.all([loadScript(b+'firebase-auth-compat.js'),loadScript(b+'firebase-database-compat.js'),loadScript(b+'firebase-firestore-compat.js')]),15000);}
  catch(e){ACCT.state='offline';menuRefresh();return;}
- try{const alt=localStorage.getItem('nwaos_mode')==='alt';const main=firebase.initializeApp(FB_CFG);ACCT.mainAuth=main.auth();ACCT.app=alt?firebase.initializeApp(FB_CFG,'alt'):main;ACCT.auth=ACCT.app.auth();
+ try{const alt=localStorage.getItem('nwaos_mode')==='alt';const main=firebase.initializeApp(FB_CFG);ACCT.mainAuth=main.auth();ACCT.app=alt?firebase.initializeApp(FB_CFG,'alt'):main;ACCT.auth=ACCT.app.auth();ACCT.altMode=alt;if(alt)ACCT.mainAuth.onAuthStateChanged(u=>{ACCT.creatorBehind=!!u&&(u.email||'').toLowerCase()===ADMIN_EMAIL;menuRefresh();});
   ACCT.be=rtdbBE(ACCT.app.database());ACCT.auth.onAuthStateChanged(u=>onAcct(u));}
  catch(e){console.warn(e);ACCT.state='offline';menuRefresh();}}
 async function onAcct(u){
@@ -212,6 +213,18 @@ async function passwordSignIn(name,pw){name=(name||'').trim();if(!/^[A-Za-z0-9_]
  let login=name.toLowerCase();try{const t=await withTimeout(firebase.app().firestore().collection('usernames').doc(login).get(),8000);if(t.exists&&t.data().login)login=t.data().login;}catch(e){}
  try{if(ACCT.uid)clearSiteGames();localStorage.removeItem('nwaos_mode');await ACCT.mainAuth.signInWithEmailAndPassword(login+'@'+ACCT_DOMAIN,pw);if(ACCT.auth!==ACCT.mainAuth)location.reload();return'';}
  catch(e){const c=e&&e.code||'';return /wrong-password|invalid-credential|user-not-found|invalid-login/.test(c)?'Wrong username or password.':c==='auth/too-many-requests'?'Too many tries. Wait a bit.':'Couldn\'t log in. Check your internet.';}}
+const ALT_EMAIL='definitelynotadmin273@'+ACCT_DOMAIN;
+function switchAcct(mode){clearSiteGames();if(mode==='alt')localStorage.setItem('nwaos_mode','alt');else localStorage.removeItem('nwaos_mode');location.reload();}
+async function toAlt(pw){if(QS.get('fake')){location.search='?fake=DefinitelyNotAdmin273';return'';}
+ const alt=firebase.apps.find(a=>a.name==='alt')||firebase.initializeApp(FB_CFG,'alt'),aa=alt.auth();
+ const u=await new Promise(res=>{const stop=aa.onAuthStateChanged(x=>{stop();res(x);});});
+ if(u&&(u.email||'').toLowerCase()===ALT_EMAIL){switchAcct('alt');return'';}
+ if(!pw){try{const d=await withTimeout(firebase.app().firestore().collection('secret').doc('alt').get(),8000);if(d.exists&&d.data().pw)pw=d.data().pw;}catch(e){}}
+ if(!pw)return'PW';try{await aa.signInWithEmailAndPassword(ALT_EMAIL,pw);switchAcct('alt');return'';}catch(e){return'Wrong password for DefinitelyNotAdmin273.';}}
+async function quickSetupGame(pin){const u=ACCT.auth&&ACCT.auth.currentUser;if(!u)return'Sign in first.';
+ try{const name='q_'+u.uid,app=firebase.apps.find(a=>a.name===name)||firebase.initializeApp(FB_CFG,name);await app.auth().updateCurrentUser(u);
+  const all=nwStore.get('quick',[]).filter(q=>q&&q.uid);const old=all.find(q=>q.uid===u.uid);const l=all.filter(q=>q.uid!==u.uid);l.push({uid:u.uid,name:ACCT.name,pfp:old&&old.pfp||nwStore.get('pfp',undefined),pin:await pinHash(u.uid,pin)});nwStore.set('quick',l);nwStore.set('pinfail_'+u.uid,null);return'';}
+ catch(e){console.warn(e);return'Couldn\'t turn on quick sign-in. Try again!';}}
 function acctSignOut(){if(QS.get('fake')){location.search='';return;}if(ACCT.auth)ACCT.auth.signOut();}
 
 // ---- turning game objects into data and back ----
@@ -280,7 +293,7 @@ function netLeave(silent){if(!NET.on)return;try{for(const f of NET.unsub)f();}ca
 function resetWorld(){TPAINT={};ents=[];bullets=[];parts=[];messes=[];pickups=[];respawnQ=[];openAll=false;alarmT=0;
  for(const d of doors){d.paint=null;d.open=0;d.broken=false;d.jelly=false;d.hold=false;d.cardT=0;d.repairAt=0;d.opener=null;d.pendT=0;d.pendBy=null;}grid.set(ORIG);mapDirty=true;for(const t of TRAYS){t.food=null;t.t=0;t.by=null;}}
 function repopulate(){for(const k in AD)if(k!=='ee58'&&!AD[k].nospawn)spawnAnomNPC(k);const want={dclass:6,scientist:3,guard:4,janitor:2};for(const r in want){const have=ents.filter(e=>e.kind==='h'&&!e.isPlayer&&!e.dead&&e.role===r).length;for(let i=have;i<want[r];i++)spawnNPC(r);}}
-function earnTo(e,n,why){if(!e)return;if(e===P)earn(n,why);else if(e.remote&&NET.host&&!NET.quiet)NET.ref('inbox/'+e.remote).push({earn:[n,why]});}
+function earnTo(e,n,why){if(!e)return;if(e===P)earn(n,why);else if(e.remote&&NET.on&&!NET.quiet)NET.ref('inbox/'+e.remote).push({earn:[n,why]});}
 function msgTo(e,t,c){if(!e)return;if(e===P)msg(t,c);else if(e.remote&&NET.host&&!NET.quiet)NET.ref('inbox/'+e.remote).push({m:[t,c||null]});}
 function asActor(g,fn,quiet){const oe=earn,om=msg,oq=NET.quiet;if(quiet){earn=()=>{};msg=()=>{};NET.quiet=true;}else{earn=(n,w)=>earnTo(g,n,w);msg=(t,c)=>msgTo(g,t,c);}try{fn();}catch(err){console.warn('net act',err);}finally{earn=oe;msg=om;NET.quiet=oq;}}
 function rewardTo(p,t){if(p===P)reward(p,t);else if(p.remote&&NET.host&&!NET.quiet)asActor(p,()=>reward(p,t));}
@@ -324,7 +337,7 @@ function patchP(f){const src=f.lastSrc!==undefined?decV(f.lastSrc):null,cause=f.
  if(f.hp&&f.hp.d){if(f.hp.d<0)hurt(P,-f.hp.d,src,cause||'hurt');else P.hp=Math.min(P.maxhp,P.hp+f.hp.d);}
  if(f.dead&&!P.dead)kill(P,decV(f.killedBy)||src,decV(f.deathCause)||cause||'killed');}
 function publishMe(){const me=NET.ref('players/'+NET.uid);const up={};
- if(P&&!P.dead&&mode==='play'){const st=serEnt(P,true);st.lid=P.lid;st.name=S.name;const b=NET.pubBase;if(b.lid!==st.lid){up.st=st;}else{for(const k in st)if(st[k]!==b[k])up['st/'+k]=st[k];for(const k in b)if(!(k in st))up['st/'+k]=null;}NET.pubBase=st;}
+ if(P&&!P.dead&&mode==='play'){const st=serEnt(P,true);st.lid=P.lid;st.name=P.kind==='h'?P.name:S.name;const b=NET.pubBase;if(b.lid!==st.lid){up.st=st;}else{for(const k in st)if(st[k]!==b[k])up['st/'+k]=st[k];for(const k in b)if(!(k in st))up['st/'+k]=null;}NET.pubBase=st;}
  else if(NET.pubBase.lid!==undefined||!NET.pubBase.menu){up.st={dead:true,lid:NET.pubBase.lid||'-'};NET.pubBase={menu:true,lid:NET.pubBase.lid};}
  const sh=NET.myShots.filter(s=>Date.now()-s[6]<1500);NET.myShots=sh;up.sh=sh.length?sh:null;up.n=S.name;up.at=Date.now();NET.v=(NET.v||0)+1;up.v=NET.v;me.update(up);}
 function noteShots(e,list){if(!NET.on||!list.length)return;const out=list.map(b=>[++NET.shotSeq,Math.round(b.x),Math.round(b.y),Math.round(b.vx),Math.round(b.vy),b.kind,Date.now()]);if(e===P)NET.myShots.push(...out);else if(NET.host)NET.shotsOut.push(...out);}
@@ -415,7 +428,11 @@ function onlineMenuHTML(){
   if(ql.length)h+=`<div class="qlist">${ql.map(q=>`<button class="btn sec" data-quick="${q.uid}">⚡ ${esc(q.name)}</button>`).join('')}</div><div id="pinBox" style="display:none;margin:6px 0"><input id="pinIn" inputmode="numeric" maxlength="4" placeholder="4-number code" style="width:120px"> <button class="btn" id="pinGo">Go</button></div>`;
   h+=`<div class="row" style="gap:6px;flex-wrap:wrap"><input id="lgU" placeholder="nwaos.com username" maxlength="20" autocapitalize="off" style="width:170px"><input id="lgP" type="password" placeholder="password" style="width:130px"><button class="btn" id="lgGo">Log in</button></div>
    <p class="note">No account? <a href="/" target="_blank">Make one on nwaos.com</a>.</p>`;}
- else{h+=`<p>Signed in as <b>${esc(ACCT.name)}</b>${S.admin?' <span style="color:#b46bff">(creator: admin + E58)</span>':''} · <a href="#" id="lgOut">sign out</a><br><span class="note">${ACCT.dbOk===false?'⚠ Cloud saves aren\'t switched on yet, so progress saves on this device only.':'☁ Progress saves to your account.'}</span></p>`;
+ else{const qOn=quickList().some(q=>q.uid===ACCT.uid),isAlt=ACCT.email===ALT_EMAIL;
+  h+=`<div class="row" style="gap:6px;flex-wrap:wrap;margin:4px 0">${!QS.get('fake')?`<button class="btn sec" id="qSet">⚡ ${qOn?'Change my':'Set a'} 4-number quick sign-in code</button>`:''}${S.admin&&!isAlt?'<button class="btn sec" id="toAlt">🕶 Switch to DefinitelyNotAdmin273</button>':''}${(isAlt&&(ACCT.creatorBehind||QS.get('fake')))?'<button class="btn sec" id="toMain">👑 Switch back to NWAOSmaker372</button>':''}</div>
+  <div id="qBox" style="display:none;margin:4px 0"><input id="qPin1" inputmode="numeric" maxlength="4" placeholder="4 numbers" style="width:100px"> <input id="qPin2" inputmode="numeric" maxlength="4" placeholder="again" style="width:80px"> <button class="btn" id="qGo">Save</button></div>
+  <div id="altBox" style="display:none;margin:4px 0"><input id="altPw" type="password" placeholder="DefinitelyNotAdmin273 password" style="width:230px"> <button class="btn" id="altGo">Switch</button></div>`;
+  h+=`<p>Signed in as <b>${esc(ACCT.name)}</b>${S.admin?' <span style="color:#b46bff">(creator: admin + E58)</span>':''} · <a href="#" id="lgOut">sign out</a><br><span class="note">${ACCT.dbOk===false?'⚠ Cloud saves aren\'t switched on yet, so progress saves on this device only.':'☁ Progress saves to your account.'}</span></p>`;
   if(NET.on){const n=NET.count();h+=`<p>🟢 Online in <b>${roomName(NET.room)}</b>${NET.room!=='main'?` (code <b style="letter-spacing:2px">${NET.room}</b>)`:''} · ${n} player${n===1?'':'s'} · ${NET.host?'you\'re running it':'connected'} <button class="btn sec" id="netLeave">Leave</button></p>`;
    const names=Object.entries(NET.states).filter(([u,s])=>s&&s.n).map(([u,s])=>esc(s.n)+(s.st&&!s.st.dead?' ('+(s.st.kind==='a'?(AD[decV(s.st.type)]||{}).name||'anomaly':decV(s.st.role))+')':' (picking)'));h+=`<p class="note">${names.join(' · ')}</p>`;}
   else h+=`<div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn" id="netMain">🌐 Join the main facility</button><button class="btn sec" id="netNew">＋ New empty facility</button><input id="netCode" placeholder="code" maxlength="8" style="width:80px;text-transform:uppercase"><button class="btn sec" id="netJoin">Join code</button></div><p class="note">Or just pick a role below to play single player.</p>`;}
@@ -428,6 +445,11 @@ function bindOnlineMenu(m){const $=id=>document.getElementById(id);let quid=null
  const lg=async()=>{$('lgGo').disabled=true;const r=await passwordSignIn($('lgU').value,$('lgP').value);NET.err=r;menuRefresh();};
  if($('lgGo'))$('lgGo').onclick=lg;if($('lgP'))$('lgP').onkeydown=e=>{if(e.key==='Enter')lg();};
  if($('lgOut'))$('lgOut').onclick=e=>{e.preventDefault();netLeave();acctSignOut();};
+ if($('qSet'))$('qSet').onclick=()=>{$('qBox').style.display='block';$('qPin1').focus();};
+ if($('qGo'))$('qGo').onclick=async()=>{const a=$('qPin1').value.trim(),b=$('qPin2').value.trim();if(!/^\d{4}$/.test(a)){NET.err='Type exactly 4 numbers.';menuRefresh();return;}if(a!==b){NET.err='The codes didn\'t match. Try again!';menuRefresh();return;}const r=await quickSetupGame(a);NET.err=r||'⚡ Quick sign-in is on for this device! (Works on nwaos.com too.)';menuRefresh();};
+ if($('toAlt'))$('toAlt').onclick=async()=>{const r=await toAlt();if(r==='PW'){$('altBox').style.display='block';$('altPw').focus();}else if(r){NET.err=r;menuRefresh();}};
+ if($('altGo'))$('altGo').onclick=async()=>{const r=await toAlt($('altPw').value);if(r){NET.err=r;menuRefresh();}};
+ if($('toMain'))$('toMain').onclick=()=>{if(QS.get('fake')){location.search='?fake=NWAOSmaker372';return;}switchAcct('main');};
  if($('netMain'))$('netMain').onclick=()=>netJoin('main');
  if($('netNew'))$('netNew').onclick=()=>{const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let id='';for(let i=0;i<5;i++)id+=c[Math.floor(Math.random()*c.length)];netJoin(id);};
  if($('netJoin'))$('netJoin').onclick=()=>{const v=($('netCode').value||'').trim().toUpperCase();if(!/^[A-Z0-9]{4,8}$/.test(v)){NET.err='Type the facility code your friend sees.';menuRefresh();return;}netJoin(v);};
@@ -472,7 +494,7 @@ let openAll=false;
 function solidTile(tx,ty){if(tx<0||ty<0||tx>=W||ty>=H)return true;const g=grid[ix(tx,ty)];if(g===WALL||g===GLASS)return true;if(g===DOOR){const d=doors[doorMap[ix(tx,ty)]];return !d.broken&&d.open<.9;}return false;}
 function hitsSolid(x,y,r){const x0=Math.floor((x-r)/T),x1=Math.floor((x+r)/T),y0=Math.floor((y-r)/T),y1=Math.floor((y+r)/T);for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){if(!solidTile(tx,ty))continue;const cx=clamp(x,tx*T,tx*T+T),cy=clamp(y,ty*T,ty*T+T);if((x-cx)*(x-cx)+(y-cy)*(y-cy)<r*r)return true;}return false;}
 function move(e,dx,dy){if(e.ghost){e.x=clamp(e.x+dx,T,(W-1)*T);e.y=clamp(e.y+dy,T,(H-1)*T);return;}if(dx&&!hitsSolid(e.x+dx,e.y,e.r))e.x+=dx;if(dy&&!hitsSolid(e.x,e.y+dy,e.r))e.y+=dy;}
-function canOpen(e,d){if(d.broken||openAll)return true;if(e.kind!=='h'||e.sleep>0||e.cage>0||e.duck||e.cuffedBy||e.escortMe)return false;if(e.isPlayer&&e.role==='dclass')return false;if(e.testPass&&e.testPass.has(d.room))return true;if(e.outerPass&&e.outerPass===d.room&&!d.inner)return true;if(e.isPlayer&&!e.sticky)return d.level===0||(e.items[e.sel]==='keycard'&&e.card>=d.level);return e.card>=d.level;}
+function canOpen(e,d){if(d.broken||openAll)return true;if(e.cuffedBy&&!e.cuffedBy.dead&&dist(e,e.cuffedBy)<4*T&&e.kind==='h'&&!(e.sleep>0))return true;if(e.kind!=='h'||e.sleep>0||e.cage>0||e.duck||e.cuffedBy||e.escortMe)return false;if(e.isPlayer&&e.role==='dclass'&&!e.rogue&&!(e.testPass&&e.testPass.has(d.room)))return false;if(e.testPass&&e.testPass.has(d.room))return true;if(e.outerPass&&e.outerPass===d.room&&!d.inner)return true;if(e.isPlayer&&!e.sticky)return d.level===0||(e.items[e.sel]==='keycard'&&e.card>=d.level);return e.card>=d.level;}
 function intends(e,d){if(e.isPlayer)return Math.hypot(e.x-d.cx,e.y-d.cy)<T*1.25;if(!e.path)return false;for(let k=0;k<Math.min(5,e.path.length);k++)if(doorMap[e.path[k]]===d.i)return true;return false;}
 function openDoor(d,e){if(d.pair&&d.pair.open>.02&&!d.pair.broken){d.pair.cardT=0;d.pair.hold=false;}d.cardT=5;d.opener=e;tone(880,.08,'sine',.04);}
 
@@ -553,7 +575,7 @@ const AD={
  ee3:{name:'EE3 Spikester',room:'ee3',r:13,hp:150,speed:150,cage:1,play:1,cost:1,food:['sandwich','pizza','meat','lettuce','bread','breadP','breadC'],desc:'Punch, kick, stab. Earns e-bucks for staying alive. Gets hungry (and grumpy).'},
  ee4:{name:'EE4 The Egg',room:'ee4',r:16,hp:1e9,speed:0,inv:1,stat:1},
  ee7:{name:'EE7 Banana Phone',room:'ee7',r:14,hp:1e9,speed:0,inv:1,stat:1},
- ee8:{name:'EE8 Glob',room:'ee8',r:14,hp:800,speed:38,cage:1,food:['lettuce']},
+ ee8:{name:'EE8 Glob',room:'ee8',r:14,hp:800,speed:60,cage:1,food:['lettuce'],play:1,pnpc:1,cost:1,desc:'Cute. Says "Glob!". Leaves goo, eats lettuce. There\'s also an NPC Glob, so there can be two!'},
  ee9:{name:'EE9 The Prankster',room:'ee9',r:14,hp:400,speed:125,play:1,cost:3,food:'any',desc:'Quick prank buttons, 5-second jelly doors, sneak other anomalies into your cell. Needs feeding.'},
  ee10:{name:'E10 Infinite Water Slide',room:'ee10',r:34,hp:1e9,speed:0,inv:1,stat:1},
  ee12:{name:'E12 Emmett',room:'ee12',r:13,hp:200,speed:135,play:1,cost:2,cage:1,food:['meat'],desc:'Emerge into a toothy monster and chomp. Steal the clothes and name of whoever you eat.'},
@@ -567,7 +589,7 @@ const AD={
  ee58:{name:'E58 The Creator',room:null,r:18,hp:1e9,speed:460,inv:1}
 };
 const CLSW={Safe:1,Scaper:1,Euclid:2,Conditional:2,Keter:3};
-const MESS={blood:{n:'blood',c:'#b3121b',p:2},mayo:{n:'mayo spill',c:'#fff1bd',p:3},goo:{n:'Glob goo',c:'#6fb8ff',p:2},bread:{n:'bread',c:'#c8955a',p:2},rubble:{n:'rubble',c:'#6b6157',p:4},corpse:{n:'body',c:'#444',p:3},water:{n:'water',c:'#5fb4ff',p:2},paper:{n:'crumpled note',c:'#ffe45c',p:1}};
+const MESS={blood:{n:'blood',c:'#b3121b',p:2},mayo:{n:'mayo spill',c:'#fff1bd',p:3},goo:{n:'Glob goo',c:'#6fb8ff',p:2},bread:{n:'bread',c:'#c8955a',p:2},rubble:{n:'rubble',c:'#6b6157',p:4},corpse:{n:'body',c:'#444',p:3},water:{n:'water',c:'#5fb4ff',p:2},paper:{n:'crumpled note',c:'#ffe45c',p:1},note:{n:'sticky note',c:'#ffe45c',p:1}};
 const SURN=['Ross','Patel','Nguyen','Okafor','Lind','Moreau','Kato','Silva','Hughes','Bauer','Reyes','Clarke','Novak','Ito'];
 const FIRSTN=['Dave','Marla','Jin','Tomas','Priya','Rex','Oona','Gus','Bea','Hank','Lou','Zed'];
 const EYES=[['Brown','#5a3a1a'],['Green','#3c8a3c'],['Blue','#2f6fd6'],['Grey','#8a8f96'],['Amber','#c8871e']];
@@ -605,7 +627,7 @@ function mkHuman(role,x,y,o){const base={dclass:0,janitor:1,scientist:rint(1,3),
  cd:0,cd2:0,cd3:0,sleep:0,cage:0,blind:0,blindCd:0,cageCd:0,revealT:0,aggro:0,emT:0,emCd:0,stabT:0,tcd:0,hurtT:0,pcd:0,card:base[role],speed:role==='guard'?135:120,hp:role==='scientist'?140:100,maxhp:role==='scientist'?140:100,items:role==='guard'?['gun','tranq']:[],sel:0,aim:0,walk:0,face:0,flags:new Set()},o||{});}
 function mkAnom(type,x,y,o){const d=AD[type];return Object.assign({id:nid++,kind:'a',type,x,y,r:d.r,hp:d.hp,maxhp:d.hp,name:d.name,home:d.room?R[d.room]:null,hx:x,hy:y,speed:d.speed,card:-1,cd:0,cd2:0,cd3:0,sleep:0,cage:0,blind:0,blindCd:0,cageCd:0,revealT:0,aggro:0,emT:0,emCd:0,stabT:0,tcd:0,hurtT:0,pcd:0,hunger:100,timer:60,walk:0,face:0,aim:0,ringT:rnd(25,60),flags:new Set()},o||{});}
 function anomHome(type){const r=R[AD[type].room];if(type==='ee1')return{x:MAYO_C.x,y:MAYO_C.y};const c=roomCenter(r);if(type==='ee10')return{x:c.x,y:c.y-T};return c;}
-function spawnAnomNPC(type){if(AD[type].play||AD[type].nospawn)return;if(P&&!P.dead&&P.type===type)return;if(ents.some(e=>!e.dead&&e.type===type))return;const h=anomHome(type);const a=mkAnom(type,h.x,h.y);ents.push(a);return a;}
+function spawnAnomNPC(type){const pn=AD[type].pnpc;if((AD[type].play&&!pn)||AD[type].nospawn)return;if(!pn&&P&&!P.dead&&P.type===type)return;if(ents.some(e=>!e.dead&&e.type===type&&!(pn&&e.isPlayer)))return;const h=anomHome(type);const a=mkAnom(type,h.x,h.y);ents.push(a);return a;}
 function spawnNPC(role){if(NET.on&&NET.playersIn(role)>=3){respawnQ.push({t:30,fn:()=>spawnNPC(role)});return{};}const r=role==='dclass'?R.dblock:role==='scientist'?R.lab:role==='guard'?R.armory:R.closet;const p=randPt(r,2);const e=mkHuman(role,p.x,p.y);ents.push(e);return e;}
 function initWorld(){for(const k in AD)if(k!=='ee58'&&!AD[k].nospawn)spawnAnomNPC(k);for(let i=0;i<6;i++)spawnNPC('dclass');for(let i=0;i<3;i++)spawnNPC('scientist');for(let i=0;i<4;i++)spawnNPC('guard').card=i<2?4:rint(1,4);for(let i=0;i<2;i++)spawnNPC('janitor');}
 
@@ -621,10 +643,10 @@ function giveKey(e){if(e.isPlayer&&e.kind==='h'&&!e.sticky&&e.card>=1&&!hasItem(
 function breadKind(col){return col==='#c0392b'?'breadR':col==='#8a8f96'?'breadG':'breadP';}
 function itemCol(k){if(!k)return'#c8955a';if(k==='breadR'||k==='meat')return'#c0392b';const kd=ITEMS[k].kind;return kd==='gun'||kd==='melee'||kd==='tranq'||kd==='flame'||kd==='card'||kd==='key'?'#8a8f96':'#c8955a';}
 function makeRogue(e){if(e.rogue||e.role!=='dclass')return;e.rogue=true;if(e.isPlayer){msgTo(e,'🚨 You are now a ROGUE D-class. Guards will shoot you!','#ff6b6b');}}
-function hurt(t,dmg,src,cause){if(!t||t.dead||t.inSlide||t.ghost)return;if(t.kind==='a'&&AD[t.type].inv)return;if(src&&src!==t){if(t.kind==='a'){t.aggro=7;t.aggroBy=src;}if(src.kind==='h'&&src.role==='dclass'&&t.kind==='h'&&t.role!=='dclass')makeRogue(src);if(t.kind==='h'&&t.role==='dclass'&&!t.rogue&&src.kind==='h'&&!t.isPlayer&&src.isPlayer&&src.role==='dclass')makeRogue(src);}
+function hurt(t,dmg,src,cause){if(!t||t.dead||t.inSlide||t.ghost)return;if(t.steven&&!(src&&src.type==='ee1')){puff(t.x,t.y,'#ddd',3,60,.2,2);return;}if(t.kind==='a'&&AD[t.type].inv)return;if(src&&src!==t){if(t.kind==='a'){t.aggro=7;t.aggroBy=src;}if(src.kind==='h'&&src.role==='dclass'&&t.kind==='h'&&t.role!=='dclass')makeRogue(src);if(t.kind==='h'&&t.role==='dclass'&&!t.rogue&&src.kind==='h'&&!t.isPlayer&&src.isPlayer&&src.role==='dclass')makeRogue(src);}
  if(t.job&&t.job.type==='test'&&src===t.job.a&&(t.job.act==='blue'||t.job.act==='pet'))finishTest(t,true);
  t.lastCause=cause||null;t.lastSrc=src||null;t.hp-=dmg;t.hurtT=.18;puff(t.x,t.y,'#c0141a',3,80,.35,2);if(t===P)SFX.hit();if(t.hp<=0)kill(t,src,cause);}
-function kill(t,src,cause){if(t.dead)return;if(t.job&&t.job.type==='test'&&src&&src===t.job.a)finishTest(t,true);t.dead=true;t.hp=0;t.deathCause=cause||'killed';t.killedBy=src||null;t.lastCause=cause||null;t.lastSrc=src||null;if(t.job&&t.job.type==='test'&&t.job.by&&t.job.by.isPlayer&&!t.job.by.dead){earnTo(t.job.by,3,'learned something when '+t.name+' died in your test');}if(t.carry){t.carry.carried=null;t.carry=null;}
+function kill(t,src,cause){if(t.dead)return;if(t.steven&&!(src&&src.type==='ee1')&&!/trash/.test(cause||'')&&t.hp>0){return;}if(t.job&&t.job.type==='test'&&src&&src===t.job.a)finishTest(t,true);t.dead=true;t.hp=0;t.deathCause=cause||'killed';t.killedBy=src||null;t.lastCause=cause||null;t.lastSrc=src||null;if(t.job&&t.job.type==='test'&&t.job.by&&t.job.by.isPlayer&&!t.job.by.dead){earnTo(t.job.by,3,'learned something when '+t.name+' died in your test');}if(t.carry){t.carry.carried=null;t.carry=null;}
  if(src&&src.kind==='a'&&src!==t)src.kills=(src.kills||0)+1;
  if(cause&&cause.includes('inside out'))addMess(t.x,t.y,'blood');
  else if(t.kind==='h'&&!/eaten|chomp|slide|bread|flattened/.test(cause||''))addMess(t.x,t.y,'corpse',{role:t.role,col:t.color,skin:t.skin||'#151515',steven:t.steven,sticky:t.sticky,hx:rnd(18,30)*(Math.random()<.5?-1:1),hy:rnd(-8,10),t0:gameT,rot:rnd(-.4,.4)});
@@ -640,7 +662,7 @@ function kill(t,src,cause){if(t.dead)return;if(t.job&&t.job.type==='test'&&src&&
  if(t.kind==='h'&&!t.isPlayer&&P&&dist(t,P)<12*T)msg(t.name+' was '+(cause||'killed')+'.','#ff9a9a');}
 function reward(p,t){
  if(t.type==='ee8'){p.sad=true;if(p===P)msg('💙 You killed Glob. You feel terrible. (Sad until you die or leave.)','#7fb8ff');}
- if(p.kind==='a'){if(t.kind==='h'){earn(5,'got '+t.name);if(p.type==='ee3'&&p.hunger<=25){earn(5,'starving bonus');p.hunger=Math.min(100,p.hunger+40);say(p,'*munch*');}}return;}
+ if(p.kind==='a'){if(t.kind==='h'){earn(5,'got '+t.name);if(p.type==='ee3'&&p.hunger<=25&&!foodWaiting(p)){earn(5,'starving bonus');p.hunger=Math.min(100,p.hunger+40);say(p,'*munch*');}}return;}
  if(t.kind==='a'){if(isOut(t)&&(t.kills||0)>=3)earn(5,'stopped a rampaging '+t.name+' (caging it pays more!)');else earn(-1,'Don\'t do that! We CONTAIN anomalies. Cage them!');return;}
  if(p.role==='dclass'){if(t.role==='guard'){earn(10,'took down a guard');if(t.card>p.card){p.card=t.card;msg('💳 Stole a level '+t.card+' keycard!','#b9f');}}return;}
  if(t.role==='dclass'){if(t.rogue||t.fleeing){if(p.role==='guard')earn(10,'took down a rogue D-class');}else earn(-1,'Don\'t kill innocent D-class!');return;}
@@ -704,16 +726,16 @@ function axes(){let ax=((K.d||K.arrowright)?1:0)-((K.a||K.arrowleft)?1:0),ay=((K
  joy.addEventListener('pointerdown',ev=>{ev.preventDefault();ac();JOY.id=ev.pointerId;try{joy.setPointerCapture(ev.pointerId);}catch(e){}mv(ev);});
  joy.addEventListener('pointermove',ev=>{if(ev.pointerId===JOY.id)mv(ev);});
  const end=ev=>{if(ev.pointerId===JOY.id){JOY.id=null;JOY.x=JOY.y=0;knob.style.transform='';}};joy.addEventListener('pointerup',end);joy.addEventListener('pointercancel',end);})();
-function hotbarTap(x,y){if(!P||P.dead||P.kind!=='h'||P.sticky||mode!=='play')return false;const n=6,sz=50,x0=VW/2-n*(sz+6)/2;if(y<VH-sz-16||y>VH-16)return false;const i=Math.floor((x-x0)/(sz+6));if(i<0||i>5)return false;if(P.items[i])P.sel=i;return true;}
-function touchButtons(){if(!P||P.dead)return[];if(P.kind==='h'){if(P.sticky)return[['e','✋','Use'],['t','✏️','Write'],['b','🛒','Shop'],['r','↺','Respawn']];return[['e','✋','Use'],['p','👊','Punch'],['next','🔄','Item'],['sprint','🏃','Sprint'],['g','⬇️','Drop'],['c','🔲','Cage'],['b','🛒','Shop'],['r','↺','Respawn']];}
- const m={ee3:[['q','🦵','Kick'],['f','🗡️','Stab'],['h','😤','Argh']],ee42:[['h','😡','Roar']],ee88:[['h','😡','Roar']],ee12:[['q','😬','Emerge'],['h','😡','Roar']],ee24:[['q','🍞','Eat door'],[' ','⭕','Bake'],['h','😡','Roar']],ee9:[['tab','👆','Who'],['h','😡','Roar']],ee20:[['q','💥','Blow door']],ee27:[['q','📣','Call out']],ee58:[]}[P.type]||[];return m.concat([['r','↺','Respawn']]);}
+function hotbarTap(x,y){if(!P||P.dead||!(P.kind==='h'||P.type==='ee3')||P.sticky||mode!=='play')return false;const n=6,sz=50,x0=VW/2-n*(sz+6)/2;if(y<VH-sz-16||y>VH-16)return false;const i=Math.floor((x-x0)/(sz+6));if(i<0||i>5)return false;if(P.items[i])P.sel=i;return true;}
+function touchButtons(){if(!P||P.dead)return[];if(P.kind==='h'){if(P.sticky)return[['e','✋','Use'],['t','✏️','Draw'],['b','🛒','Shop'],['r','↺','Respawn']];return[['e','✋','Use'],['p','👊','Punch'],...(P.steven?[['q','💥','Slam'],['f','😋','Eat']]:[]),['next','🔄','Item'],['sprint','🏃','Sprint'],['g','⬇️','Drop'],['c','🔲','Cage'],['b','🛒','Shop'],['r','↺','Respawn']];}
+ const m={ee42:[['h','😡','Roar']],ee8:[['g','🟢','Goo'],['h','😡','Hungry']],ee3:[['q','🦵','Kick'],['f','🗡️','Stab'],['h','😤','Argh'],['e','✋','Pick up'],['g','⬇️','Drop'],['next','🔄','Item']],ee88:[['h','😡','Roar']],ee12:[['q','😬','Emerge'],['h','😡','Roar']],ee24:[['q','🍞','Eat door'],[' ','⭕','Bake'],['h','😡','Roar']],ee9:[['tab','👆','Who'],['h','😡','Roar']],ee20:[['q','💥','Blow door']],ee27:[['q','📣','Call out']],ee58:[]}[P.type]||[];return m.concat([['r','↺','Respawn']]);}
 let tbKey='';
 function updTouchUI(){const el=document.getElementById('touch');const show=TOUCH&&!S.touchOff&&mode==='play'&&!uiOpen()&&P&&!P.dead;el.classList.toggle('on',!!show);if(!show)return;
- const bs=touchButtons();const key=(P.kind==='h'?'h':P.type)+(P.sticky?'s':'');if(key===tbKey)return;tbKey=key;const box=document.getElementById('tbtns');
+ const bs=touchButtons();const key=(P.kind==='h'?'h':P.type)+(P.sticky?'s':'')+(P.steven?'v':'');if(key===tbKey)return;tbKey=key;const box=document.getElementById('tbtns');
  box.innerHTML=bs.map(([k,ic,l])=>`<button class="tb" data-k="${k}"><b>${k==='p'?iconImg('punch',22):ic}</b>${l}</button>`).join('');
  box.querySelectorAll('.tb').forEach(b=>{const k=b.dataset.k;
   b.addEventListener('pointerdown',ev=>{ev.preventDefault();ev.stopPropagation();ac();b.classList.add('down');try{b.setPointerCapture(ev.pointerId);}catch(e){}
-   if(k==='next'){if(P&&P.items&&P.items.length)P.sel=(P.sel+1)%P.items.length;return;}if(k==='mayo'){M.rclick=true;return;}pressed.add(k);K[k]=true;});
+   if(k==='next'){if(P&&P.items&&P.items.length)P.sel=((P.sel||0)+1)%P.items.length;return;}if(k==='mayo'){M.rclick=true;return;}pressed.add(k);K[k]=true;});
   const up=ev=>{b.classList.remove('down');if(k!=='next'&&k!=='mayo')K[k]=false;};b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);});}
 cv.addEventListener('contextmenu',ev=>ev.preventDefault());
 cv.addEventListener('wheel',ev=>{if(P&&P.items&&P.items.length){P.sel=(P.sel+(ev.deltaY>0?1:-1)+P.items.length)%P.items.length;}},{passive:true});
@@ -739,7 +761,7 @@ function goTo(e,x,y,dt,spd){const tgt={x,y};const d=Math.hypot(x-e.x,y-e.y);if(d
  e.pathT=(e.pathT||0)-dt;const gi=ix(Math.floor(x/T),Math.floor(y/T));if(!e.path||e.pathT<=0||e.pathGoal!==gi){e.path=findPath(e,Math.floor(x/T),Math.floor(y/T))||[];e.pathT=1.2;e.pathGoal=gi;}if(!e.path.length)return false;followPath(e,dt,spd);return true;}
 function wanderIn(e,dt,room,spd){if(!e.goal||e.wt<=0){e.goal=randPt(room,1.2);e.wt=rnd(2,5);}e.wt-=dt;const dx=e.goal.x-e.x,dy=e.goal.y-e.y,d=Math.hypot(dx,dy);if(d>5){move(e,dx/d*spd*dt,dy/d*spd*dt);e.walk+=dt*8;e.face=Math.atan2(dy,dx);}}
 function wanderRooms(e,dt,list,spd){if(!e.path||!e.path.length){e.idle=(e.idle||0)-dt;if(e.idle>0)return;const r=R[pick(list)];const p=randPt(r,1.5);e.path=findPath(e,Math.floor(p.x/T),Math.floor(p.y/T))||[];e.idle=rnd(1,4);}followPath(e,dt,spd);}
-function hunt(e,dt,range,spd,filter){const t=nearestHuman(e,range,filter);if(!t)return null;if(!goTo(e,t.x,t.y,dt,spd))return null;return t;}
+function hunt(e,dt,range,spd,filter){const t=nearestHuman(e,range,filter);if(!t)return null;if(!goTo(e,t.x,t.y,dt,spd*(e.type==='ee12'&&e.emT>0?1.8:1.3)))return null;return t;}
 
 // ================= NPC humans =================
 const ROOMS_FOR={dclass:['dblock','cafe','cafe'],scientist:['lab','cafe','hall','ee8','ee27','ee4','hall'],guard:['hall','hall','armory','cafe','lab','dblock'],janitor:['closet','hall']};
@@ -750,7 +772,7 @@ function guardAI(e,dt){let t=null,bd=11*T;for(const a of ents){if(a===e||!hostil
   if(t.kind==='a'&&(e.tcd||0)<=0&&(AD[t.type].inv||t.yeastMode||Math.random()<.5)){e.tcd=2.5;const s=e.cd;e.cd=0;fire(e,'tranq',ang);e.cd=Math.max(s,.4);}
   else if(!(t.kind==='a'&&AD[t.type].inv)){fire(e,'gun',ang+rnd(-.12,.12));e.cd=Math.max(e.cd,2);}
   return true;}
- for(const a of ents){if(a.kind!=='a'||a.dead||!(a.sleep>0||a.cage>0)||!isOut(a))continue;if(dist(a,e)<14*T){goTo(e,a.x,a.y,dt,e.speed);if(dist(a,e)<44)recontain(a,e);return true;}}
+ for(const a of ents){if(a.kind!=='a'||a.dead||!(a.sleep>0||a.cage>0)||!isOut(a))continue;if(dist(a,e)<14*T){goTo(e,a.x,a.y,dt,e.speed);if(dist(a,e)<44){if(!(a.cage>0)){a.cage=15;say(e,'Caged it!');}else recontain(a,e);}return true;}}
  if(e.job&&e.job.type==='twig'){const tw=e.job.t;if(!tw||tw.dead||tw.sleep>0||tw.breached){e.job=null;return false;}const d=tw.home.door2||tw.home.door;goTo(e,d.cx,d.cy+T*1.3,dt,e.speed);if(dist(e,tw)<8*T&&los(e,tw,false)&&(e.tcd||0)<=0){e.tcd=1.6;e.face=Math.atan2(tw.y-e.y,tw.x-e.x);const s=e.cd;e.cd=0;fire(e,'tranq',e.face+rnd(-.12,.12));e.cd=s;}return true;}
  return false;}
 function npcHuman(e,dt){if(e.carried){if(e.carried.dead||e.carried.carry!==e)e.carried=null;else{e.x=e.carried.x;e.y=e.carried.y-30;return;}}
@@ -758,6 +780,12 @@ function npcHuman(e,dt){if(e.carried){if(e.carried.dead||e.carried.carry!==e)e.c
  if(e.sleep>0||e.cage>0||e.spinT>0||e.insideT>0)return;
  if(e.job&&e.job.type==='test'){testAI(e,dt);return;}
  if(e.job&&e.job.type==='duty'){dutyAI(e,dt);return;}
+ if(e.job&&e.job.type==='escortP'){const j=e.job,d=j.d;j.t-=dt;
+  if(!d||d.dead||d.rogue||j.t<=0||(d.job&&d.job.by!==e)){if(d&&d.job&&d.job.by===e){d.job=null;d.cuffedBy=null;}e.job=null;}
+  else if(!d.job){if(!d.wantTest&&!d.cuffedBy){e.job=null;return;}goTo(e,d.x,d.y,dt,e.speed);if(dist(e,d)<46){d.job={type:'test',a:j.a,act:j.act,pay:j.pay,txt:j.txt,by:e,t:240,prog:0,phase:'follow'};d.cuffedBy=e;d.wantTest=false;const gi=j.need||(ITEMS[j.act]?j.act:null);if(gi&&d.items.length<6)d.items.push(gi);say(e,'Come with me, D-class. Test: '+j.txt.split(':')[0],3);msgTo(d,'🔗 '+e.name+' cuffed you. Test: '+j.txt,'#9ff');}}
+  else{const od=j.a.home.door,ty=od.cy+(j.a.home.top?1.6:-1.6)*T;if(d.job.phase==='follow'){if(dist(e,d)<3*T||Math.hypot(e.x-od.cx,e.y-ty)>T)goTo(e,od.cx,ty,dt,e.speed*.85);}else{if(Math.hypot(e.x-od.cx,e.y-ty)>T)goTo(e,od.cx,ty,dt,e.speed);
+    if(d.job.phase==='go'&&!d.escort){d.escort=e;}const dd=doors.find(x=>x.room===j.a.home.id&&!x.broken&&Math.hypot(x.cx-d.x,x.cy-d.y)<1.9*T&&x.open<.5);if(dd&&(e.cd2||0)<=0){e.cd2=2;openDoor(dd,e);}}}
+  return;}
  if(e.job&&e.job.type==='escort'){const d=e.job.d;if(!d||d.dead||d.escort!==e){e.job=null;}else{const r=roomOf(d),safe=!r||['hall','cafe','dblock','lab','armory','closet'].includes(r.id);
   if(safe){if(dist(e,d)>2*T)goTo(e,d.x,d.y,dt,e.speed);}else{const cell=R[r.airlock||r.id]||r,od=cell.door;if(od)goTo(e,od.cx,od.cy+(cell.top?1.8:-1.8)*T,dt,e.speed);}return;}}
  if(e.job&&e.job.type==='push'){const h=e.job.h;if(!h||h.state!=='idle'||Math.hypot(h.x-h.hx,h.y-h.hy)<T){e.job=null;}else{goTo(e,h.x,h.y+h.r+20,dt,e.speed);if(dist(e,h)<h.r+e.r+40&&gameT-(e.pushT||0)>.5){e.pushT=gameT;pushHouse(h,e);}return;}}
@@ -775,7 +803,11 @@ function npcHuman(e,dt){if(e.carried){if(e.carried.dead||e.carried.carry!==e)e.c
  if(e.leaving){const r=R[e.leaving],d=r.door;goTo(e,d.cx,d.cy+(r.top?2:-2)*T,dt,e.speed);if(!e.testPass&&!e.outerPass){e.leaving=null;}return;}
  if(e.role!=='guard'){for(const a of ents){if(a.kind==='a'&&!a.dead&&hostile(a)&&dist(a,e)<5*T&&los(a,e,false)){const d=dist(a,e)||1;move(e,(e.x-a.x)/d*e.speed*1.2*dt,(e.y-a.y)/d*e.speed*1.2*dt);e.walk+=dt*12;if(Math.random()<.01)say(e,pick(['AAAH!','RUN!','Not again!']));return;}}}
  wanderRooms(e,dt,ROOMS_FOR[e.role]||['hall'],e.speed*.8);}
+function escortTargets(){const L=[];if(P&&!P.dead&&P.kind==='h')L.push(P);for(const g of NET.ghosts.values())if(!g.dead)L.push(g);return L.filter(t=>t.role==='dclass'&&t.wantTest&&!t.job&&!t.cuffedBy&&!t.rogue&&!t.dead);}
+function pickTestFor(npc){const opts=[];for(const k in TACT){const a=ents.find(x=>x.type===k&&!x.dead&&!isOut(x)&&!x.isPlayer);if(!a||!a.home||!a.home.door||npc.card<a.home.door.level)continue;for(const t of TACT[k])opts.push([a,...t]);}return opts.length?pick(opts):null;}
 function dispatchJobs(){
+ for(const t of escortTargets()){if(ents.some(n=>n.job&&n.job.type==='escortP'&&n.job.d===t))continue;const cands=ents.filter(n=>n.kind==='h'&&!n.isPlayer&&!n.dead&&!n.job&&!n.carry&&(n.role==='scientist'||n.role==='guard')&&!n.sleep).sort((a,b)=>dist(a,t)-dist(b,t));
+  for(const n of cands){const pt=pickTestFor(n);if(!pt)continue;const[a,act,txt,pay,need]=pt;n.job={type:'escortP',d:t,a,act,txt,pay,need,t:150};n.path=null;break;}}
  for(const a of ents){if(a.kind!=='a'||a.dead||isOut(a))continue;if(!['ee24','ee12','ee8','ee9','ee3','ee42'].includes(a.type)||!a.home.tray)continue;if(a.hunger>(a.roared?55:35)||foodInCell(a.home))continue;if(ents.some(e=>e.job&&(e.job.t===a||e.job.a===a)))continue;
   const cands=ents.filter(e=>e.kind==='h'&&!e.isPlayer&&!e.dead&&e.role==='dclass'&&!e.rogue&&!e.job&&!e.duck);if(!cands.length)continue;const f=pick(cands);f.job={type:'feed',t:a};f.outerPass=a.home.id;f.testPass=new Set(['cafe']);f.path=null;}
  {const h=ents.find(a=>a.type==='ee1'&&!a.dead);if(h&&h.state==='idle'&&!h.pushing&&Math.hypot(h.x-h.hx,h.y-h.hy)>T&&!ents.some(e=>e.job&&e.job.type==='push')){const cs=ents.filter(e=>e.kind==='h'&&!e.isPlayer&&!e.dead&&!e.job&&!e.duck&&e.role!=='dclass'&&e.card>=2&&!hasItem(e,'mayo')).sort((a,b)=>dist(a,h)-dist(b,h)).slice(0,2);if(cs.length===2)for(const c of cs){c.job={type:'push',h};c.path=null;}}}
@@ -787,13 +819,13 @@ function tryEscape(e,dt){if(!e.home||!e.home.door||isOut(e))return false;const r
  if(!id&&od.open<.5&&!od.broken)return false;
  if(!goTo(e,od.cx,od.cy+(top?2:-2)*T,dt,e.speed*.9)){const dx=od.cx-e.x,dy=od.cy-e.y,dd=Math.hypot(dx,dy)||1;if(dd>T*.9)move(e,dx/dd*e.speed*.5*dt,dy/dd*e.speed*.5*dt);}
  if(Math.random()<dt*.15)say(e,e.type==='ee8'?'Glob?':pick(['Let me out!','*scratch scratch*','...']),1.5);return true;}
-function npcAnom(e,dt){if(e.sleep>0||e.cage>0)return;const home=e.home;if(!['ee1','ee2','ee4','ee7','ee10','ee27','ee76'].includes(e.type)&&e.type!=='ee24'&&tryEscape(e,dt))return;
+function npcAnom(e,dt){if(e.carried){if(e.carried.dead||e.carried.carry!==e)e.carried=null;else{e.x=e.carried.x;e.y=e.carried.y-30;return;}}if(e.sleep>0||e.cage>0)return;const home=e.home;if(!['ee1','ee2','ee4','ee7','ee10','ee27','ee76'].includes(e.type)&&e.type!=='ee24'&&tryEscape(e,dt))return;
  switch(e.type){
  case 'ee1':return updMayo(e,dt);
- case 'ee2':{let tgt=null,bc=0;for(const t of ents){if(t.kind!=='h'||t.dead||t.inSlide||t.duck)continue;const c=coolness(t.color);const d=dist(e,t);if(d<8*T&&los(e,t,false)){if(c>bc){bc=c;tgt=t;}if(t.isPlayer&&isBlue(t.eye)&&!t.goggles&&(t.blindCd||0)<=0&&d<7*T){t.blind=7;t.blindCd=18;msg('😵 EE2 saw your BLUE EYES. You can\'t see! (Scrambler goggles would help.)','#ff9a3c');}}}
-  if(tgt&&bc>0){e.mad=true;goTo(e,tgt.x,tgt.y,dt,80+110*bc);if(dist(e,tgt)<e.r+tgt.r+8&&e.cd<=0){e.cd=.8;hurt(tgt,22,e,'smashed by EE2 for wearing a cool color');sfxAt(e.x,e.y,'hit');}if(Math.random()<.01)say(e,pick(['NO BLUE!','ORANGE ONLY!','GRRR']));}
+ case 'ee2':{if(ee2Blue(e,dt))return;let tgt=null,bc=0;for(const t of ents){if(t.kind!=='h'||t.dead||t.inSlide||t.duck)continue;const c=Math.max(coolness(t.color),t.items&&t.items[t.sel]==='bluesuit'?.9:0);const d=dist(e,t);if(d<8*T&&los(e,t,false)){if(c>bc){bc=c;tgt=t;}if(t.isPlayer&&isBlue(t.eye)&&!t.goggles&&(t.blindCd||0)<=0&&d<7*T){t.blind=7;t.blindCd=18;msg('😵 EE2 saw your BLUE EYES. You can\'t see! (Scrambler goggles would help.)','#ff9a3c');}}}
+  if(tgt&&bc>0){e.mad=true;goTo(e,tgt.x,tgt.y,dt,80+110*bc);if(dist(e,tgt)<e.r+tgt.r+8&&e.cd<=0){e.cd=.8;if(isBlue(tgt.color)){const g=tgt.steven;kill(tgt,e,'torn apart by EE2 for wearing BLUE');}else if(tgt.items&&tgt.items[tgt.sel]==='bluesuit'&&coolness(tgt.color)<=0){hurt(tgt,15,e,'punched by EE2 for holding up a blue shirt');say(e,'PUT IT AWAY!');}else hurt(tgt,22,e,'smashed by EE2 for wearing a cool color');sfxAt(e.x,e.y,'hit');}if(Math.random()<.01)say(e,pick(['NO BLUE!','ORANGE ONLY!','GRRR']));}
   else{e.mad=false;if(isOut(e))wanderRooms(e,dt,['hall'],70);else wanderIn(e,dt,home,50);}return;}
- case 'ee3':{e.hunger=Math.max(0,e.hunger-dt*.5);starveHurt(e,dt);if(e.dead)return;if(!isOut(e)&&e.hunger<=25&&!(e.aggro>0)){const d=cellDoors(home).find(x=>!x.broken&&x.inner)||home.door;if(d){goTo(e,d.cx,d.cy+(home.top?-1:1)*T*.9,dt,e.speed);if(Math.hypot(d.cx-e.x,d.cy-e.y)<1.9*T&&(e.cd2||0)<=0){dentDoor(e,d);e.cd2=1.6;}}return;}if(e.aggro>0&&e.aggroBy&&!e.aggroBy.dead){goTo(e,e.aggroBy.x,e.aggroBy.y,dt,e.speed);if(dist(e,e.aggroBy)<40&&e.cd<=0){e.cd=1.4;e.stabT=.9;melee(e,Math.atan2(e.aggroBy.y-e.y,e.aggroBy.x-e.x),40,40,'stabbed by Spikester');}}else if(isOut(e))wanderRooms(e,dt,['hall','dblock','cafe'],70);else wanderIn(e,dt,home,60);return;}
+ case 'ee3':{e.hunger=Math.max(0,e.hunger-dt*.5);starveHurt(e,dt);if(e.dead)return;if(!isOut(e)&&e.hunger<=25&&!(e.aggro>0)){const fd=pickups.find(p=>roomOf(p)===home&&accepts(e,p.item));if(fd){goTo(e,fd.x,fd.y,dt,e.speed);if(dist(e,fd)<e.r+14){pickups.splice(pickups.indexOf(fd),1);e.hunger=Math.min(100,e.hunger+(FILL[fd.item]||30));say(e,'*munch*');}return;}const d=cellDoors(home).find(x=>!x.broken&&x.inner)||home.door;if(d){goTo(e,d.cx,d.cy+(home.top?-1:1)*T*.9,dt,e.speed);if(Math.hypot(d.cx-e.x,d.cy-e.y)<1.9*T&&(e.cd2||0)<=0){dentDoor(e,d);e.cd2=1.6;}}return;}if(e.aggro>0&&e.aggroBy&&!e.aggroBy.dead){goTo(e,e.aggroBy.x,e.aggroBy.y,dt,e.speed);if(dist(e,e.aggroBy)<40&&e.cd<=0){e.cd=1.4;e.stabT=.9;melee(e,Math.atan2(e.aggroBy.y-e.y,e.aggroBy.x-e.x),40,40,'stabbed by Spikester');}}else if(isOut(e))wanderRooms(e,dt,['hall','dblock','cafe'],70);else wanderIn(e,dt,home,60);return;}
  case 'ee7':{if(e.ringing>0){e.ringing-=dt;if(Math.floor(gameT*2)!==Math.floor((gameT-dt)*2))sfxAt(e.x,e.y,'ring');if(e.ringing<=0)e.ringT=rnd(30,75);}else{e.ringT-=dt;if(e.ringT<=0){e.ringing=10;if(P&&roomOf(P)===home)msg('📞 EE7 is ringing! (Press E to answer... if you dare.)','#ffe14a');}}return;}
  case 'ee8':{e.hunger=Math.max(0,e.hunger-dt*.5);if(eatFloor(e,dt))return;if(isOut(e))wanderRooms(e,dt,['hall'],40);else wanderIn(e,dt,home,38);e.gt=(e.gt||rnd(3,7))-dt;if(e.gt<=0){e.gt=rnd(4,8);say(e,'Glob!',1.6);sfxAt(e.x,e.y,'glob');}e.goo=(e.goo||140)-dt;if(e.goo<=0){e.goo=rnd(120,180);addMess(e.x+rnd(-10,10),e.y+12,'goo');}return;}
  case 'ee9':{e.hunger=Math.max(0,e.hunger-dt*.5);const t=nearestHuman(e,isOut(e)?10*T:2.6*T,h=>!h.duck);if(t&&(isOut(e)||e.hunger<50)){goTo(e,t.x,t.y,dt,e.speed);if(dist(e,t)<2.6*T&&(e.pcd||0)<=0)doPrank(e,t,pick(['duck','duck','spin','inside']));}else if(isOut(e))wanderRooms(e,dt,['hall'],80);else wanderIn(e,dt,home,50);return;}
@@ -815,7 +847,8 @@ function npcAnom(e,dt){if(e.sleep>0||e.cage>0)return;const home=e.home;if(!['ee1
 function yeastEat(e,t){kill(t,e,'eaten by the Yeast');say(e,'*crunch*... bread.');pickups.push({x:e.x+rnd(-16,16),y:e.y+30,item:'breadR',life:400,fresh:gameT+8});e.hunger=100;SFX.munch();}
 function yeastLure(e,range){let best=null,bd=range;for(const p of pickups){if(!YEASTY.includes(p.item)||(p.fresh||0)>gameT)continue;const d=dist(p,e);if(d<bd){bd=d;best=p;}}
  for(const h of ents){if(h.kind!=='h'||h.dead||h.inSlide||!h.items||!h.items.some(k=>YEASTY.includes(k)))continue;const d=dist(h,e);if(d<bd){bd=d;best=h;}}return best;}
-function cellDoorNear(e,r){const home=e.home;if(!home)return null;let best=null,bd=r||1.9*T;for(const d of cellDoors(home)){if(d.broken)continue;const dd=Math.hypot(d.cx-e.x,d.cy-e.y);if(dd<bd){bd=dd;best=d;}}return best;}
+function foodWaiting(e){const home=e.home;if(!home)return false;if(e.type==='ee88')return ents.some(h=>h.kind==='h'&&!h.dead&&!h.steven&&(roomOf(h)===home||(roomOf(h)&&roomOf(h).airlock===home.id)));const inCell=p=>{const r=roomOf(p);return r===home||(r&&r.airlock===home.id&&false);};return pickups.some(p=>roomOf(p)===home&&accepts(e,p.item))||(e.items||[]).some(k=>ITEMS[k].kind==='food'&&accepts(e,k));}
+function cellDoorNear(e,r){const home=e.home;if(!home)return null;if(foodWaiting(e)){if(e===P&&gameT-(e.fwT||0)>3){e.fwT=gameT;msg(e.type==='ee88'?'👁 There\'s a soul right here in your cell. Eat it first!':'🍞 There\'s food in your cell (or your hands)! Eat it first.','#ffcf7a');}return null;}let best=null,bd=r||1.9*T;for(const d of cellDoors(home)){if(d.broken)continue;const dd=Math.hypot(d.cx-e.x,d.cy-e.y);if(dd<bd){bd=dd;best=d;}}return best;}
 function dentDoor(e,d){d.dents=(d.dents||0)+1;e.cd=.7;puff(d.cx,d.cy,'#c9ced6',8,120,.35,2);tone(120+d.dents*6,.12,'square',.06,-40);
  const nm=AD[e.type].name;if(d.dents===1||d.dents===8||d.dents===12){alarm(nm+' is DENTING its door! Feed it!');announce('Anomaly '+spokenId(e.type)+', is damaging its containment door. Feeding staff, report immediately.','dent'+e.type);}
  if(d.dents>=15){d.dents=0;breakCell(e.home,gameT+150);alarm(nm+' was so hungry it BURST its door open!');}else if(e===P)msg('💥 Dent! ('+d.dents+'/15)','#ffcf7a');}
@@ -823,6 +856,17 @@ function starveHurt(e,dt){if(e.hunger>0){e.starveT=0;return;}e.starveT=(e.starve
 function soulSuck(e,t){if(!t||t.dead||t.kind!=='h'||t.suckT>0)return false;t.suckT=1.5;t.suckBy=e;e.cd=rnd(10,15);say(e,'...',1.5);tone(70,1.4,'sine',.07,40);if(t===P)msg('👁 E88 is sucking out your SOUL! You can\'t move!','#c08bff');return true;}
 function suckTick(e,dt){const b=e.suckBy;if(!b||b.dead||dist(e,b)>5*T){e.suckT=0;e.suckBy=null;return false;}e.suckT-=dt;if(Math.random()<dt*30)parts.push({x:e.x+rnd(-8,8),y:e.y-10+rnd(-8,8),vx:(b.x-e.x)*1.6,vy:(b.y-40-e.y)*1.6,life:.55,max:.55,col:pick(['#c08bff','#e6d4ff','#8a4fd8']),size:3});
  if(e.suckT<=0){e.suckT=0;e.suckBy=null;b.hp=Math.min(b.maxhp,b.hp+30);if(b.type==='ee88'){b.hunger=100;say(b,'*slurp*',2);if(!isOut(b))for(const h of ents)if(h.test&&h.test.act==='feed88')h.flags.add('fed_ee88');}kill(e,b,'soul-sucked by the Soul Eater');}return true;}
+const isBlueHex=h=>{try{return isBlue(h);}catch(e){return false;}};
+function ee2Blue(e,dt){let best=null,bd=10*T;
+ for(const k in TPAINT){if(!isBlueHex(TPAINT[k]))continue;const i=+k,x=(i%W+.5)*T,y=(((i/W)|0)+.5)*T,d=Math.hypot(x-e.x,y-e.y);if(d<bd){bd=d;best={i,x,y};}}
+ for(const d of doors){if(d.paint&&isBlueHex(d.paint)&&!d.broken){const dd=Math.hypot(d.cx-e.x,d.cy-e.y);if(dd<bd){bd=dd;best={d,x:d.cx,y:d.cy};}}}
+ for(const a of ents){if(a===e||a.dead||a.kind!=='a'||!a.tint||!isBlueHex(a.tint))continue;const dd=dist(a,e);if(dd<bd){bd=dd;best={a,x:a.x,y:a.y};}}
+ if(!best)return false;e.mad=true;if(Math.random()<.02)say(e,pick(['BLUE!!','NO BLUE!','GRRRR']));
+ if(bd>1.5*T){const ang=Math.atan2(best.y-e.y,best.x-e.x),tx=best.x-Math.cos(ang)*T,ty=best.y-Math.sin(ang)*T;if(!goTo(e,tx,ty,dt,200)){move(e,Math.cos(ang)*200*dt,Math.sin(ang)*200*dt);}return true;}
+ if(e.cd>0)return true;e.cd=.6;sfxAt(e.x,e.y,'hit');puff(best.x,best.y,'#3f7fe0',14,160,.5,3);
+ if(best.a){hurt(best.a,30,e,'smashed by EE2 for being BLUE');best.a.tint=null;return true;}
+ if(best.d){best.d.broken=true;best.d.paint=null;best.d.repairAt=gameT+150;alarm('EE2 SMASHED A BLUE DOOR!');return true;}
+ const g=grid[best.i];delete TPAINT[best.i];if(g===WALL||g===GLASS){grid[best.i]=FLOOR;messes.push({x:best.x,y:best.y,type:'rubble',c:MESS.rubble?MESS.rubble.c:'#777',s:14,rot:0,seed:Math.random(),prog:0,tile:best.i,repairAt:gameT+240});alarm('EE2 SMASHED A BLUE WALL!');}mapDirty=true;return true;}
 function mayoTarget(h){let best=null,bd=MAYO_R;
  for(const t of ents){if(t.dead||t.inSlide||!hasItem(t,'mayo'))continue;const d=Math.hypot(t.x-h.x,t.y-h.y);if(d<bd){bd=d;best={ent:t};}}
  for(const m of messes){if(m.type!=='mayo')continue;const d=Math.hypot(m.x-h.x,m.y-h.y);if(d<bd){bd=d;best={mess:m};}}
@@ -830,7 +874,7 @@ function mayoTarget(h){let best=null,bd=MAYO_R;
 function updMayo(h,dt){
  if(h.state==='charge'){const g=h.tgt;let tx,ty,ok=true;if(g.ent){if(g.ent.dead||!hasItem(g.ent,'mayo'))ok=false;else{tx=g.ent.x;ty=g.ent.y;}}else if(g.pick){if(!pickups.includes(g.pick))ok=false;else{tx=g.pick.x;ty=g.pick.y;}}else{if(!messes.includes(g.mess))ok=false;else{tx=g.mess.x;ty=g.mess.y;}}
   if(!ok){const nx=mayoTarget(h);if(nx){h.tgt=nx;return;}h.state='idle';return;}const d=Math.hypot(tx-h.x,ty-h.y);const s=Math.min(d,430*dt);h.x+=(tx-h.x)/d*s;h.y+=(ty-h.y)/d*s;smash(h.x,h.y,h.r+4);if(Math.random()<.3)puff(h.x,h.y+h.r,'#7a6a5a',2,80,.4,3);
-  for(const t of ents)if(t.kind==='h'&&!t.dead&&dist(h,t)<h.r+t.r)kill(t,h,'flattened by the Mayo House');
+  for(const t of ents)if(t.kind==='h'&&!t.dead&&dist(h,t)<h.r+t.r){if(t.steven){if(gameT>(t.squashT||0)){t.squashT=gameT+1.2;if(hasItem(t,'mayo')){takeItem(t,'mayo');msgTo(t,'🫙 The Mayo House grabbed your mayo instead of you!','#ffcf7a');}else hurt(t,t.maxhp/10,h,'flattened by the Mayo House');}}else kill(t,h,'flattened by the Mayo House');}
   if(d<h.r+10){if(g.mess)messes.splice(messes.indexOf(g.mess),1);if(g.pick)pickups.splice(pickups.indexOf(g.pick),1);if(g.ent&&!g.ent.dead)takeItem(g.ent,'mayo');SFX.munch();const nx=mayoTarget(h);if(nx){h.tgt=nx;say(h,'*MUNCH* MORE MAYO!!',2);}else{h.state='happy';h.t=3;say(h,'*MUNCH* ...mayo.',3);}}return;}
  if(h.state==='happy'){h.t-=dt;const nx=mayoTarget(h);if(nx){h.state='charge';h.tgt=nx;say(h,'MAAAYOOOO!!',2);return;}if(h.t<=0)h.state='idle';return;}
  if(h.state==='return'){const tx=h.hx,ty=h.hy,d=Math.hypot(tx-h.x,ty-h.y);if(d<4){h.x=tx;h.y=ty;h.state='idle';h.pushing=false;return;}const s=Math.min(d,90*dt);h.x+=(tx-h.x)/d*s;h.y+=(ty-h.y)/d*s;smash(h.x,h.y,h.r+2);}
@@ -861,29 +905,29 @@ function startHuman(role,opt){opt=opt||{};retireP();const r=role==='dclass'?R.db
  if(role==='sticky'){P.sticky=true;P.r=11;P.color='#ffe45c';P.card=Math.max(1,S.card);P.items=[];}
  if(opt.steven){P.steven=true;P.name='Doctor Steven';P.maxhp=P.hp=420;P.speed=130;P.skin='#e9e4da';}
  ents.push(P);begin();
- if(role==='sticky'){msg('You are E22 Sticky Notes. Click nearby (or WASD) to stick a new note and hop to it. Press T to write on yourself.','#ffe45c');return;}
- if(opt.steven)msg('You are Doctor Steven: super tough. Press E next to someone to pick them up.','#e9e4da');
+ if(role==='sticky'){msg('You are E22 Sticky Notes. Click nearby (or WASD) to stick a new note and hop to it. Press T to draw on yourself.','#ffe45c');return;}
+ if(opt.steven)msg('You are Doctor Steven: almost unkillable (only the Mayo House hurts you). Sprint is SUPER fast. Press E to pick someone up, then Q to slam them or F to eat them. Pick up anomalies and carry them into their cell to recontain them.','#e9e4da');
  msg(role==='dclass'?'You are a D-class. A scientist will assign you tests. Press B for the shop.':role==='janitor'?'You are a Janitor. Hold E near messes to clean them for e-bucks.':role==='scientist'?'You are a Scientist. Stand near anomalies to earn research money. C cages weak anomalies.':'You are a Guard. Shoot rogue D-class, tranq Twig, recontain escapees (E). C cages.','#9fd');}
 const winLeft=()=>S.win&&S.win.until>Date.now()?Math.ceil((S.win.until-Date.now())/1000):0;
 function startAnom(type,uncontained){const cost=type==='ee58'?0:AD[type].cost+(uncontained?3:0);if(!S.admin&&!winLeft()){if(S.pts<cost)return;S.pts-=cost;}if(!winLeft()&&type!=='ee58')S.win={until:Date.now()+300000};S.lastAnom={type,unc:!!uncontained};save();
- retireP();for(const e of ents)if(e.type===type&&!e.isPlayer)e.dead=true;respawnQ=respawnQ.filter(q=>!q.type||q.type!==type);ents=ents.filter(e=>!e.dead);
+ retireP();if(!AD[type].pnpc)for(const e of ents)if(e.type===type&&!e.isPlayer)e.dead=true;respawnQ=respawnQ.filter(q=>!q.type||q.type!==type);ents=ents.filter(e=>!e.dead);
  if(type==='ee58'){P=mkAnom('ee58',60*T,(29+OY)*T,{isPlayer:true,ghost:true});}
- else{const h=anomHome(type);for(const d of cellDoors(R[AD[type].room])){d.broken=false;d.jelly=false;d.hold=false;d.repairAt=0;}P=mkAnom(type,h.x,h.y,{isPlayer:true});if(uncontained){const p=randPt(R.hall,1);P.x=p.x;P.y=p.y;P.disguised=true;P.disRole='scientist';P.fake='Dr. '+pick(SURN);P.color='#f4f4f4';P.skin=pick(SKINS);P.eye=pick(EYES)[1];}}
+ else{const h=anomHome(type);for(const d of cellDoors(R[AD[type].room])){d.broken=false;d.jelly=false;d.hold=false;d.repairAt=0;}P=mkAnom(type,h.x+(AD[type].pnpc?34:0),h.y,{isPlayer:true});if(uncontained){const p=randPt(R.hall,1);P.x=p.x;P.y=p.y;P.disguised=true;P.disRole='scientist';P.fake='Dr. '+pick(SURN);P.color='#f4f4f4';P.skin=pick(SKINS);P.eye=pick(EYES)[1];}}
  P.alive=0;ents.push(P);begin();msg('You are '+AD[type].name+(uncontained?' (uncontained & disguised!)':'')+'.','#ffcf7a');}
 function begin(){if(P){P.lid=Math.random().toString(36).slice(2,9);if(NET.on)P.id='p:'+NET.uid;}mode='play';lifeEarn=0;closeOv('menu');closeOv('death');}
 function onPlayerDeath(cause){if(P.role==='dclass'&&P.test&&P.test.kind==='test')earn(5,'died during a test (for science!)');mode='dead';P.items=[];setTimeout(()=>showDeath(cause),900);}
 function respawnPlayer(){if(!P||P.dead){showMenu();return;}retireP();P.inSlide=false;P.banana=null;mode='menu';showMenu();}
-function getInteract(e){let best=null,bd=1e9;const add=(d,label,fn)=>{if(d<bd){bd=d;best={label,fn};}};
+function getInteract(e){let best=null,bd=1e9;const ALL=[];const add=(d,label,fn)=>{ALL.push({d,label,fn});if(d<bd){bd=d;best={label,fn};}};
  for(const s of spots){const d=Math.hypot(s.x-e.x,s.y-e.y);if(d<(s.big?60:42))add(d,s.lab,()=>{if(s.act)s.act();else if(give(e,s.item))msg('Took '+ITEMS[s.item].n+'.');});}
  for(const p of pickups){const d=dist(p,e);if(d<38)add(d,'Pick up '+ITEMS[p.item].n,()=>{if(give(e,p.item))pickups.splice(pickups.indexOf(p),1);});}
  for(const a of ents){if(a.kind!=='a'||a.dead||a===e||a.ghost)continue;const d=dist(a,e);if(d>a.r+e.r+24)continue;const act=anomAction(e,a);if(act)add(d-4,act[0],act[1]);}
- {const it=e.items[e.sel];if((e.role==='scientist'||e.role==='guard')&&it&&it!=='keycard'){for(const h of ents){if(h.kind!=='h'||h.isPlayer||h.dead||h.role!=='dclass'||h.rogue||h.duck)continue;const d=dist(h,e);if(d<46)add(d-4,'Give '+ITEMS[it].n+' to '+h.name,()=>{takeItem(e,it);h.items.push(it);say(h,pick(['Uh, thanks?','What\'s this for?','Okay...']));});}}}
- if((e.role==='scientist'||e.role==='guard')&&!e.carry){for(const h of ents){if(h.kind!=='h'||h.isPlayer||h.dead||h.role!=='dclass'||h.rogue||h.job||h.duck||h.carried)continue;const d=dist(h,e);if(d<46)add(d-3,(e.role==='guard'?'Take '+h.name+' to a test':'Run a test on ')+(e.role==='guard'?'':h.name),()=>openTestMenu(h));}}
+ {const it=e.items[e.sel];if((e.role==='scientist'||e.role==='guard')&&it&&it!=='keycard'){for(const h of ents){if(h.kind!=='h'||h===e||h.dead||h.role!=='dclass'||h.rogue||h.duck)continue;const d=dist(h,e);if(d<46)add(d-4,'Give '+ITEMS[it].n+' to '+h.name,()=>{takeItem(e,it);h.items.push(it);say(h,pick(['Uh, thanks?','What\'s this for?','Okay...']));});}}}
+ if((e.role==='scientist'||e.role==='guard')&&!e.carry){for(const h of ents){if(h.kind!=='h'||h===e||h.dead||h.role!=='dclass'||h.rogue||h.job||h.duck||h.carried||h.cuffedBy)continue;const d=dist(h,e);if(d<46)add(d-3,(e.role==='guard'?'Take '+h.name+' to a test':'Run a test on ')+(e.role==='guard'?'':h.name),()=>openTestMenu(h));}}
  if(e.role==='guard'&&e.test&&e.test.kind==='duty'&&e.test.act&&!e.test.handed){for(const h of ents){if(h.kind!=='h'||h.isPlayer||h.dead||h.role!=='dclass'||h.rogue||h.job||h.duck||h.carried)continue;const d=dist(h,e);if(d<46)add(d-3,'Hand your duty to '+h.name,()=>handDuty(e,h));}}
- if(e.steven){if(e.carry)add(-1,'Put down '+e.carry.name,()=>dropCarry(e));else for(const h of ents){if(h.kind!=='h'||h===e||h.dead||h.inSlide||h.carried)continue;const d=dist(h,e);if(d<40)add(d+2,'Pick up '+h.name,()=>{e.carry=h;h.carried=e;h.path=null;say(h,'Hey! Put me down!');});}}
+ if(e.steven){if(e.carry){const h=e.carry;add(-1,'Put down '+h.name,()=>dropCarry(e));if(h.kind==='h'){add(-.5,'SLAM '+h.name+' (Q)',()=>stevenSlam(e));add(-.4,'Eat '+h.name+' (F)',()=>stevenEat(e));}}else for(const h of ents){if(h===e||h.dead||h.inSlide||h.carried||h.ghost)continue;if(h.kind==='a'&&(AD[h.type].stat||['ee1','ee10','ee58'].includes(h.type)))continue;if(h.kind!=='h'&&h.kind!=='a')continue;const d=dist(h,e);if(d<44)add(d+2,'Pick up '+(h.kind==='a'?AD[h.type].name:h.name),()=>{e.carry=h;h.carried=e;h.path=null;h.dragBy=null;say(h,h.kind==='a'?'!!!':'Hey! Put me down!');if(h.kind==='a'&&e===P)msg('Carry it back into its cell to recontain it.','#e9e4da');});}}
  if(e.role==='janitor')for(const d of doors){if(!(d.dents>0))continue;const dd=Math.hypot(d.cx-e.x,d.cy-e.y);if(dd<62)add(dd-8,'Hammer out the dents ('+d.dents+')',()=>{d.dents=0;earn(3,'fixed a dented door');tone(500,.06,'square',.04);});}
  for(const tr of TRAYS){const d=Math.hypot(tr.x-e.x,tr.y-e.y),it=e.items[e.sel];if(d<46&&it&&ITEMS[it].kind==='food')add(d-6,'Put '+ITEMS[it].n+' on the feeding tray',()=>trayPut(tr,e,it));}
- if(e.role==='dclass'){for(const d of doors){const dd=Math.hypot(d.cx-e.x,d.cy-e.y);if(dd>=58||d.broken||d.open>.5)continue;const esc=e.escort;if(esc&&!esc.dead&&e.testPass&&(e.testPass.has(d.room)||e.outerPass===d.room)&&dist(esc,e)<7*T)add(dd+20,'Ask '+esc.name+' to open the door',()=>{openDoor(d,esc);say(esc,'Okay, in you go.');});else add(dd+30,'You can\'t open doors (D-class)',()=>msg(esc?'Your tester ('+esc.name+') has to be next to you to open it.':'D-class can\'t open doors. Wait for a scientist to take you to a test.'));}}
+ if(e.role==='dclass'&&!e.rogue){for(const d of doors){const dd=Math.hypot(d.cx-e.x,d.cy-e.y);if(dd>=58||d.broken||d.open>.5)continue;const esc=e.escort;if(esc&&!esc.dead&&e.testPass&&(e.testPass.has(d.room)||e.outerPass===d.room)&&dist(esc,e)<7*T)add(dd+20,'Ask '+esc.name+' to open the door',()=>{openDoor(d,esc);say(esc,'Okay, in you go.');});else add(dd+30,'You can\'t open doors (D-class)',()=>msg(esc?'Your tester ('+esc.name+') has to be next to you to open it.':'D-class can\'t open doors. Wait for a scientist to take you to a test.'));}}
  else for(const d of doors){const dd=Math.hypot(d.cx-e.x,d.cy-e.y);if(dd>=58)continue;
   if(d.broken){if(d.jelly)add(dd+15,'Fix the jelly door',()=>{d.broken=false;d.jelly=false;d.repairAt=0;d.open=1;msg('You squished the jelly back into a normal door.');SFX.hit();});continue;}
   if(d.level===0)continue;
@@ -893,10 +937,11 @@ function getInteract(e){let best=null,bd=1e9;const add=(d,label,fn)=>{if(d<bd){b
   if(d.hold){add(dd+20,'Let the door close',()=>{d.hold=false;msg('Door released.');});continue;}
   if(d.cardT>0||d.open>.5){add(dd+20,'Keep this door open',()=>{d.hold=true;d.opener=e;msg('Door held open. Anything inside can wander out...');});continue;}
   add(dd+20,'Open this L'+d.level+' door with your keycard',()=>openDoor(d,e));}
- return best;}
+ if(best){const seen=new Set();best.all=ALL.sort((a,b)=>a.d-b.d).filter(x=>!seen.has(x.label)&&seen.add(x.label)).slice(0,5);}return best;}
 function anomAction(e,a){const it=e.items[e.sel];
  if(a.dragBy===e)return['Let go of '+a.name,()=>{a.dragBy=null;e.dragging=null;}];
- if((a.cage>0||a.sleep>0)&&isOut(a)&&isStaff(e)&&!a.dragBy)return['Drag '+a.name+' back to its cell',()=>{a.dragBy=e;e.dragging=a;a.dragT=0;msg('🔲 Dragging '+a.name+'. Pull it into its cell (or airlock) to recontain it.','#9cf');}];
+ if(a.sleep>0&&!(a.cage>0)&&isOut(a)&&isStaff(e))return['It\'s knocked out: CAGE it first (C), then drag it back',()=>tryCage(e)];
+  if(a.cage>0&&isOut(a)&&isStaff(e)&&!a.dragBy)return['Drag '+a.name+' back to its cell',()=>{a.dragBy=e;e.dragging=a;a.dragT=0;msg('🔲 Dragging '+a.name+'. Pull it into its cell (or airlock) to recontain it.','#9cf');}];
  if(it&&ITEMS[it].kind==='food'&&AD[a.type].food!==undefined)return['Feed '+ITEMS[it].n+' to '+a.name,()=>feed(e,a,it)];
  if(it&&ITEMS[it].kind==='food'&&a.type==='ee24')return['Feed '+ITEMS[it].n+' to '+a.name,()=>feed(e,a,it)];
  switch(a.type){
@@ -910,8 +955,29 @@ function anomAction(e,a){const it=e.items[e.sel];
   default:return null;}}
 function startBanana(e,a){if(e.flags)e.flags.add('banana');a.ringing=0;a.ringT=rnd(40,80);if(hasItem(e,'earplugs')){msg('🎧 You hold the banana to your ear... and hear nothing at all. The banana seems disappointed.','#ffe14a');return;}e.banana={t:0};e.frozen=true;}
 function startSlide(e){if(e.flags)e.flags.add('slide');e.inSlide={d:0,x:0,vx:0};msg('You climbed E10. Wheee! ...wait, when does it end?','#7fd0ff');SFX.whoosh();}
+function playerJob(e,dt){const j=e.job;if(!j||j.type!=='test')return false;const a=j.a;j.t=(j.t||240)-dt;
+ if(!a||a.dead||j.t<=0||!j.by||j.by.dead){finishTest(e,false);return false;}
+ if(j.phase==='follow'){const sc=j.by;if(dist(e,sc)>1.8*T)goTo(e,sc.x,sc.y,dt,e.speed*1.2);const od=a.home.door;
+  if(Math.hypot(e.x-od.cx,e.y-od.cy)<4.3*T){j.phase='go';e.cuffedBy=null;e.testPass=new Set([a.home.id]);msg('🔓 You\'re uncuffed. Go in and: '+(j.txt||j.act)+' (press E at the doors to ask your tester to open them)','#9ff');}return true;}
+ const near=dist(e,a)<=a.r+e.r+18,inRoom=roomOf(e)===a.home,done=()=>finishTest(e,true);
+ switch(j.act){case 'stand':if(inRoom){j.prog=(j.prog||0)+dt;if(j.prog>=5)done();}break;
+  case 'blue':if(inRoom&&!j.worn){j.worn=true;e.color='#2f4fff';msg('👕 You put on the blue shirt...','#7fb8ff');}if(j.worn){j.prog=(j.prog||0)+dt;if(j.prog>=4)done();}break;
+  case 'look':case 'pat':case 'poke':case 'pet':if(near){j.prog=(j.prog||0)+dt;if(j.prog>=1.5){if(j.act==='pat'){say(a,'Glob! ♥');SFX.glob();}done();}}break;
+  case 'touch':if(e.name==='Steve')done();break;
+  case 'calc':if(e.flags&&e.flags.has('calc'))done();break;
+  case 'answer':if(e.banana||e.flags&&e.flags.has('banana'))done();break;
+  case 'slide':if(e.inSlide)done();break;
+  case 'mayo':if(a.state==='happy'||a.state==='charge')done();break;
+  case 'die':break;
+  default:if(near&&hasItem(e,j.act)){takeItem(e,j.act);a.hunger=100;say(a,'*nom*');SFX.munch();done();}}
+ return false;}
 function updPlayerHuman(e,dt){
+ if(e.returning&&(roomOf(e)===R.cafe||roomOf(e)===R.dblock)){e.returning=false;e.testPass=null;}
+ if(e.cuffedBy&&(!e.job||e.cuffedBy.dead)){if(e.cuffedBy.dead||!e.job)e.cuffedBy=null;}
+ if(e.job&&e.job.type==='test'){if(playerJob(e,dt)){e.walk+=dt*8;return;}}
+ if(e.carried){if(e.carried.dead||e.carried.carry!==e)e.carried=null;else{e.x=e.carried.x;e.y=e.carried.y-30;return;}}
  if(e.carry&&(e.carry.dead||e.carry.carried!==e))e.carry=null;
+ if(e.carry&&e.carry.kind==='a'&&!isOut(e.carry)){const a=e.carry;e.carry=null;a.carried=null;recontain(a,e);earn(15,'carried '+a.name+' back to its cell');bonusProg(150);}
  if(e.sticky&&!e.banana&&!e.inSlide){updSticky(e,dt);return;}
  if(e.banana){e.banana.t+=dt;if(e.banana.t>1.5&&Math.random()<dt*12)SFX.gib();if(e.banana.t>11.5){e.banana=null;kill(e,null,'killed by a phone call from EE7');}return;}
  if(e.inSlide){const s=e.inSlide;const ax=clamp(axes()[0],-1,1);s.vx=clamp(s.vx+ax*900*dt,-300,300)*.96;s.x=clamp(s.x+s.vx*dt,-160,160);s.d+=dt*(16+Math.min(20,s.d/40));return;}
@@ -922,7 +988,7 @@ function updPlayerHuman(e,dt){
   if(h0>25&&e.hunger<=25)msg('🍔 You\'re getting hungry. Eat something (free sandwiches and meat in the Cafeteria).','#ffcf7a');
   if(h0>0&&e.hunger<=0)msg('😵 You\'re STARVING! You\'re slower and losing health until you eat.','#ff9a9a');
   if(e.hunger<=0){e.starveT=(e.starveT||0)+dt;if(e.starveT>=2){e.starveT=0;hurt(e,2,null,'starved to death');}}else e.starveT=0;}
- const sp=e.speed*(e.duck?.6:1)*(spr?1.6:1)*(e.sad?.5:1)*(e.hunger<=0&&!e.sticky?.6:1);if(ax||ay){const l=Math.max(1,Math.hypot(ax,ay));move(e,ax/l*sp*dt,ay/l*sp*dt);e.walk+=dt*10;}
+ const sp=e.speed*(e.duck?.6:1)*(spr?(e.steven?2.8:1.6):1)*(e.sad?.5:1)*(e.hunger<=0&&!e.sticky?.6:1);if(ax||ay){const l=Math.max(1,Math.hypot(ax,ay));move(e,ax/l*sp*dt,ay/l*sp*dt);e.walk+=dt*10;}
  e.aim=Math.atan2(MW.y-e.y,MW.x-e.x);e.face=e.aim;
  if(e.role==='dclass'&&!e.rogue&&(e.card>0||e.items.some(isWeapon)))makeRogue(e);giveKey(e);
  updTests(e,dt);
@@ -934,6 +1000,7 @@ function updPlayerHuman(e,dt){
   else if(M.click){if(!it||ITEMS[it].kind==='clean'||it==='keycard'){if(e.cd<=0&&!TOUCH){e.cd=.45;melee(e,e.aim,8,30,'punched by '+e.name);}}
    else if(ITEMS[it].kind==='spill')spill(e,it);
    else if(ITEMS[it].kind==='paint'){takeItem(e,it);e.color='#ff8a1e';msg('🎨 You sprayed your uniform ORANGE. EE2 likes you now.','#ff9a3c');puff(e.x,e.y,'#ff8a1e',16,90,.6,3);}
+   else if(it==='bluesuit'){takeItem(e,it);e.color='#2f4fff';msg('👕 You put on the BLUE shirt. Stay far away from EE2...','#7fb8ff');}
    else if(it==='goggles'){e.goggles=!e.goggles;msg(e.goggles?'🥽 Goggles on. Everything is scrambled... but your eyes are hidden.':'Goggles off.');}
    else if(it==='earplugs')msg('🎧 Earplugs work automatically while you carry them (banana calls).');
    else if(ITEMS[it].kind==='food'){if(it==='yeast'){msg('You can\'t eat raw yeast. Someone might, though...');}else if(it==='breadR'){takeItem(e,it);kill(e,null,'killed by eating raw person-bread (cook it first!)');}else if(it==='breadG'){takeItem(e,it);e.hunger=Math.min(100,(e.hunger||0)+10);hurt(e,15,null,'chipped teeth on metal bread');msg('OW. Metal bread. -15 HP');}else if(it==='breadGl'){takeItem(e,it);hurt(e,35,null,'killed by eating glass bread');msg('OUCH! There was GLASS in that bread! -35 HP','#ff9a9a');}else{takeItem(e,it);e.hp=Math.min(e.maxhp,e.hp+20);const fill=FILL[it]||20;e.hunger=Math.min(100,(e.hunger===undefined?100:e.hunger)+fill);msg('Ate '+ITEMS[it].n+'. +20 HP, +'+fill+' food');}}}}
@@ -945,12 +1012,13 @@ function updPlayerHuman(e,dt){
  const tool=it&&ITEMS[it].kind==='clean'?ITEMS[it].sp:(e.role==='janitor'?.6:0);
  const m=tool?nearestMess(e,44,it==='sponge'?'water':null):null;e.cleanM=m;
  if(m&&K.e){m.prog+=dt*tool/1.6;if(Math.random()<dt*10)puff(m.x,m.y,'#ddd',1,40,.3,2);if(m.prog>=1){cleanMess(m,e);}}
- else if(pressed.has('e')){const a=getInteract(e);if(a)a.fn();}}
+ else if(e.steven&&e.carry&&e.carry.kind==='h'){if(pressed.has('q'))stevenSlam(e);else if(pressed.has('f'))stevenEat(e);}
+ if(pressed.has('e')){const a=getInteract(e);if(a)a.fn();}}
 function nearestMess(e,r,type){let b=null,bd=r;for(const m of messes){if(type&&m.type!==type)continue;const d=Math.hypot(m.x-e.x,m.y-e.y);if(d<bd){bd=d;b=m;}}return b;}
 function cleanMess(m,e){if(m.tile!==undefined&&!restoreTile(m)){m.prog=.9;if(e===P)msg('Something is standing where the wall goes!');return;}const i=messes.indexOf(m);if(i<0)return;messes.splice(i,1);puff(m.x,m.y,'#fff',8,70,.5,2);if(e===P&&e.role==='janitor')earn(MESS[m.type].p,'cleaned up '+MESS[m.type].n);}
 function spill(e,k){takeItem(e,k);addMess(e.x+Math.cos(e.aim)*22,e.y+Math.sin(e.aim)*22,k==='mayo'?'mayo':'water');msg(k==='mayo'?'🫙 You spilled mayo on the floor. EE1 can smell that, you know.':'💧 Splash. A janitor will love this.');}
-function tryCage(e){if(!isStaff(e)){msg('Only guards and scientists can use Cage.');return;}if((e.cageCd||0)>0){msg('Cage recharging ('+Math.ceil(e.cageCd)+'s).');return;}let a=null,bd=3.3*T;for(const t of ents){if(t.kind!=='a'||t.dead||!AD[t.type].cage||t.cage>0)continue;const d=dist(t,e);if(d<bd){bd=d;a=t;}}
- if(!a){msg('No weak anomaly close enough to cage.');return;}if(a.yeastMode){msg('It\'s in YEAST MODE. It can\'t be caged!','#ff9a9a');return;}a.cage=a.type==='ee24'?5:10;e.cageCd=15;SFX.hit();puff(a.x,a.y,'#9cf',12,100,.5,3);msg('🔲 Caged '+a.name+' for '+a.cage+'s. Press E on it to drag it back to its cell!','#9cf');if(isOut(a)){earn(5,'caged '+a.name);bonusProg(60);}}
+function tryCage(e){if(!isStaff(e)){msg('Only guards and scientists can use Cage.');return;}if((e.cageCd||0)>0){msg('Cage recharging ('+Math.ceil(e.cageCd)+'s).');return;}let a=null,bd=3.3*T;for(const t of ents){if(t.kind!=='a'||t.dead||!(AD[t.type].cage||t.sleep>0)||t.cage>0||AD[t.type].stat||t.type==='ee58')continue;const d=dist(t,e);if(d<bd){bd=d;a=t;}}
+ if(!a){msg('No weak or knocked-out anomaly close enough to cage.');return;}if(a.yeastMode){msg('It\'s in YEAST MODE. It can\'t be caged!','#ff9a9a');return;}a.cage=a.sleep>0?Math.max(15,a.sleep+8):a.type==='ee24'?5:10;e.cageCd=15;SFX.hit();puff(a.x,a.y,'#9cf',12,100,.5,3);msg('🔲 Caged '+a.name+' for '+a.cage+'s. Press E on it to drag it back to its cell!','#9cf');if(isOut(a)){earn(5,'caged '+a.name);bonusProg(60);}}
 // ---- tests ----
 const TESTS=[
  {need:'ee8',rooms:['ee8'],txt:'Stand near EE8 Glob for 5 seconds',pay:5,goal:5,chk:(e,dt)=>{const g=ents.find(a=>a.type==='ee8'&&!a.dead);if(g&&dist(e,g)<4*T)e.test.prog+=dt;return e.test.prog>=5;}},
@@ -968,19 +1036,46 @@ function dutyList(e){const L=[];{const se=ents.find(a=>a.type==='ee88'&&!a.dead&
  const tw=has('ee20');if(tw&&!tw.breached&&e.role==='guard')L.push({kind:'duty',rooms:[],txt:'Tranquilize Twig before its timer runs out',pay:10,chk:e=>e.flags.has('tranqTwig')});
  return L;}
 function updTests(e,dt){if(!['dclass','guard'].includes(e.role)||e.rogue||e.sticky){if(e.test){e.test=null;e.testPass=null;e.outerPass=null;}return;}
- if(!e.test){e.testCd-=dt;if(e.testCd<=0){let pool;if(e.role==='dclass'){const tests=TESTS.filter(t=>ents.some(a=>a.type===t.need&&!a.dead&&!isOut(a)));const duties=dutyList(e);pool=((e.lastKind==='test'&&duties.length)||!tests.length)?duties:tests;}else pool=dutyList(e);
+ if(!e.test){e.testCd-=dt;if(e.testCd<=0){let pool;if(e.role==='dclass'){if(e.job||e.cuffedBy){e.testCd=5;return;}const duties=dutyList(e);if(e.lastKind!=='test'||!duties.length){e.lastKind='test';if(!e.wantTest){e.wantTest=gameT;msg('🧪 A scientist or guard is coming to take you to a test. Wait in the Cafeteria or D-Block.','#9ff');}e.testCd=60;return;}pool=duties;}else pool=dutyList(e);
    if(!pool.length){e.testCd=10;return;}const t=pick(pool);e.lastKind=t.kind||'test';e.flags=new Set();e.test=Object.assign({kind:'test'},t,{doc:e.role==='dclass'?'Dr. '+pick(SURN):'the Foundation',prog:0,time:150});
    if(e.role==='dclass'){e.testPass=new Set(t.rooms||[]);e.outerPass=t.outer||null;}
    msg((e.test.kind==='duty'?'📋 DUTY':'🧪 TEST')+' from '+e.test.doc+': '+t.txt+(e.role==='dclass'?'. (The doors you need are unlocked for you.)':''),'#9ff');}return;}
  e.test.time-=dt;if(e.test.chk(e,dt)){earn(e.test.pay,(e.test.kind==='duty'?'duty done for ':'')+e.test.doc+(e.test.kind==='duty'?'':' marked your test a SUCCESS'));e.test=null;e.testPass=null;e.outerPass=null;e.testCd=e.role==='dclass'?8:45;bonusProg(30);}else if(e.test.time<=0){msg('⌛ Timed out. Another one is coming.');e.test=null;e.testPass=null;e.outerPass=null;e.testCd=e.role==='dclass'?6:30;}}
 // ---- scientist-run tests ----
 const TACT={ee88:[['stand','Feed the Soul Eater: go into its cell (it eats souls)',12]],ee1:[['mayo','Mayo Evacuation: everyone out, then feed it a jar of mayo',15,'mayo']],ee8:[['lettuce','Feed Glob lettuce',8],['pat','Pat Glob',4]],ee24:[['bread','Feed the Yeast yeastless bread mix',8]],ee12:[['meat','Feed Emmett meat',12]],ee3:[['sandwich','Give Spikester a sandwich',6]],ee9:[['sandwich','Feed the Prankster a sandwich',12]],ee7:[['answer','Answer the banana when it rings',12]],ee10:[['slide','Ride the water slide',10]],ee76:[['touch','Touch the Steve blob',5]],ee27:[['calc','Ask the calculator a sum',4]],ee2:[['stand','Stand in EE2\'s room for 5 seconds (in orange)',8],['blue','Wear a blue shirt into EE2\'s room',12,'bluesuit']],ee4:[['look','Observe the egg',3]],ee42:[['pet','Pet the starfish',10]]};
+const TEST_NAMES=[['ee1',/mayo ?house|mimic ?house|\bhouse\b/],['ee2',/orange ?(stick ?)?man|stick ?man|orange guy/],['ee3',/spik/],['ee4',/\begg\b/],['ee7',/banana|phone/],['ee8',/\bglob\b/],['ee9',/prank|\bcat\b/],['ee10',/slide/],['ee12',/emmett|emmet/],['ee20',/twig/],['ee24',/yeast/],['ee27',/calc/],['ee42',/star ?fish/],['ee76',/steve|blob/],['ee88',/soul/]];
+const CANT_KILL=['ee4','ee8','ee27','ee76'];
+function parseTest(text,scientist){const t=' '+text.toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ')+' ';let type=null;
+ const m=t.match(/\b(e{1,2})\s?(\d{1,3})\b/);if(m){const n=+m[2];const k='ee'+n;if(AD[k])type=k;}
+ if(!type)for(const[k,re]of TEST_NAMES)if(re.test(t)){type=k;break;}
+ if(!type)return{err:'I don\'t know which anomaly you mean. Try a name like Glob, Orange Man or E24.'};
+ const a=ents.find(x=>x.type===type&&!x.dead&&!isOut(x));if(!a)return{err:(AD[type]?AD[type].name:type)+' isn\'t in its cell right now.'};
+ if(scientist&&a.home&&a.home.door&&scientist.card<a.home.door.level)return{err:'Your keycard can\'t open '+AD[type].name+'\'s cell.'};
+ const has=re=>re.test(t),T2=TACT[type]||[];let act=null,pay=6;
+ if(has(/\b(feed|food|give|lettuce|meat|sandwich|bread|mayo|pizza|snack)\b/)){const f=T2.find(x=>x[3]||ITEMS[x[0]]);if(!f)return{err:AD[type].name+' doesn\'t eat anything you can give it. Not a viable test.'};return{a,act:f[0],pay:f[2],need:f[3],txt:text};}
+ if(has(/\b(kill|killed|die|dies|dead|death|eaten|murder|chomp|chomped|squash|flatten|flattened|suck|sucked|destroy)/)){if(type==='ee7')act='answer';else if(type==='ee10')act='slide';else if(CANT_KILL.includes(type))return{err:AD[type].name+' can\'t kill anyone. Not a viable test.'};else act='die';pay=12;}
+ else if(has(/\b(answer|ring|call|phone)\b/)&&type==='ee7')act='answer';
+ else if(has(/\b(ride|slide|go down)\b/)&&type==='ee10')act='slide';
+ else if(has(/\b(ask|math|sum|question|add|plus|times)\b/)&&type==='ee27')act='calc';
+ else if(has(/\bblue\b/)&&type==='ee2')act='blue';
+ else if(has(/\b(pet|pat|hug|touch|poke|tickle|boop|bump)\b/))act=type==='ee8'?'pat':type==='ee76'?'touch':type==='ee42'?'pet':'poke';
+ else if(has(/\b(look|observe|watch|stare|study|check|inspect)\b/))act='look';
+ else if(has(/\b(stand|go in|go into|walk in|enter|stay|sit|wait|visit|hang out|live)\b/))act='stand';
+ if(!act)return{err:'That\'s not a viable test. Try something like "pet Glob", "stand in E24\'s cell" or "get killed by the Orange Man".'};
+ if(act==='stand')pay=8;if(act==='look')pay=4;return{a,act,pay,txt:text};}
+function assignTest(h,a,act,txt,pay,need){if(need&&!hasItem(h,need)&&hasItem(P,need))takeItem(P,need);h.job={type:'test',a,act,pay,by:P,t:240,prog:0,phase:'follow',txt};h.cuffedBy=P;h.testPass=null;h.wantTest=false;
+ {const gi=need||(ITEMS[act]?act:null);if(h.isPlayer){if(gi&&!hasItem(h,gi)&&h.items.length<6)h.items.push(gi);}else h.items=gi?[gi]:[];}h.path=null;
+ if(!h.isPlayer)say(h,pick(['Okay...','Do I have to?','For science, I guess.']));msg('🔗 '+h.name+' is cuffed and following you. Lead them to '+a.name+'\'s cell door (open the doors with your keycard).','#9ff');closeOv('testdlg');}
 function openTestMenu(h){const p=document.getElementById('testP');const list=Object.keys(TACT).map(k=>ents.find(a=>a.type===k&&!a.dead&&!isOut(a))).filter(a=>a&&P&&P.card>=(a.home.door?a.home.door.level:0));
- p.innerHTML=`<h2>Test on ${h.name}</h2><p style="color:#9fb0c2">Pick an anomaly. They follow you in cuffs to the cell door, then go in. You both get paid once the anomaly actually does something. You can only pick anomalies your keycard can open.</p>`+(list.length?'':'<p style="color:#ff9a9a">Your keycard can\'t open any anomaly cells with someone inside yet.</p>')+list.map(a=>`<button class="btn sec opt" data-a="${a.type}">${a.name} <small style="color:#9fb0c2">· ${CLS[a.type]}</small></button>`).join('')+`<button class="btn sec opt" onclick="closeOv('testdlg')">Never mind (Esc)</button>`;
- p.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const a=ents.find(x=>x.type===b.dataset.a&&!x.dead);p.innerHTML=`<h2>${a.name}</h2><p style="color:#9fb0c2">What should ${h.name} do?</p>`+TACT[a.type].map(([k,t,pay,need],i)=>{const ok=!need||hasItem(P,need)||hasItem(h,need);return`<button class="btn opt" data-i="${i}" ${ok?'':'disabled'}>${t} <small>· +${pay} e-bucks${ok?'':' · needs '+ITEMS[need].n+(need==='bluesuit'?' (Science Lab)':need==='mayo'?' (Science Lab or shop)':'')}</small></button>`;}).join('')+`<button class="btn sec opt" onclick="closeOv('testdlg')">Never mind (Esc)</button>`;
-  p.querySelectorAll('[data-i]').forEach(bb=>bb.onclick=()=>{const [act,txt,pay,need]=TACT[a.type][+bb.dataset.i];if(need&&!hasItem(h,need)){takeItem(P,need);}h.job={type:'test',a,act,pay,by:P,t:240,prog:0,phase:'follow'};h.cuffedBy=P;h.testPass=null;h.items=need?[need]:ITEMS[act]?[act]:[];h.path=null;say(h,pick(['Okay...','Do I have to?','For science, I guess.']));msg('🔗 '+h.name+' is cuffed and following you. Lead them to '+a.name+'\'s cell door (open the doors with your keycard).','#9ff');closeOv('testdlg');});});
- openOv('testdlg');}
-function finishTest(e,ok){const j=e.job;if(!j||j.type!=='test')return;const a=j.a;if(ok&&j.by&&j.by.isPlayer&&!j.by.dead){earnTo(j.by,j.pay,'your test on '+(a?a.name:'?')+' worked ('+e.name+' got paid too)');if(j.by===P)bonusProg(30);}if(ok)floatTxt(e.x,e.y-30,'+E$','#8dff9a');e.job=null;e.cuffedBy=null;e.testPass=null;e.items=[];e.path=null;if(!e.dead){e.escortMe=true;e.returning=true;e.color='#ff8a14';}}
+ p.innerHTML=`<h2>Test on ${esc(h.name)}${h.isPlayer?' <small style="color:#7fd0ff">(real player)</small>':''}</h2><p style="color:#9fb0c2">Pick an anomaly, or write your own test. They follow you in cuffs to the cell door, then go in. You both get paid once the anomaly actually does it.</p>
+ <div class="row" style="gap:6px;margin:6px 0 10px"><input id="wTest" maxlength="80" placeholder='✍️ Write a test, e.g. "pet Glob" or "get killed by Orange Man"' style="flex:1;min-width:240px"><button class="btn" id="wGo">Try it</button></div><p id="wErr" style="color:#ff9a9a;margin:-4px 0 8px;min-height:0"></p>`
+  +(list.length?'':'<p style="color:#ff9a9a">Your keycard can\'t open any anomaly cells with someone inside yet.</p>')+list.map(a=>`<button class="btn sec opt" data-a="${a.type}">${a.name} <small style="color:#9fb0c2">· ${CLS[a.type]}</small></button>`).join('')+`<button class="btn sec opt" onclick="closeOv('testdlg')">Never mind (Esc)</button>`;
+ const go=()=>{const v=document.getElementById('wTest').value.trim();if(!v)return;const r=parseTest(v,P);if(r.err){document.getElementById('wErr').textContent='🤔 '+r.err;return;}assignTest(h,r.a,r.act,'(written) '+r.txt,r.pay,r.need);};
+ document.getElementById('wGo').onclick=go;document.getElementById('wTest').onkeydown=e=>{e.stopPropagation();if(e.key==='Enter')go();};
+ p.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const a=ents.find(x=>x.type===b.dataset.a&&!x.dead);p.innerHTML=`<h2>${a.name}</h2><p style="color:#9fb0c2">What should ${esc(h.name)} do?</p>`+TACT[a.type].map(([k,t,pay,need],i)=>{const ok=!need||hasItem(P,need)||hasItem(h,need);return`<button class="btn opt" data-i="${i}" ${ok?'':'disabled'}>${t} <small>· +${pay} e-bucks${ok?'':' · needs '+ITEMS[need].n+(need==='bluesuit'?' (Science Lab)':need==='mayo'?' (Science Lab or shop)':'')}</small></button>`;}).join('')+`<button class="btn sec opt" onclick="closeOv('testdlg')">Never mind (Esc)</button>`;
+  p.querySelectorAll('[data-i]').forEach(bb=>bb.onclick=()=>{const [act,txt,pay,need]=TACT[a.type][+bb.dataset.i];assignTest(h,a,act,txt,pay,need);});});
+ openOv('testdlg');setTimeout(()=>{const i=document.getElementById('wTest');if(i&&!TOUCH)i.focus();},50);}
+function finishTest(e,ok){const j=e.job;if(!j||j.type!=='test')return;const a=j.a;if(e===P){if(ok){earn(Math.ceil(j.pay*.6),'test on '+(a?a.name:'?')+' done');bonusProg(30);if(j.by&&j.by!==P&&j.by.isPlayer&&!j.by.dead)earnTo(j.by,j.pay,'your test on '+(a?a.name:'?')+' worked ('+e.name+' got paid too)');}else msg('🧪 The test was cancelled.');e.job=null;e.cuffedBy=null;e.testPass=new Set(['cafe']);e.returning=true;e.testCd=40;if(!e.dead)msg('Head back to the Cafeteria.','#9ff');return;}if(ok&&j.by&&j.by.isPlayer&&!j.by.dead){earnTo(j.by,j.pay,'your test on '+(a?a.name:'?')+' worked ('+e.name+' got paid too)');if(j.by===P)bonusProg(30);}if(ok)floatTxt(e.x,e.y-30,'+E$','#8dff9a');e.job=null;e.cuffedBy=null;e.testPass=null;e.items=[];e.path=null;if(!e.dead){e.escortMe=true;e.returning=true;e.color='#ff8a14';}}
 function testAI(e,dt){const j=e.job,a=j.a;j.t-=dt;
  const done=ok=>finishTest(e,ok);
  if(j.by&&j.by.isPlayer&&!j.by.dead&&dist(e,j.by)>9*T&&gameT-(j.warnT||0)>6){j.warnT=gameT;msgTo(j.by,'⚠ Don\'t leave your D-class behind! ('+e.name+')','#ffcf7a');}
@@ -997,6 +1092,8 @@ function testAI(e,dt){const j=e.job,a=j.a;j.t-=dt;
  switch(j.act){
   case 'answer':if(a.ringing>0){a.ringing=0;a.ringT=rnd(40,80);e.banana={t:0};say(e,'...hello?');done(true);}else if(Math.random()<dt*.3)say(e,'Waiting for it to ring...',2);return;
   case 'slide':done(true);msg('🌊 '+e.name+' went down E10. They are still sliding.','#7fd0ff');e.dead=true;respawnQ.push({t:25,fn:()=>spawnNPC('dclass')});return;
+  case 'die':if(Math.random()<dt*.4)say(e,pick(['Uh... hello?','Nice anomaly...','Please don\'t...']),1.5);return;
+  case 'poke':say(e,'*poke*');done(true);return;
   case 'touch':if(e.name==='Steve')done(true);else{const dx=a.x-e.x,dy=a.y-e.y,d=Math.hypot(dx,dy)||1;move(e,dx/d*60*dt,dy/d*60*dt);}return;
   case 'calc':if(a.isPlayer){a.visitor={who:e.name,q:'what\'s 2 + 2?',npc:e};}else{say(e,'What\'s 2 + 2?');say(a,rudeCalc(a.uses||0,4).slice(0,40),3);a.uses=(a.uses||0)+1;}done(true);return;
   case 'look':say(e,'It\'s... an egg.');done(true);return;
@@ -1009,35 +1106,52 @@ function dutyAI(e,dt){const j=e.job,a=j.a;j.t-=dt;const fin=ok=>{if(ok){floatTxt
  if(!a||a.dead||isOut(a)||j.t<=0){fin(false);return;}
  if(j.act==='feed'){const tr=a.home.tray;if(!j.put){goTo(e,tr.x,tr.y,dt,e.speed);if(Math.hypot(e.x-tr.x,e.y-tr.y)<38&&!tr.food){tr.food=j.food;tr.t=2.2;tr.by=e;e.items=[];j.put=true;say(e,'Food is on the conveyor!');}}else if(e.flags.has('fed_'+a.type))fin(true);else{j.wait=(j.wait||0)+dt;if(j.wait>4){fin(true);}}return;}
  const al=R[a.home.id+'_al']||a.home;const c=roomCenter(al);goTo(e,c.x,c.y,dt,e.speed);const r=roomOf(e);if(r===al||r===a.home){j.prog+=dt;if(j.prog>=4){say(e,'Looks fine.');fin(true);}}}
-function dropCarry(e){const h=e.carry;if(!h)return;const x=e.x+Math.cos(e.aim)*26,y=e.y+Math.sin(e.aim)*26;h.x=hitsSolid(x,y,h.r)?e.x:x;h.y=hitsSolid(x,y,h.r)?e.y:y;h.carried=null;e.carry=null;}
-function openNote(){openOv('notedlg');const i=document.getElementById('noteIn');i.value=P.note||'';setTimeout(()=>i.focus(),30);}
-document.getElementById('noteGo').onclick=()=>{const t=document.getElementById('noteIn').value.trim();if(P&&P.sticky){P.note=t;if(t&&gameT-(P.lastNote||-99)>30){P.lastNote=gameT;earn(1,'posted a helpful note');}}closeOv('notedlg');};
-document.getElementById('noteIn').addEventListener('keydown',ev=>{if(ev.key==='Enter')document.getElementById('noteGo').click();});
+function stevenSlam(e){const h=e.carry;if(!h||h.kind!=='h')return;e.carry=null;h.carried=null;h.x=e.x+Math.cos(e.aim||0)*24;h.y=e.y+Math.sin(e.aim||0)*24;puff(h.x,h.y,'#cfd6de',18,180,.5,3);tone(70,.25,'square',.09,-30);
+ if(h.armor>0){h.armor=0;h.hp=Math.min(h.hp,30);h.sleep=Math.max(h.sleep||0,1.5);say(h,'OOF! (my armor broke)');msgTo(e,'💥 Their armor saved them once. Slam them again!','#e9e4da');}
+ else{const g=h.steven;h.steven=false;kill(h,e,'slammed into the ground by Doctor Steven');h.steven=g;}}
+function stevenEat(e){const h=e.carry;if(!h||h.kind!=='h')return;e.carry=null;h.carried=null;const g=h.steven;h.steven=false;kill(h,e,'eaten by Doctor Steven');h.steven=g;e.hunger=100;e.hp=Math.min(e.maxhp,e.hp+40);SFX.munch();say(e,'*crunch*');}
+function dropCarry(e){const h=e.carry;if(!h)return;if(h.kind==='a'&&!isOut(h)){e.carry=null;h.carried=null;recontain(h,e);if(e===P){earn(15,'carried '+h.name+' back to its cell');bonusProg(150);}return;}const x=e.x+Math.cos(e.aim)*26,y=e.y+Math.sin(e.aim)*26;h.x=hitsSolid(x,y,h.r)?e.x:x;h.y=hitsSolid(x,y,h.r)?e.y:y;h.carried=null;e.carry=null;}
+const PAD={col:'#222',down:false,last:null};
+function openNote(){openOv('notedlg');const cv2=document.getElementById('drawPad'),g=cv2.getContext('2d');g.fillStyle='#ffe45c';g.fillRect(0,0,240,240);if(P&&P.drawing){const im=new Image();im.onload=()=>g.drawImage(im,0,0,240,240);im.src=P.drawing;}
+ const cols=['#222','#d63031','#2f6fd6','#1e9e4a','#ff8a14','#8e44ad','#ffffff'];const box=document.getElementById('padCols');box.innerHTML=cols.map(c=>`<button class="sw ${c===PAD.col?'on':''}" data-c="${c}" style="background:${c}"></button>`).join('');
+ box.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{PAD.col=b.dataset.c;box.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x===b));});
+ const pos=ev=>{const r=cv2.getBoundingClientRect();return[(ev.clientX-r.left)*240/r.width,(ev.clientY-r.top)*240/r.height];};
+ cv2.onpointerdown=ev=>{ev.preventDefault();PAD.down=true;PAD.last=pos(ev);try{cv2.setPointerCapture(ev.pointerId);}catch(e){}};
+ cv2.onpointermove=ev=>{if(!PAD.down)return;const p=pos(ev);g.strokeStyle=PAD.col;g.lineWidth=PAD.col==='#ffffff'?18:9;g.lineCap='round';g.beginPath();g.moveTo(PAD.last[0],PAD.last[1]);g.lineTo(p[0],p[1]);g.stroke();PAD.last=p;};
+ cv2.onpointerup=cv2.onpointercancel=()=>{PAD.down=false;};
+ document.getElementById('padClear').onclick=()=>{g.fillStyle='#ffe45c';g.fillRect(0,0,240,240);};}
+document.getElementById('noteGo').onclick=()=>{const cv2=document.getElementById('drawPad');const sm=document.createElement('canvas');sm.width=sm.height=64;const g=sm.getContext('2d');g.drawImage(cv2,0,0,64,64);const d=g.getImageData(0,0,64,64).data;let ink=0;for(let i=0;i<d.length;i+=4)if(Math.abs(d[i]-255)+Math.abs(d[i+1]-228)+Math.abs(d[i+2]-92)>60)ink++;
+ if(P&&P.sticky){P.drawing=ink>8?sm.toDataURL('image/png'):null;if(P.drawing&&gameT-(P.lastNote||-99)>30){P.lastNote=gameT;earn(1,'drew a helpful note');}}closeOv('notedlg');};
 function updSticky(e,dt){e.aim=Math.atan2(MW.y-e.y,MW.x-e.x);if(uiOpen()||e.sleep>0||e.cage>0)return;
  let hop=null;const dirs={w:[0,-1],arrowup:[0,-1],s:[0,1],arrowdown:[0,1],a:[-1,0],arrowleft:[-1,0],d:[1,0],arrowright:[1,0]};for(const k in dirs)if(pressed.has(k))hop={x:e.x+dirs[k][0]*2.5*T,y:e.y+dirs[k][1]*2.5*T};
  {const jm=Math.hypot(JOY.x,JOY.y);if(!hop&&jm>.6&&e.cd<=0)hop={x:e.x+JOY.x/jm*2.5*T,y:e.y+JOY.y/jm*2.5*T};}
  if(M.click){if(Math.hypot(MW.x-e.x,MW.y-e.y)<=4.2*T)hop={x:MW.x,y:MW.y};else msg('Too far! Stick your next note closer (within 4 tiles).');}
- if(hop&&e.cd<=0){if(!hitsSolid(hop.x,hop.y,e.r)&&los(e,hop,false)){addMess(e.x,e.y,'paper');e.x=hop.x;e.y=hop.y;e.cd=.35;puff(e.x,e.y,'#ffe45c',6,60,.3,2);tone(900,.06,'triangle',.03,300);}else msg('Can\'t stick a note there.');}
+ if(hop&&e.cd<=0){if(!hitsSolid(hop.x,hop.y,e.r)&&los(e,hop,false)){addMess(e.x,e.y,'note',{img:e.drawing||null,t0:gameT,rot:rnd(-.25,.25)});e.drawing=null;e.x=hop.x;e.y=hop.y;e.cd=.35;puff(e.x,e.y,'#ffe45c',6,60,.3,2);tone(900,.06,'triangle',.03,300);}else msg('Can\'t stick a note there.');}
  if(pressed.has('t'))openNote();if(pressed.has('b'))openShop();if(pressed.has('e')){const a=getInteract(e);if(a)a.fn();}}
 // ---- anomaly player ----
-const ABIL={ee88:['Click: Soul suck someone close (10–15s cooldown)','Souls are your only food. Starving (25% or less): click your door to dent it','H: Roar for food (when hungry)'],ee3:['Click: Punch','Q: Kick','F / Right-click: STAB','H: "ARGH!" (when hungry)','Starving (25% or less): click your door to dent it; kills pay double and feed you'],ee42:['Click: Bite (1s)','Walk into meat to eat it','H: Roar for food (when hungry)'],ee12:['Q: Emerge (15s cooldown)','Click: Chomp (while emerged)','H: Roar for food (when hungry)'],ee24:['Walk into food to eat it (then bake it into bread)','H: Roar for food (when hungry)','Click: Eat (3s cooldown)','Then hit 10 timing circles (Space/Click)','Q: Eat your glass door (when starving)'],ee9:['Walk up to people: prank buttons appear on the right (1/2/3, Tab = who)','Click a door: jelly door (lasts 5s, 60s cooldown)','Click a wall next to you: let another anomaly in (stand still 6s)','Click food to prank it, then walk over it to eat','H: Roar for food (when hungry)'],ee20:['Click: Laser','Q: Blow your door open (when the timer hits 0)'],ee27:['Q: Call out','Answer visitors when they ask'],ee58:['1–6: pick a tool (buttons at the top)','Hand: tap doors, drag people','Right-click: spill mayo','O: open/close ALL doors']};
-function updPlayerAnom(e,dt){const busy=uiOpen()||e.sleep>0||e.cage>0||e.stabT>0;const d=AD[e.type];
+const ABIL={ee8:['Click: "Glob!"','G: leave a little goo','Walk into lettuce to eat it','H: hungry Glob (when hungry)','Earns 1 e-buck every 20s for being adorable'],ee88:['Click: Soul suck someone close (10–15s cooldown)','Souls are your only food. Starving (25% or less): click your door to dent it','H: Roar for food (when hungry)'],ee3:['Click: Punch','Q: Kick','F / Right-click: STAB','H: "ARGH!" (when hungry)','E: pick up items · 1–6: pick · G: drop · click to use','Starving (25% or less): click your door to dent it; kills pay double and feed you'],ee42:['Click: Bite (1s)','Walk into meat to eat it','H: Roar for food (when hungry)'],ee12:['Q: Emerge (15s cooldown)','Click: Chomp (while emerged)','H: Roar for food (when hungry)'],ee24:['Walk into food to eat it (then bake it into bread)','H: Roar for food (when hungry)','Click: Eat (3s cooldown)','Then hit 10 timing circles (Space/Click)','Q: Eat your glass door (when starving)'],ee9:['Walk up to people: prank buttons appear on the right (1/2/3, Tab = who)','Click a door: jelly door (lasts 5s, 60s cooldown)','Click a wall next to you: let another anomaly in (stand still 6s)','Click food to prank it, then walk over it to eat','H: Roar for food (when hungry)'],ee20:['Click: Laser','Q: Blow your door open (when the timer hits 0)'],ee27:['Q: Call out','Answer visitors when they ask'],ee58:['1–6: pick a tool (buttons at the top)','Hand: tap doors, drag people','Right-click: spill mayo','O: open/close ALL doors']};
+function updPlayerAnom(e,dt){if(e.carried){if(e.carried.dead||e.carried.carry!==e)e.carried=null;else{e.x=e.carried.x;e.y=e.carried.y-30;return;}}const busy=uiOpen()||e.sleep>0||e.cage>0||e.stabT>0;const d=AD[e.type];
  e.aim=Math.atan2(MW.y-e.y,MW.x-e.x);
  if(e.type==='ee24'){e.hunger=Math.max(0,e.hunger-dt*.5);}
  if(e.type==='ee20')updTwig(e,dt);
  if(e.type==='ee3'){e.alive+=dt;if(e.alive>=15){e.alive=0;earn(1,'Spikester survived another 15s');}}
  if(e.bake){if(e.sleep>0)e.sleep=0;updBake(e,dt);return;}
  if(e.wall){e.wall.t+=dt;if(e.wall.t>=6){e.wall=null;wallPrank(e);}return;}
- if(['ee9','ee12','ee3','ee42','ee88'].includes(e.type)){const h0=e.hunger;e.hunger=Math.max(0,e.hunger-dt*.5);if(h0>25&&e.hunger<=25){if(e.type==='ee3')msg('😤 You\'re STARVING! Kills pay double and feed you. You can also dent your door (click it).','#ffcf7a');if(e.type==='ee88')msg('👁 You\'re starving for souls. Click your door to dent it... or wait for a D-class.','#c08bff');}}
+ if(['ee9','ee12','ee3','ee42','ee88','ee8'].includes(e.type)){const h0=e.hunger;e.hunger=Math.max(0,e.hunger-dt*.5);if(h0>25&&e.hunger<=25){if(e.type==='ee3')msg('😤 You\'re STARVING! Kills pay double and feed you. You can also dent your door (click it).','#ffcf7a');if(e.type==='ee88')msg('👁 You\'re starving for souls. Click your door to dent it... or wait for a D-class.','#c08bff');}}
  if(e.type==='ee3')starveHurt(e,dt);
- if(['ee24','ee12','ee9','ee3','ee42'].includes(e.type)){for(const p of pickups){if(dist(p,e)>e.r+14||(p.fresh||0)>gameT)continue;if(e.type==='ee24'||(e.type==='ee9'?p.pranked:accepts(e,p.item))){anomEats(e,p);if(e.type==='ee9')say(e,'*nom* hehehe');break;}else if(e.type==='ee9'&&!p.warned){p.warned=1;msg('Prank your food first (click it), then eat it.');}}}
+ if(['ee24','ee12','ee9','ee3','ee42','ee8'].includes(e.type)){for(const p of pickups){if(dist(p,e)>e.r+14||(p.fresh||0)>gameT)continue;if(e.type==='ee24'||(e.type==='ee9'?p.pranked:accepts(e,p.item))){anomEats(e,p);if(e.type==='ee9')say(e,'*nom* hehehe');break;}else if(e.type==='ee9'&&!p.warned){p.warned=1;msg('Prank your food first (click it), then eat it.');}}}
  if(e.roarT>0)e.roarT-=dt;if(e.roarCd>0)e.roarCd-=dt;
- if(pressed.has('h')&&['ee24','ee12','ee9','ee3','ee42','ee88'].includes(e.type)){if(e.hunger>50)msg('You can only roar when you\'re hungry (hunger 50% or less).');else if(e.roarCd>0)msg('Catch your breath ('+Math.ceil(e.roarCd)+'s).');else{e.roarT=4;e.roarCd=8;e.roared=true;tone(90,.5,'sawtooth',.08,-30);msg(e.type==='ee3'?'😤 ARGH! Everyone knows you\'re hungry now.':'😡 You ROARED. Everyone knows you want food now.','#ffcf7a');}}
- if(!busy&&!d.stat){let [ax,ay]=axes();e.stam=e.stam===undefined?3:e.stam;const spr=(K.shift||K.sprint)&&e.stam>0&&(ax||ay);e.stam=clamp(e.stam+(spr?-dt:dt*.5),0,3);const sp=d.speed*(spr?1.5:1)*(e.sad?.5:1);if(ax||ay){const l=Math.max(1,Math.hypot(ax,ay));move(e,ax/l*sp*dt,ay/l*sp*dt);e.walk+=dt*10;e.face=Math.atan2(ay,ax);}}
+ if(pressed.has('h')&&['ee24','ee12','ee9','ee3','ee42','ee88','ee8'].includes(e.type)){if(e.hunger>50)msg('You can only roar when you\'re hungry (hunger 50% or less).');else if(e.roarCd>0)msg('Catch your breath ('+Math.ceil(e.roarCd)+'s).');else{e.roarT=4;e.roarCd=8;e.roared=true;tone(90,.5,'sawtooth',.08,-30);msg(e.type==='ee3'?'😤 ARGH! Everyone knows you\'re hungry now.':'😡 You ROARED. Everyone knows you want food now.','#ffcf7a');}}
+ if(!busy&&!d.stat){let [ax,ay]=axes();e.stam=e.stam===undefined?3:e.stam;const spr=(K.shift||K.sprint)&&e.stam>0&&(ax||ay);e.stam=clamp(e.stam+(spr?-dt:dt*.5),0,3);const sp=d.speed*(spr?1.9:1)*(e.sad?.5:1)*(e.type==='ee12'&&e.emT>0?1.8:1)*(e.cd>0&&e.type!=='ee58'?1.2:1);if(ax||ay){const l=Math.max(1,Math.hypot(ax,ay));move(e,ax/l*sp*dt,ay/l*sp*dt);e.walk+=dt*10;e.face=Math.atan2(ay,ax);}}
  if(busy)return;
  let click=M.click;const q=pressed.has('q');
  switch(e.type){
- case 'ee3':if(click&&e.cd<=0){const dd=e.hunger<=25&&cellDoorNear(e);if(dd)dentDoor(e,dd);else{e.cd=.45;melee(e,e.aim,10,30,'punched by Spikester');}}if(q&&(e.cd2||0)<=0){e.cd2=1.4;const h=melee(e,e.aim,18,34,'kicked by Spikester');if(h){const a=Math.atan2(h.y-e.y,h.x-e.x);move(h,Math.cos(a)*40,Math.sin(a)*40);}}
+ case 'ee3':{e.items=e.items||[];if(e.sel===undefined)e.sel=0;for(let i=1;i<=6;i++)if(pressed.has(String(i))&&e.items.length>=i)e.sel=i-1;const it=e.items[e.sel];
+  if(pressed.has('e')){let best=null,bd=40;for(const p of pickups){const d=dist(p,e);if(d<bd){bd=d;best=p;}}if(best){if(e.items.length>=6)msg('Your hands are full (6 items). Drop something with G.');else{e.items.push(best.item);e.sel=e.items.length-1;pickups.splice(pickups.indexOf(best),1);msg('Picked up '+ITEMS[best.item].n+'.');}}}
+  if(pressed.has('g')&&it){e.items.splice(e.sel,1);e.sel=Math.max(0,Math.min(e.sel,e.items.length-1));pickups.push({x:e.x+Math.cos(e.aim)*20,y:e.y+Math.sin(e.aim)*20,item:it,life:90,fresh:gameT+3});}
+  if(click&&it&&isWeapon(it)&&ITEMS[it].kind!=='melee'){fire(e,it,e.aim);break;}
+  if(click&&it&&ITEMS[it].kind==='food'){e.items.splice(e.sel,1);e.sel=Math.max(0,Math.min(e.sel,e.items.length-1));if(accepts(e,it)){e.hunger=Math.min(100,e.hunger+(FILL[it]||25));msg('😋 Spikester ate the '+ITEMS[it].n+'.');SFX.munch();}else msg('Spikester doesn\'t like '+ITEMS[it].n+'. He threw it away.');break;}}
+  if(click&&e.cd<=0){const dd=e.hunger<=25&&cellDoorNear(e);if(dd)dentDoor(e,dd);else{e.cd=.45;melee(e,e.aim,10,30,'punched by Spikester');}}if(q&&(e.cd2||0)<=0){e.cd2=1.4;const h=melee(e,e.aim,18,34,'kicked by Spikester');if(h){const a=Math.atan2(h.y-e.y,h.x-e.x);move(h,Math.cos(a)*40,Math.sin(a)*40);}}
   if((pressed.has('f')||M.rclick)&&(e.cd3||0)<=0){e.cd3=1.2;e.stabT=1.05;e.stabA=e.aim;melee(e,e.aim,45,42,'stabbed by Spikester');SFX.hit();}break;
  case 'ee42':if(click&&e.cd<=0){e.cd=1;melee(e,e.aim,20,26,'bitten by the Flesh-Eating Starfish');}break;
  case 'ee12':if(q&&(e.emCd||0)<=0){e.emT=8;e.emCd=15;say(e,'*rrrip*');SFX.munch();}if(click&&e.cd<=0){if(e.emT>0){e.cd=.8;const h=melee(e,e.aim,50,34,'chomped by Emmett');if(h&&h.dead){earn(2,'ate someone (yum, meat)');}}else msg('Emerge first (Q).');}if(!(e.emT>0)&&e.wasEm)e.revealT=10;e.wasEm=e.emT>0;break;
@@ -1057,6 +1171,7 @@ function updPlayerAnom(e,dt){const busy=uiOpen()||e.sleep>0||e.cage>0||e.stabT>0
  case 'ee27':if(q&&e.cd<=0){e.cd=4;say(e,pick(['Is anyone gonna talk to me?','Hello?? I do MATH.','Is anyone gonna USE me or something?','I\'m bored. Ask me a sum, cowards.']),3);e.nextV=Math.min(e.nextV||0,gameT+4);}
   if(!e.visitor&&gameT>(e.nextV||12)){const v=nearestHuman(e,4*T);e.visitor={who:v?v.name:pick(['Dr. ','Officer '])+pick(SURN),q:pick(['what\'s 1 + 1?','what\'s 3 + 7?','what\'s 12 x 12?','what\'s 50 - 51?','what\'s 81 / 9?','what\'s 6 x 7?']),npc:v};e.nextV=gameT+rnd(20,40);}
   if(e.visitor&&!document.getElementById('calcp').classList.contains('on'))openCalcP(e);break;
+ case 'ee8':if(click&&e.cd<=0){e.cd=.6;say(e,pick(['Glob!','Glob glob!','GLOB!','glob?']),1.5);SFX.glob();}if(pressed.has('g')&&(e.cd2||0)<=0){e.cd2=4;addMess(e.x+rnd(-8,8),e.y+12,'goo');msg('A little goo.');}e.alive=(e.alive||0)+dt;if(e.alive>=20){e.alive=0;earn(1,'being adorable');}break;
  case 'ee88':if(click&&!(e.cd>0&&e.hunger<=25&&cellDoorNear(e))){if(e.cd>0)msg('Soul suck recharging ('+Math.ceil(e.cd)+'s).');else{let t=null,bd=3.2*T;for(const h of ents){if(h.kind!=='h'||h.dead||h.inSlide||h===e||h.suckT>0)continue;const d=dist(h,e);if(d<bd){bd=d;t=h;}}if(t)soulSuck(e,t);else{const dd=e.hunger<=25&&cellDoorNear(e);if(dd&&e.cd2<=0){dentDoor(e,dd);e.cd=0;e.cd2=.7;}else msg('Nobody close enough. Get within about 3 tiles.');}}}else if(click&&e.cd>0&&e.hunger<=25&&(e.cd2||0)<=0){const dd=cellDoorNear(e);if(dd){const c0=e.cd;dentDoor(e,dd);e.cd=c0;e.cd2=.7;}}break;
  case 'ee58':updCreator(e,click);break;}
  if(pressed.has('e')&&e.type!=='ee58'){const a=nearestHuman(e,0);}}
@@ -1082,6 +1197,12 @@ function updCreator(e,click){const tool=e.tool58||'hand';
   const t=creatorTarget(30);if(t&&(t.kind==='h'||!AD[t.type].stat)){e.drag58=t;t.pin={x:Math.round(MW.x),y:Math.round(MW.y)};}}}
 function setTool58(k){if(!P||P.type!=='ee58')return;P.tool58=k;const t=TOOLS58.find(x=>x[0]===k);if(t)msg(t[1]+' '+t[2]+': '+t[3],'#b46bff');updBar58(true);}
 let bar58Key='';
+let USE_LIST=null,useKey='';
+function updUseBar(){let bar=document.getElementById('useBar');if(!bar){bar=document.createElement('div');bar.id='useBar';document.body.appendChild(bar);}
+ const show=USE_LIST&&mode==='play'&&!uiOpen()&&P&&!P.dead;bar.style.display=show?'flex':'none';if(!show){useKey='';return;}
+ const key=USE_LIST.map(x=>x.label).join('|');if(key===useKey)return;useKey=key;
+ bar.innerHTML=USE_LIST.map((x,i)=>`<button class="useb ${i===0?'first':''}" data-i="${i}">${i===0&&!TOUCH?'<kbd>E</kbd> ':''}${esc(x.label)}</button>`).join('');
+ bar.querySelectorAll('[data-i]').forEach(b=>b.onpointerdown=ev=>{ev.preventDefault();ev.stopPropagation();const lab=USE_LIST&&USE_LIST[+b.dataset.i]&&USE_LIST[+b.dataset.i].label;const cur=getInteract(P);const it=cur&&cur.all&&cur.all.find(x=>x.label===lab);if(it){it.fn();useKey='';}});}
 function updBar58(force){const show=P&&!P.dead&&P.type==='ee58'&&mode==='play';let bar=document.getElementById('bar58');
  if(!bar){bar=document.createElement('div');bar.id='bar58';document.body.appendChild(bar);const tr=document.createElement('div');tr.id='trash58';tr.innerHTML='🗑️<small>drag here</small>';document.body.appendChild(tr);}
  const tr=document.getElementById('trash58');bar.style.display=show?'flex':'none';tr.style.display=show&&P.tool58==='kill'?'flex':'none';
@@ -1142,10 +1263,10 @@ function buildMenu(){const m=document.getElementById('menuP');const pts=S.pts,ad
  <button class="card" data-role="sticky" ${S.sticky||(S.staff&&S.eb>=100)?'':'disabled'}><b>E22 · Sticky Notes</b><small>A worker. Move by sticking new notes, write messages on yourself. Level 1 card.</small><span class="tag ${S.sticky?'go':''}">${S.sticky?'PLAY':S.staff?'Unlock · 100 e-bucks':'Needs Scientist/Guard unlocked + 100'}</span></button>
  ${S.steven?`<div class="card"><b>Doctor Steven</b><small>A worker stuck in an 096-type body. Super tough, picks people up. Pick his clothes:</small><div class="row" style="gap:6px;margin-top:7px"><button class="btn" data-steven="guard" style="padding:5px 9px">Guard</button><button class="btn" data-steven="scientist" style="padding:5px 9px">Scientist</button><button class="btn" data-steven="janitor" style="padding:5px 9px">Janitor</button></div></div>`:`<button class="card" data-role="steven" ${S.eb>=1000?'':'disabled'}><b>Doctor Steven</b><small>A worker stuck in an 096-type body. Super tough, picks people up, wears guard, scientist or janitor clothes.</small><span class="tag">Unlock · 1,000 e-bucks</span></button>`}
  </div><h3>Play as an anomaly (SEP points)</h3><div style="color:#8494a6;font-size:12.5px;margin:-2px 0 8px">Points are spent when you pick one, and you get 5 guaranteed minutes: if you're killed, you respawn as it (or switch to another anomaly for free). After that, play until you die. You still earn SEP points as an anomaly, twice as fast once you've breached.</div><div class="grid">`;
- const list=['ee3','ee27','ee24','ee42','ee12','ee88','ee9','ee20'];
- const wl=winLeft();for(const k of list){const a=AD[k];const tk=NET.on?NET.anomTaken(k):'';const can=(adm||wl||pts>=a.cost)&&!tk;h+=`<button class="card" data-anom="${k}" ${can?'':'disabled'}><b>${a.name}</b><small>${CLS[k]} · ${a.desc}</small><span class="tag ${can?'go':''}">${tk?'Taken by '+esc(tk):adm?'FREE (admin)':wl?'FREE ('+Math.ceil(wl/60)+' min left)':a.cost+' point'+(a.cost>1?'s':'')}</span></button>`;
+ const list=['ee8','ee3','ee27','ee24','ee42','ee12','ee88','ee9','ee20'];
+ const wl=winLeft();for(const k of list){const a=AD[k];const tk=NET.on&&!adm?NET.anomTaken(k):'';const can=(adm||wl||pts>=a.cost)&&!tk;h+=`<button class="card" data-anom="${k}" ${can?'':'disabled'}><b>${a.name}</b><small>${CLS[k]} · ${a.desc}</small><span class="tag ${can?'go':''}">${tk?'Taken by '+esc(tk):adm?'FREE (admin)':wl?'FREE ('+Math.ceil(wl/60)+' min left)':a.cost+' point'+(a.cost>1?'s':'')}</span></button>`;
   if(k==='ee12'){const c2=(adm||wl||pts>=5)&&!tk;h+=`<button class="card" data-anom="ee12" data-unc="1" ${c2?'':'disabled'}><b>E12 Emmett · Uncontained</b><small>Start loose, disguised as a scientist. Nobody knows... until you emerge.</small><span class="tag ${c2?'go':''}">${adm?'FREE (admin)':wl?'FREE':'5 points'}</span></button>`;}}
- if(adm&&!(NET.on&&NET.anomTaken('ee58')))h+=`<button class="card" data-anom="ee58"><b>E58 · The Creator</b><small>Apollyon. The giant cursor. Reshape the facility.</small><span class="tag go">CREATOR ONLY</span></button>`;
+ if(adm)h+=`<button class="card" data-anom="ee58"><b>E58 · The Creator</b><small>Apollyon. The giant cursor. Reshape the facility.</small><span class="tag go">CREATOR ONLY</span></button>`;
  h+=`</div><h3>Customize</h3><div class="row">
  <label>Name <input id="cName" value="${(S.name||'').replace(/"/g,'&quot;')}" maxlength="16" style="width:130px"></label>
  <span class="swl">Eyes ${EYES.map(([n,c])=>`<button class="sw ${S.eye===c?'on':''}" data-eye="${c}" title="${n}" style="background:${c}"></button>`).join('')}<small id="eyeWarn" style="color:#ffb14a">${S.eye==='#2f6fd6'?'⚠ Blue is risky: EE2 hates it!':''}</small></span>
@@ -1206,7 +1327,7 @@ function openShop(){if(P&&!P.dead&&P.type==='ee58'){openCreatorItems();return;}i
  sp.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>buy(b.dataset.buy,next));openOv('shop');}
 function buy(k,next){const s=SHOP.find(x=>x.k===k);
  if(k==='card'){const p=cardPrice(next);if(S.eb<p)return;S.eb-=p;S.card=next;P.card=Math.max(P.card,next);msg('💳 Bought a level '+next+' keycard!','#b9f');}
- else if(k==='armor'){if(S.eb<25)return;S.eb-=25;P.maxhp+=50;P.hp+=50;msg('🛡️ Armor on. +50 HP.');}
+ else if(k==='armor'){if(S.eb<25)return;S.eb-=25;P.maxhp+=50;P.hp+=50;P.armor=(P.armor||0)+1;msg('🛡️ Armor on. +50 HP.');}
  else if(s.free){if(!give(P,k))return;freeT[k]=gameT;msg('Claimed free '+ITEMS[k].n+'.');}
  else{if(S.eb<s.p)return;if(P.items.length>=6){msg('Your hands are full.');return;}S.eb-=s.p;give(P,k);msg('Bought '+ITEMS[k].n+'.');}
  SFX.cash();save();openShop();}
@@ -1246,12 +1367,12 @@ function update(dt){gameT+=dt;
  for(let i=0;i<ents.length;i++){const a=ents[i];if(a.dead||a.ghost||a.inSlide||AD[a.type]&&(AD[a.type].stat||a.type==='ee1'))continue;for(let j=i+1;j<ents.length;j++){const b=ents[j];if(b.dead||b.ghost||b.inSlide||AD[b.type]&&(AD[b.type].stat||b.type==='ee1'))continue;const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),m=a.r+b.r;if(d>0&&d<m){const p=(m-d)/2;move(a,-dx/d*p,-dy/d*p);move(b,dx/d*p,dy/d*p);}}}
  if(!CL)for(const a of ents){if(!a.dragBy)continue;const g=a.dragBy;a.dragT=(a.dragT||0)+dt;if(g.dead||a.dead||a.dragT>60){a.dragBy=null;g.dragging=null;continue;}a.cage=Math.max(a.cage,1);const dx=a.x-g.x,dy=a.y-g.y,d=Math.hypot(dx,dy)||1;if(d>34){const s=Math.min(d-34,400*dt);move(a,-dx/d*s,-dy/d*s);if(Math.hypot(a.x-g.x,a.y-g.y)>3*T){a.x=g.x+dx/d*30;a.y=g.y+dy/d*30;}}
   if(!isOut(a)){const by=g;a.dragBy=null;g.dragging=null;recontain(a,null);if(by.isPlayer){earnTo(by,15,'dragged '+a.name+' back to its cell');if(by===P)bonusProg(150);}}}
- updTouchUI();updBar58();updBullets(dt);if(!CL)updTrays(dt);updEscape();updPrankBar();
+ updTouchUI();updBar58();updUseBar();updBullets(dt);if(!CL)updTrays(dt);updEscape();updPrankBar();
  for(const e of ents)if(e.drowsy>0&&!e.remote&&(!CL||e===P))e.drowsy=Math.max(0,e.drowsy-dt/8);
  for(const p of parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.92;p.vy*=.92;p.life-=dt;}parts=parts.filter(p=>p.life>0);
  if(CL)respawnQ=[];for(const q of respawnQ){q.t-=dt;if(q.t<=0)q.fn();}respawnQ=respawnQ.filter(q=>q.t>0);
  if(!CL){for(const p of pickups)p.life-=dt;pickups=pickups.filter(p=>p.life>0);}
- if(!CL)for(let i=messes.length-1;i>=0;i--){const m=messes[i];if(m.tile!==undefined&&m.repairAt&&gameT>m.repairAt){if(restoreTile(m))messes.splice(i,1);else m.repairAt=gameT+5;}}
+ if(!CL)for(let i=messes.length-1;i>=0;i--){const m=messes[i];if(m.type==='note'&&!m.img&&gameT-(m.t0||0)>15){messes.splice(i,1);continue;}if(m.tile!==undefined&&m.repairAt&&gameT>m.repairAt){if(restoreTile(m))messes.splice(i,1);else m.repairAt=gameT+5;}}
  if(!CL){jobT-=dt;if(jobT<=0){jobT=2;dispatchJobs();}}
  if(!CL)rogueT-=dt;if(rogueT<=0){rogueT=rnd(70,130);const c=ents.filter(e=>e.kind==='h'&&!e.isPlayer&&!e.dead&&e.role==='dclass'&&!e.rogue&&!e.job);if(c.length&&ents.filter(e=>e.rogue&&!e.isPlayer&&!e.dead).length<1){const r=pick(c);r.rogue=true;say(r,'I\'M BREAKING OUT!',3);announce('Warning. Class D containment breach in progress. Security, report to the Class D block.','dclass');msg('🚨 A D-class ('+r.name+') has gone rogue!','#ff9a9a');}}
  ents=ents.filter(e=>!e.dead);
@@ -1272,6 +1393,7 @@ function rrect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.qu
 function renderMap(){const c=mx;c.fillStyle='#07090b';c.fillRect(0,0,W*T,H*T);
  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=ix(x,y),g=grid[i];if(g===FLOOR||g===DOOR||g===GLASS){const r=rooms[roomMap[i]];c.fillStyle=g===FLOOR&&r?r.floor:'#262b32';c.fillRect(x*T,y*T,T,T);if(g!==GLASS){c.strokeStyle='rgba(255,255,255,.035)';c.strokeRect(x*T+.5,y*T+.5,T-1,T-1);}}}
  // decor
+ for(let y=0;y<H;y++)for(let x=1;x<W-1;x++){const i=ix(x,y);if(grid[i]!==GLASS)continue;const l=roomMap[ix(x-1,y)],r=roomMap[ix(x+1,y)];if((l>=0&&rooms[l].id==='ee2')||(r>=0&&rooms[r].id==='ee2')){c.fillStyle='rgba(255,140,30,.45)';c.fillRect(x*T,y*T,T,T);}}
  c.save();c.strokeStyle='#e0262b';c.lineWidth=6;c.setLineDash([22,10]);c.beginPath();c.arc(MAYO_C.x,MAYO_C.y,MAYO_R,0,Math.PI*2);c.stroke();c.restore();
  
  let sd=7;const sr=()=>{sd=(sd*9301+49297)%233280;return sd/233280;};
@@ -1297,7 +1419,7 @@ function drawDoor(d){const[x0,y0]=d.tiles[0];const px=x0*T,py=y0*T;
  const half=T*(1-d.open);ctx.fillStyle=d.glass?'rgba(170,225,255,.55)':'#3d4756';ctx.fillRect(px,py+6,half,T-12);ctx.fillRect(px+2*T-half,py+6,half,T-12);
  ctx.fillStyle=LVC[d.level];ctx.fillRect(px,py+T/2-2,half,4);ctx.fillRect(px+2*T-half,py+T/2-2,half,4);
  if(d.hold){ctx.fillStyle='#ffe14a';ctx.fillRect(px+T-3,py,6,5);}}
-function drawMess(m){if(m.type==='corpse'){drawCorpse(m);return;}ctx.save();ctx.translate(m.x,m.y);ctx.rotate(m.rot);ctx.fillStyle=m.c;
+function drawMess(m){if(m.type==='corpse'){drawCorpse(m);return;}if(m.type==='note'){const c=ctx;c.save();c.translate(m.x,m.y);c.rotate(m.rot||0);const fade=m.img?1:clamp(1-(gameT-(m.t0||0)-12)/3,0,1);c.globalAlpha=fade;c.fillStyle='#ffe45c';c.strokeStyle='#b89a1a';c.lineWidth=1.2;c.beginPath();c.moveTo(-12,-12);c.lineTo(12,-12);c.lineTo(12,6);c.lineTo(6,12);c.lineTo(-12,12);c.closePath();c.fill();c.stroke();const im=noteImg(m,'img');if(im)c.drawImage(im,-11,-11,22,22);c.restore();return;}ctx.save();ctx.translate(m.x,m.y);ctx.rotate(m.rot);ctx.fillStyle=m.c;
  if(m.type==='paper'){ctx.fillStyle=m.c;ctx.strokeStyle='#b89a1a';ctx.lineWidth=1;ctx.beginPath();for(let k=0;k<8;k++){const a=k*.785,r=5+((m.seed*53+k*17)%4);ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);}ctx.closePath();ctx.fill();ctx.stroke();}
  else if(m.type==='rubble'){for(let k=0;k<5;k++){const a=k*1.3+m.seed*6,r=6+((m.seed*97+k*31)%10);ctx.fillRect(Math.cos(a)*r-4,Math.sin(a)*r-3,8+k%3*2,6+k%2*3);}}
  else if(m.type==='bread'){ctx.fillStyle=m.c;rrect(ctx,-13,-8,26,16,7);ctx.fill();ctx.strokeStyle='rgba(0,0,0,.35)';ctx.lineWidth=2;for(let k=-1;k<=1;k++){ctx.beginPath();ctx.moveTo(k*7-3,-5);ctx.lineTo(k*7+3,5);ctx.stroke();}}
@@ -1346,8 +1468,8 @@ function drawSteven(e,color,role){const c=ctx,sw=Math.sin(e.walk||0)*3,pale='#e9
  c.fillStyle=pale;c.strokeStyle='#8a857a';c.lineWidth=1.2;c.beginPath();c.ellipse(0,-34,7.5,9,0,0,7);c.fill();c.stroke();
  c.fillStyle='#222';c.beginPath();c.arc(-2.6,-35,1.3,0,7);c.arc(2.6,-35,1.3,0,7);c.fill();c.strokeStyle='#222';c.beginPath();c.arc(0,-31.5,2.4,.3,2.8);c.stroke();}
 function drawSticky(e){const c=ctx;c.rotate(Math.sin(gameT*2)*.05);c.fillStyle='#ffe45c';c.strokeStyle='#b89a1a';c.lineWidth=1.5;c.beginPath();c.moveTo(-13,-13);c.lineTo(13,-13);c.lineTo(13,7);c.lineTo(7,13);c.lineTo(-13,13);c.closePath();c.fill();c.stroke();c.fillStyle='#e0c23a';c.beginPath();c.moveTo(13,7);c.lineTo(7,7);c.lineTo(7,13);c.closePath();c.fill();c.fillStyle='rgba(255,255,255,.35)';c.fillRect(-13,-13,26,4);
- c.fillStyle='#222';c.beginPath();c.arc(-4,-4,1.6,0,7);c.arc(4,-4,1.6,0,7);c.fill();c.strokeStyle='#222';c.lineWidth=1.2;c.beginPath();c.arc(0,-1,3,.3,2.8);c.stroke();
- if(e.note){c.fillStyle='#4a3a10';for(let k=0;k<3;k++)c.fillRect(-9,4+k*2.6,14-k*3,1);}}
+ const im=noteImg(e,'drawing');if(im)c.drawImage(im,-12,-12,24,24);}
+function noteImg(o,k){const src=o[k];if(!src)return null;if(!o._imc||o._imc.src!==src){const im=new Image();im.src=src;o._imc={src,im};}return o._imc.im.complete&&o._imc.im.naturalWidth?o._imc.im:null;}
 function drawCage(e){const c=ctx;if(!(e.cage>0))return;c.strokeStyle='#9cf';c.lineWidth=3;c.strokeRect(e.x-e.r-8,e.y-e.r-14,e.r*2+16,e.r*2+20);for(let k=1;k<4;k++){c.beginPath();c.moveTo(e.x-e.r-8+k*(e.r*2+16)/4,e.y-e.r-14);c.lineTo(e.x-e.r-8+k*(e.r*2+16)/4,e.y+e.r+6);c.stroke();}}
 function drawAnom(e){const c=ctx;if(e.tint){const f=c.filter;c.filter=(f&&f!=='none'?f+' ':'')+tintFilter(e.tint);try{drawAnom0(e);}finally{c.filter=f;}return;}drawAnom0(e);}
 function shadeCol(hex,a){const n=parseInt(hex.slice(1),16);let r=n>>16&255,g=n>>8&255,b=n&255;const f=a<0?1+a:1-a,t=a<0?0:255;r=Math.round(a<0?r*f:r+(t-r)*a);g=Math.round(a<0?g*f:g+(t-g)*a);b=Math.round(a<0?b*f:b+(t-b)*a);return'#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);}
@@ -1493,19 +1615,19 @@ function drawHUD(){const c=ctx;if(!P)return;c.textAlign='left';c.textBaseline='a
  if(P.maxhp<1e8){c.fillStyle='#000';c.fillRect(26,64,pw-24,8);c.fillStyle=P.hp/P.maxhp>.4?'#5fdc6a':'#ff5a5a';c.fillRect(26,64,(pw-24)*clamp(P.hp/P.maxhp,0,1),8);}
  if(P.kind==='h'&&!P.sticky&&P.hunger!==undefined){const hf=clamp(P.hunger/100,0,1);c.fillStyle='#000';c.fillRect(44,77,pw-42,6);c.fillStyle=P.hunger<=0?(Math.sin(gameT*8)>0?'#ff5a5a':'#7a2020'):P.hunger<=25?'#ffb14a':'#e8a64a';c.fillRect(44,77,(pw-42)*hf,6);c.font='11px system-ui';c.fillText('🍔',26,84);}
  c.fillStyle='#e8ecf1';c.font='bold 13px system-ui';c.fillText('💵 '+S.eb+' e-bucks',26,92+hy);c.fillText('⭐ '+S.pts+' SEP pts',150,92+hy);c.fillStyle='#000';c.fillRect(150,98+hy,110,4);c.fillStyle='#ffe14a';c.fillRect(150,98+hy,110*S.prog/600,4);
- if(P.kind==='h'){c.fillStyle='#9fb0c2';c.font='11px system-ui';c.fillText(P.sticky?'Click/WASD: hop · T: write · B: shop · R R: respawn':'B: shop · C: cage · G: drop · R R: respawn',26,118+hy);}
+ if(P.kind==='h'){c.fillStyle='#9fb0c2';c.font='11px system-ui';c.fillText(P.sticky?'Click/WASD: hop · T: draw · B: shop · R R: respawn':'B: shop · C: cage · G: drop · R R: respawn',26,118+hy);}
  // minimap
  const mw=W*2,mh=H*2,mxp=VW-mw-14;c.globalAlpha=.88;c.fillStyle='#0b0d10';c.fillRect(mxp-4,10,mw+8,mh+8);c.drawImage(mmC,mxp,14);c.globalAlpha=1;
  for(const e of ents){if(e.dead)continue;const show=e===P||(e.kind==='a'&&isOut(e)&&!e.disguised&&!AD[e.type].stat&&e.type!=='ee58');if(!show)continue;c.fillStyle=e===P?'#ffe14a':'#ff4d4d';c.fillRect(mxp+e.x/T*2-2,14+e.y/T*2-2,4,4);}
  // test card
  if(P.test){const t=P.test;const w=Math.min(520,VW-340);c.fillStyle='rgba(20,40,48,.9)';rrect(c,VW/2-w/2,14,w,46,10);c.fill();c.fillStyle='#9ff';c.font='bold 12px system-ui';c.textAlign='center';c.fillText((t.kind==='duty'?'📋 DUTY from ':'🧪 TEST from ')+t.doc+' · +'+t.pay+' e-bucks · '+Math.ceil(t.time)+'s',VW/2,32);c.fillStyle='#e8ecf1';c.font='13px system-ui';c.fillText(t.txt+(t.prog?' ('+Math.min(t.goal||5,t.prog).toFixed(1)+'/'+(t.goal||5)+'s)':''),VW/2,51);c.textAlign='left';}
  // hotbar / abilities
- if(P.kind==='h'){const n=6,sz=50,x0=VW/2-n*(sz+6)/2;for(let i=0;i<n;i++){const x=x0+i*(sz+6),y=VH-sz-16;c.fillStyle=i===P.sel&&P.items[i]?'rgba(255,179,71,.3)':'rgba(12,16,21,.8)';rrect(c,x,y,sz,sz,8);c.fill();c.strokeStyle=i===P.sel&&P.items[i]?'#ffb347':'#2b3440';c.lineWidth=2;c.stroke();const it=P.items[i];c.fillStyle='#9fb0c2';c.font='10px system-ui';c.fillText(String(i+1),x+4,y+12);if(it){const bc=ITEMS[it].bc;c.textAlign='center';drawIcon(c,it,x+sz/2,y+sz/2-2,24);c.fillStyle='#cfd8e2';c.font='9px system-ui';c.fillText(ITEMS[it].n.split(' ')[0].slice(0,9),x+sz/2,y+sz-5);c.textAlign='left';}}
+ if(P.kind==='h'||P.type==='ee3'){P.items=P.items||[];const n=6,sz=50,x0=VW/2-n*(sz+6)/2;for(let i=0;i<n;i++){const x=x0+i*(sz+6),y=VH-sz-16;c.fillStyle=i===P.sel&&P.items[i]?'rgba(255,179,71,.3)':'rgba(12,16,21,.8)';rrect(c,x,y,sz,sz,8);c.fill();c.strokeStyle=i===P.sel&&P.items[i]?'#ffb347':'#2b3440';c.lineWidth=2;c.stroke();const it=P.items[i];c.fillStyle='#9fb0c2';c.font='10px system-ui';c.fillText(String(i+1),x+4,y+12);if(it){const bc=ITEMS[it].bc;c.textAlign='center';drawIcon(c,it,x+sz/2,y+sz/2-2,24);c.fillStyle='#cfd8e2';c.font='9px system-ui';c.fillText(ITEMS[it].n.split(' ')[0].slice(0,9),x+sz/2,y+sz-5);c.textAlign='left';}}
   const it=P.items[P.sel];if(it){c.fillStyle='#e8ecf1';c.font='bold 12px system-ui';c.textAlign='center';const iw=ITEMS[it];let lab=it==='keycard'?'Keycard (level '+P.card+') · held out: just walk into doors':iw.n;if(iw.mag){const rl=P.rl&&P.rl[it]>gameT;lab+=rl?' · reloading '+Math.ceil(P.rl[it]-gameT)+'s':' · ammo '+(P.ammo&&P.ammo[it]!==undefined?P.ammo[it]:iw.mag)+'/'+iw.mag;}c.fillText(lab,VW/2,VH-sz-24);c.textAlign='left';}}
  else{const L=ABIL[P.type]||[];const extra=[];if(P.type==='ee24')extra.push('Hunger: '+Math.round(P.hunger)+'%'+(P.hunger<=50?' · H to roar':'')+(foodInCell(P.home)?' · food in your cell!':''));if(P.type==='ee20')extra.push(P.breached?'You are LOOSE':P.timer>0?'Door ready in '+Math.ceil(P.timer)+'s':'DOOR READY! Press Q');if(P.type==='ee12')extra.push(P.emT>0?'EMERGED '+Math.ceil(P.emT)+'s':(P.emCd>0?'Emerge in '+Math.ceil(P.emCd)+'s':'Emerge ready (Q)'));if(P.type==='ee9'){extra.push(P.pcd>0?'Prank in '+Math.ceil(P.pcd)+'s':'Prank ready');extra.push('Hunger: '+Math.round(P.hunger)+'%'+(P.hunger<30?' · STARVING = stronger pranks!':'')+(P.hunger<=50?' · H to roar':''));if(P.wall)extra.push('Pranking the wall... '+Math.ceil(6-P.wall.t)+'s');}if(P.type==='ee12')extra.push('Hunger: '+Math.round(P.hunger)+'%'+(P.disguised?' · disguised as '+P.fake:''));if(P.type!=='ee58'){const wl=winLeft();extra.push(wl?'Guaranteed time: '+Math.floor(wl/60)+':'+String(wl%60).padStart(2,'0')+' (you respawn if killed)':'Bonus time: play until you die');}
   const lines=L.concat(extra);const w=360,h=lines.length*18+16;c.fillStyle='rgba(12,16,21,.82)';rrect(c,VW/2-w/2,VH-h-14,w,h,10);c.fill();c.textAlign='center';lines.forEach((l,i)=>{c.fillStyle=i>=L.length?'#ffe14a':'#e8ecf1';c.font=(i>=L.length?'bold ':'')+'13px system-ui';c.fillText(l,VW/2,VH-h-14+22+i*18);});c.textAlign='left';}
  // prompt
- if(mode==='play'&&!uiOpen()&&P.kind==='h'&&!P.inSlide&&!P.banana){let label=null;if(P.cleanM)label='Hold E: clean '+MESS[P.cleanM.type].n;else{const a=getInteract(P);if(a)label='E: '+a.label;}if(label){c.font='bold 14px system-ui';const w=c.measureText(label).width+24;c.fillStyle='rgba(255,179,71,.95)';rrect(c,VW/2-w/2,VH-112,w,28,8);c.fill();c.fillStyle='#1a1206';c.textAlign='center';c.fillText(label,VW/2,VH-93);c.textAlign='left';}}
+ if(mode==='play'&&!uiOpen()&&P.kind==='h'&&!P.inSlide&&!P.banana){let label=null;if(P.cleanM)label='Hold E: clean '+MESS[P.cleanM.type].n;else{const a=getInteract(P);USE_LIST=a&&a.all&&a.all.length>1?a.all:null;if(a&&!USE_LIST)label=(TOUCH?'Use: ':'E: ')+a.label;}if(label){c.font='bold 14px system-ui';const w=c.measureText(label).width+24;c.fillStyle='rgba(255,179,71,.95)';rrect(c,VW/2-w/2,VH-112,w,28,8);c.fill();c.fillStyle='#1a1206';c.textAlign='center';c.fillText(label,VW/2,VH-93);c.textAlign='left';}}
  // messages
  let y=VH-24-(TOUCH&&!S.touchOff?175:0);const mxw=Math.min(460,VW/2-200);for(let i=msgs.length-1;i>=0;i--){const m=msgs[i];c.globalAlpha=clamp(m.life,0,1);c.font='13px system-ui';const lines=wrap(m.t,mxw);for(let k=lines.length-1;k>=0;k--){c.fillStyle='rgba(0,0,0,.55)';c.fillRect(12,y-15,c.measureText(lines[k]).width+12,20);c.fillStyle=m.c;c.fillText(lines[k],18,y);y-=20;}y-=4;}c.globalAlpha=1;
  if(P.bake){const b=P.bake,cx=VW/2,cy=VH/2-40;c.fillStyle='rgba(0,0,0,.55)';c.fillRect(0,0,VW,VH);c.fillStyle='#fff';c.font='bold 20px system-ui';c.textAlign='center';c.fillText('MAKE BREAD! '+b.hits+' / 10',cx,cy-90);c.font='13px system-ui';c.fillText('Press SPACE or click when the ring meets the circle',cx,cy+100);
