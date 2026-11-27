@@ -620,6 +620,8 @@ body.ttt-full{overflow:hidden}
 .lava-pad[hidden],.lava-btns[hidden]{display:none}
 .lava-end{position:absolute;top:24%;left:50%;transform:translateX(-50%) rotate(-1deg);width:min(92%,380px);text-align:center;z-index:5}
 .lava-end[hidden]{display:none}
+.more-games{margin-top:24px;text-align:center}
+.more-games-list{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
 .lava-online{text-align:left;margin:18px auto;max-width:520px}
 .lava-room-list{margin:6px 0 10px;padding-left:20px}
 /* leaderboard */
@@ -973,6 +975,14 @@ body.ttt-full{overflow:hidden}
           <p class="hand" id="lavaEndText"></p>
           <div class="row" style="justify-content:center" id="lavaEndBtns"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- more NWAOS games that live at their own address -->
+    <div class="box more-games" id="moreGames">
+      <h3>MORE NWAOS GAMES</h3>
+      <div class="more-games-list">
+        <a class="btn red" href="/sep/">🔬 PLAY SEP FOUNDATION</a>
       </div>
     </div>
 
@@ -1376,7 +1386,7 @@ const CONFIG = {
     { id: 'floating-text', name: 'Floating Text',  anchor: '#commentList .comment.mine', style: 'right:16px;bottom:14px', r: -3, size: 92, afterFirstPost: true }, // only appears next to your own theory after you post one
     { id: 'face-mister',   name: 'Person Guy Dude Man Face Mister', anchor: '#music',   style: 'right:6px;bottom:-40px', r: 0, size: 40 },
     { id: 'baby-giant-snail', name: 'Baby Giant Snail', anchor: '#charList .char-card', style: 'right:18px;top:-20px', r: 6, size: 42 }, // riding on Giant Snail's card
-    { id: 'ball',          name: 'Ball',           anchor: '#episodes .section-head',   style: 'right:4%;bottom:-26px', r: 0, size: 34, added: true },   // added Nov 27, 2026
+    { id: 'ball',          name: 'Ball',           anchor: '#leaders .section-head',    style: 'left:46%;bottom:-24px', r: 0, size: 30, added: true },   // added Nov 27, 2026
     { id: 'giant-snail',   name: 'Giant Snail',    anchor: 'footer',                    style: 'right:7%;top:14px', r: 0, size: 58 },
   ],
 
@@ -2334,8 +2344,8 @@ function tttRenderSetup() {
   $('#tttModes').innerHTML = TTT.modes.map(m => `<button type="button" data-mode="${m.id}" aria-pressed="${m.id === TTT.pick.mode}">${m.name}
       <small>${m.goal === Infinity ? 'climb forever' : m.goal.toLocaleString() + ' tall'}${P.best[m.id] ? ' · best ' + P.best[m.id].toLocaleString() : ''}${P.beat[m.id] ? ' ✓' : ''}</small></button>`).join('');
 }
-$('#tttOpen').addEventListener('click', () => { $('#gamesHub').hidden = true; $('#ttt').hidden = false; $('#tttSetup').hidden = false; $('#tttStage').hidden = true; tttRenderSetup(); });
-$('#tttBack').addEventListener('click', () => { $('#ttt').hidden = true; $('#gamesHub').hidden = false; });
+$('#tttOpen').addEventListener('click', () => { $('#gamesHub').hidden = true; $('#moreGames').hidden = true; $('#ttt').hidden = false; $('#tttSetup').hidden = false; $('#tttStage').hidden = true; tttRenderSetup(); });
+$('#tttBack').addEventListener('click', () => { $('#ttt').hidden = true; $('#gamesHub').hidden = false; $('#moreGames').hidden = false; });
 $('#tttChars').addEventListener('click', async e => {
   const b = e.target.closest('[data-climber]'); if (!b) return;
   const c = TTT.climbers.find(x => x.id === b.dataset.climber), P = tttProgress();
@@ -2830,8 +2840,8 @@ function lavaRenderSetup() {
   $('#lavaChars').innerHTML = lavaCast().map(c => `<button type="button" data-lava-who="${c.id}" aria-pressed="${c.id === LAVA.pick.who}"><img src="${esc(c.img)}" alt="">${esc(c.name)}</button>`).join('');
   $('#lavaBots').innerHTML = [0, 1, 2, 3, 5, 7, 9].filter(n => n > 0 || lavaNet.room).map(n => `<button type="button" data-lava-bots="${n}" aria-pressed="${n === LAVA.pick.bots}">${n}</button>`).join('');
 }
-$('#lavaOpen').addEventListener('click', () => { if (!lavaCanPlay()) return; $('#gamesHub').hidden = true; $('#lava').hidden = false; $('#lavaSetup').hidden = false; lavaRenderSetup(); lavaWatchLobby(); renderLavaLobby(); });
-$('#lavaBack').addEventListener('click', () => { lavaNetLeave(); $('#lava').hidden = true; $('#gamesHub').hidden = false; });
+$('#lavaOpen').addEventListener('click', () => { if (!lavaCanPlay()) return; $('#gamesHub').hidden = true; $('#moreGames').hidden = true; $('#lava').hidden = false; $('#lavaSetup').hidden = false; lavaRenderSetup(); lavaWatchLobby(); renderLavaLobby(); });
+$('#lavaBack').addEventListener('click', () => { lavaNetLeave(); $('#lava').hidden = true; $('#gamesHub').hidden = false; $('#moreGames').hidden = false; });
 $('#lavaChars').addEventListener('click', e => { const b = e.target.closest('[data-lava-who]'); if (b) { LAVA.pick.who = b.dataset.lavaWho; lavaRenderSetup(); lavaNetPick(); } });
 $('#lavaBots').addEventListener('click', e => { const b = e.target.closest('[data-lava-bots]'); if (b) { LAVA.pick.bots = +b.dataset.lavaBots; lavaRenderSetup(); } });
 
@@ -3059,7 +3069,7 @@ function lavaShowEnd(kind) {
 $('#lavaEndBtns').addEventListener('click', e => {
   if (e.target.closest('#lavaWatch')) $('#lavaEnd').hidden = true;
   else if (e.target.closest('#lavaAgain')) { if (lavaNet.room) lavaBackToLobby(); else lavaStart(); }
-  else if (e.target.closest('#lavaLeave')) { lavaNetLeave(); lavaClose(); $('#lava').hidden = true; $('#gamesHub').hidden = false; }
+  else if (e.target.closest('#lavaLeave')) { lavaNetLeave(); lavaClose(); $('#lava').hidden = true; $('#gamesHub').hidden = false; $('#moreGames').hidden = false; }
 });
 $('#lavaCanvas').addEventListener('pointerdown', () => {   // while spectating, tap to watch someone else
   if (!lava || lava.me.alive) return;
