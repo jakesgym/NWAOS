@@ -620,6 +620,18 @@ body.ttt-full{overflow:hidden}
 .lava-pad[hidden],.lava-btns[hidden]{display:none}
 .lava-end{position:absolute;top:24%;left:50%;transform:translateX(-50%) rotate(-1deg);width:min(92%,380px);text-align:center;z-index:5}
 .lava-end[hidden]{display:none}
+/* leaderboard */
+.lb-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.lb-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.lb-row{display:flex;align-items:center;gap:10px;background:#fff;border:3px solid var(--ink);border-radius:12px;padding:6px 12px 6px 6px;cursor:pointer}
+.lb-row.me{background:#e6f3ff}
+.lb-row .lb-rank{font-family:var(--font-title);font-weight:900;width:2.6em;text-align:center;font-size:.9rem}
+.lb-row.r1 .lb-rank{color:#c9a000}.lb-row.r2 .lb-rank{color:#8a8a8a}.lb-row.r3 .lb-rank{color:#b0642a}
+.lb-row img{width:38px;height:38px;border:2px solid var(--ink);border-radius:9px;object-fit:cover}
+.lb-row .lb-name{flex:1;font-weight:700;word-break:break-all}
+.lb-row .lb-val{font-family:var(--font-title);font-weight:900;font-size:.8rem;white-space:nowrap}
+.prof-ranks{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+.prof-ranks span{background:#fff;border:2px solid var(--ink);border-radius:14px;padding:3px 9px;font-size:.75rem;font-weight:700}
 .poll-cast{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-top:14px;cursor:pointer}
 .poll-cast > img,.poll-cast .hatwrap > img:first-child{height:56px;width:auto;max-width:90px;object-fit:contain;transition:transform .15s}
 .poll-cast .hatwrap{margin-top:18px}
@@ -687,6 +699,7 @@ body.ttt-full{overflow:hidden}
       <button class="tab" data-tab="fanart">FAN ART</button>
       <button class="tab" data-tab="music">MUSIC</button>
       <button class="tab" data-tab="games">GAMES</button>
+      <button class="tab" data-tab="leaders">LEADERBOARD</button>
     </nav>
   </div>
 </header>
@@ -998,6 +1011,18 @@ body.ttt-full{overflow:hidden}
   </section>
 
   <!-- ================= MUSIC ================= -->
+  <section class="page" id="leaders" aria-labelledby="leaders-title">
+    <div class="section-head">
+      <h2 id="leaders-title">LEADERBOARD</h2>
+      <span class="hand">who's the best at NWAOS?</span>
+    </div>
+    <div class="box">
+      <div class="lb-tabs" id="lbTabs"></div>
+      <p class="form-note" id="lbNote"></p>
+      <ol class="lb-list" id="lbList"></ol>
+    </div>
+  </section>
+
   <section class="page" id="music" aria-labelledby="music-title">
     <div class="section-head">
       <h2 id="music-title">MUSIC</h2>
@@ -1075,6 +1100,7 @@ body.ttt-full{overflow:hidden}
         <p class="form-note">Every time someone gets into this account (with the password or a quick sign-in code). See one you don't know? Change your code.</p>
         <button type="button" class="btn small white" id="logShow">SHOW LOGIN LOG</button><ul class="login-log" id="loginLog"></ul></div>
     </div>
+    <div id="profRanksWrap"><h4>LEADERBOARD</h4><div class="prof-ranks" id="profRanks"></div></div>
     <h4>BADGES</h4>
     <div class="badge-grid" id="profBadges"></div>
     <div class="row">
@@ -1310,6 +1336,7 @@ const CONFIG = {
     theories:   'images/bg/theories.jpg',    // the PDOL
     fanart:     'images/bg/episodes.jpg',
     games:      'images/bg/home.jpg',
+    leaders:    'images/bg/news.jpg',
     music:      'images/bg/music.jpg',       // the PDOL with Piece 2
   },
 
@@ -1420,7 +1447,7 @@ function mergeSave(a = {}, b = {}) {
   Object.entries(tb.best || {}).forEach(([k, v]) => { best[k] = Math.max(best[k] || 0, v || 0); });
   return {
     ttt_progress: { beat: { ...(ta.beat || {}), ...(tb.beat || {}) }, best,
-      coins: Math.max(ta.coins || 0, tb.coins || 0), orbs: Math.max(ta.orbs || 0, tb.orbs || 0), knocked: Math.max(ta.knocked || 0, tb.knocked || 0), bought: [...new Set([...(ta.bought || []), ...(tb.bought || [])])] },
+      coins: Math.max(ta.coins || 0, tb.coins || 0), climbed: Math.max(ta.climbed || 0, tb.climbed || 0), orbs: Math.max(ta.orbs || 0, tb.orbs || 0), knocked: Math.max(ta.knocked || 0, tb.knocked || 0), bought: [...new Set([...(ta.bought || []), ...(tb.bought || [])])] },
     found: [...new Set([...(a.found || []), ...(b.found || [])])],
     pokes: Math.max(a.pokes || 0, b.pokes || 0),
     foundAll: !!(a.foundAll || b.foundAll),   // Master Finder stays even after starting over
@@ -1440,14 +1467,14 @@ function startLiveData() {
   if (!db) return;
   const oops = what => e => console.warn(what, e);
   db.collection('comments').orderBy('time', 'desc').limit(400).onSnapshot(q => {
-    DB.comments = q.docs.map(d => ({ id: d.id, ...d.data() })); renderComments(); updateAccountUI();
+    DB.comments = q.docs.map(d => ({ id: d.id, ...d.data() })); renderComments(); updateAccountUI(); renderLeaderboard();
   }, oops('comments'));
   db.collection('pics').where('status', '==', 'approved').onSnapshot(q => {
     DB.picsApproved = {}; q.docs.forEach(d => { DB.picsApproved[d.id] = d.data(); }); renderComments();
   }, oops('pics'));
   db.collection('profiles').onSnapshot(q => {
     DB.profiles = {}; q.docs.forEach(d => { DB.profiles[d.id] = d.data(); });
-    renderComments(); renderPostBadgePicker(); checkNewBadges();
+    renderComments(); renderPostBadgePicker(); checkNewBadges(); renderLeaderboard();
     if (typeof tttRenderSetup === 'function' && !$('#tttSetup').hidden && !$('#ttt').hidden) tttRenderSetup();
     if (typeof renderGamesHub === 'function') renderGamesHub();
   }, oops('profiles'));
@@ -1608,7 +1635,7 @@ const EP_COLORS = ['#ffd400', '#7ee0ff', '#ff9ad1', '#9dff8a', '#ffb066', '#c9b6
 /* =========================================================
    NAVIGATION (hash-based tabs)
    ========================================================= */
-const PAGES = ['home', 'episodes', 'characters', 'news', 'vote', 'theories', 'fanart', 'music', 'games'];
+const PAGES = ['home', 'episodes', 'characters', 'news', 'vote', 'theories', 'fanart', 'music', 'games', 'leaders'];
 const voteLocked = () => (CONFIG.poll.status || 'open') === 'locked';
 function showPage(name) {
   if (!PAGES.includes(name)) name = 'home';
@@ -1620,6 +1647,7 @@ function showPage(name) {
   if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
   const bg = (CONFIG.backgrounds || {})[name];
   $('#scene').style.backgroundImage = bg ? `url("${bg}")` : 'none';
+  if (name === 'leaders' && typeof renderLeaderboard === 'function') renderLeaderboard();
   window.scrollTo({ top: 0, behavior: showPage.ready ? 'smooth' : 'auto' });
   showPage.ready = true;
 }
@@ -2456,6 +2484,7 @@ function tttEnd(G, won) {
     P.coins += G.coinCount + bonus;
     P.orbs = (P.orbs || 0) + (G.orbsGot || 0);         // for the Powered Up badge
     P.knocked = (P.knocked || 0) + (G.knocks || 0);    // for the Pole Wrecker badge
+    P.climbed = (P.climbed || 0) + h;                  // all-time heights, for the leaderboard (counted from Nov 26)
     tttSaveProgress(P);
   }
   const fresh = TTT.climbers.filter(c => !c.creatorOnly && !c.onlyFor && !c.price && tttUnlocked(c, P) && !before.includes(c.id)).map(c => c.name);
@@ -3424,7 +3453,8 @@ const isCreatorUid = uid => !!DB.profiles[uid] && isCreatorName(DB.profiles[uid]
 // my own numbers (fresh from this browser)
 function myStats() {
   const P = tttProgress();
-  return { best: Math.floor(P.best.endless || 0), pokes: store.get('pokes', 0), foundAll: findWon() || !!store.get('foundAll', false), rich: (P.bought || []).includes('diamond'), orbs: P.orbs || 0, knocked: P.knocked || 0 };
+  return { best: Math.floor(P.best.endless || 0), pokes: store.get('pokes', 0), foundAll: findWon() || !!store.get('foundAll', false), rich: (P.bought || []).includes('diamond'), orbs: P.orbs || 0, knocked: P.knocked || 0,
+    coins: lbCoinsEarned(P), climbed: Math.floor(P.climbed || 0) };
 }
 const statsOf = uid => (ME && uid === ME.uid) ? myStats() : ((DB.profiles[uid] || {}).stats || {});
 // hearts from the theories board
@@ -3509,6 +3539,55 @@ function postBadgesHtml(c, holders) {
   }).join('');
 }
 
+
+/* ---------- LEADERBOARD ---------- */
+// coins earned all-time = coins you have now + what you spent in the shops
+function lbCoinsEarned(P) {
+  const spent = (P.bought || []).reduce((n, id) => n + (id === 'diamond' ? 100 : ((TTT.climbers.find(c => c.id === id) || {}).price || 0)), 0);
+  return (P.coins || 0) + spent;
+}
+const LB = [
+  { id: 'hearts',  name: '❤️ HEARTS',        unit: 'hearts', note: 'All the hearts on your posts.' },
+  { id: 'pokes',   name: '🐌 POKES',         unit: 'pokes', note: 'Snail pokes on the home page.' },
+  { id: 'coins',   name: '<img class="coin-ico" src="images/ttt/coin.png" alt=""> COINS',          unit: 'coins', note: 'All the coins ever earned in To The Top (spent ones count too).' },
+  { id: 'best',    name: '🏆 BEST CLIMB',    unit: 'tall', note: 'Best To The Top score in Endless.' },
+  { id: 'climbed', name: '🧗 TOTAL CLIMBED', unit: 'heights', note: 'Every height climbed in To The Top, added up (counting started Nov 26, 2026).' },
+  { id: 'orbs',    name: '⚡ POWER-UPS',      unit: 'orbs', note: 'SUPER POWERS orbs grabbed in To The Top.' },
+];
+let lbPick = 'hearts';
+// everyone with a public profile (approved accounts, the creator and DefinitelyNotAdmin273 included)
+function lbBoard(id) {
+  const H = heartTotals(), rows = [];
+  const uids = new Set(Object.keys(DB.profiles)); if (ME && (ME.admin || ME.status === 'approved')) uids.add(ME.uid);
+  for (const uid of uids) {
+    const prof = DB.profiles[uid] || {}, st = statsOf(uid);
+    const name = ME && uid === ME.uid ? ME.username : prof.username; if (!name) continue;
+    const v = id === 'hearts' ? (H.total[uid] || 0) : Math.floor(+st[id] || 0);
+    if (v > 0) rows.push({ uid, name, v });
+  }
+  rows.sort((a, b) => b.v - a.v || a.name.localeCompare(b.name));
+  let rank = 0, prev = null;
+  rows.forEach((r, i) => { if (r.v !== prev) { rank = i + 1; prev = r.v; } r.rank = rank; });   // ties share a place
+  return rows;
+}
+function renderLeaderboard() {
+  if (!$('#lbList')) return;
+  const L = LB.find(x => x.id === lbPick);
+  $('#lbTabs').innerHTML = LB.map(x => `<button type="button" class="chip" data-lb="${x.id}" aria-pressed="${x.id === lbPick}">${x.name}</button>`).join('');
+  $('#lbNote').textContent = L.note;
+  const rows = lbBoard(lbPick).slice(0, 50);
+  $('#lbList').innerHTML = rows.length ? rows.map(r => `<li class="lb-row r${r.rank} ${ME && r.uid === ME.uid ? 'me' : ''}" data-profile="${esc(r.uid)}">
+      <span class="lb-rank">#${r.rank}</span><img src="${pfpSrc(pfpOf(r.uid))}" alt=""><span class="lb-name">${esc(r.name)}</span><span class="lb-val">${r.v.toLocaleString()} ${L.unit}</span></li>`).join('')
+    : '<p class="empty">Nobody yet. Go be first!</p>';
+}
+$('#lbTabs').addEventListener('click', e => { const b = e.target.closest('[data-lb]'); if (b) { lbPick = b.dataset.lb; renderLeaderboard(); } });
+// "#3 in pokes" on someone's profile
+function renderProfileRanks(uid) {
+  const out = [];
+  for (const L of LB) { const r = lbBoard(L.id).find(x => x.uid === uid); if (r) out.push(`<span>#${r.rank} ${L.name}</span>`); }
+  $('#profRanksWrap').hidden = !out.length; $('#profRanks').innerHTML = out.join('');
+}
+
 /* ---------- account page (tap a profile picture) ---------- */
 function openProfile(uid) {
   const own = ME && uid === ME.uid, prof = DB.profiles[uid] || {};
@@ -3521,6 +3600,7 @@ function openProfile(uid) {
   $('#profBadges').innerHTML = list.length ? list.map(b => `<figure class="badge-card ${got.includes(b.id) ? '' : 'locked'}">
       <img src="${badgeSrc(b.id)}" alt=""><figcaption><strong>${esc(b.name)}</strong>${own && !got.includes(b.id) ? `<small>${esc(b.how)}</small>` : ''}</figcaption></figure>`).join('')
     : '<p class="form-note">No badges yet!</p>';
+  renderProfileRanks(uid);
   $('#profOwn').hidden = !own;
   if (own) {
     const waiting = !ME.admin && ME.status !== 'approved';
