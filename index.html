@@ -3670,7 +3670,7 @@ const BADGES = [
   { id: 'powered-up',         name: 'Powered Up',        how: 'Grab 10 SUPER POWERS orbs in To The Top' },
   { id: 'pole-wrecker',       name: 'Pole Wrecker',      how: 'Knock 100 things off the pole in To The Top' },
   { id: 'perfect-climb',      name: 'Perfect Climb',     how: 'Beat HARD in To The Top without losing a single heart' },
-  { id: 'sep-badge',          name: 'SEP Badge',         how: 'In SEP Foundation, ask Spikester what he likes doing, then click his link' },
+  { id: 'sep-foundation',     name: 'SEP Badge',         how: 'In SEP Foundation, ask Spikester what he likes doing, then click his link' },
   // voice actor badges: the voice actor (and the creator) has it, and can give it to as many people as they want
   { id: 'gd-voice',           name: 'Voice of GD',          how: 'Given by the voice of GD', owner: 'KdFwcEPy3RadC3UzGCALIWHLUP53' },
   { id: 'p2763-voice',        name: 'Voice of Piece 2763',  how: 'Given by the voice of Piece 2763', owner: 'Jw8Q90FYWfWETAzSNZtvkHYNrya2' },
@@ -3688,7 +3688,7 @@ const PFPS = [
   { id: 'super-powers', name: 'Super Powers', badge: 'powered-up' },
   { id: 'gd-voice', name: 'GD (voice actor)', badge: 'gd-voice' },
   { id: 'p2763-voice', name: 'Piece 2763 (voice actor)', badge: 'p2763-voice' },
-  // unlocks with the SEP Foundation badge (talk to Spikester in SEP Foundation). Hidden until that badge is on the site.
+  // unlocks with the SEP Foundation badge (talk to Spikester in SEP Foundation). 
   { id: 'sep-foundation', name: 'SEP Foundation', badge: 'sep-foundation' },
   { id: 'snail-palooza', name: 'Snail Palooza', creatorOnly: true },
 ];
@@ -3766,7 +3766,7 @@ function badgesOf(uid, holders = badgeHolders()) {
   if ((s.orbs || 0) >= 10) got.push('powered-up');
   if ((s.knocked || 0) >= 100) got.push('pole-wrecker');
   if (s.perfect) got.push('perfect-climb');
-  if (s.sep) got.push('sep-badge');
+  if (s.sep) got.push('sep-foundation');
   for (const b of BADGES) if (b.owner && (b.owner === uid || DB.grants[b.id + '_' + uid])) got.push(b.id);
   return got;
 }
