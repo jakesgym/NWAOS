@@ -79,6 +79,7 @@ input[type=color]{padding:2px;width:42px;height:32px}
 <div id="calcp" class="ov"><div class="panel dlg" id="calcpP"></div></div>
 <div id="prank" class="ov"><div class="panel dlg" id="prankP"></div></div>
 <div id="file96" class="ov"><div class="panel dlg" id="file96P"></div></div>
+<div id="spktalk" class="ov"><div class="panel dlg" id="spktalkP"></div></div>
 <div id="console" class="ov"><div class="panel dlg" id="consoleP"></div></div>
 <div id="escape" class="ov"><div class="panel dlg" id="escapeP"></div></div>
 <div id="pbar" style="position:fixed;right:14px;top:50%;transform:translateY(-50%);display:none;z-index:5;background:rgba(12,16,21,.9);border:1px solid #2b3440;border-radius:12px;padding:10px;width:200px;font:13px system-ui;color:#e8ecf1"></div>
@@ -306,7 +307,7 @@ function updGhosts(){const now=Date.now();
   const alive=st&&!st.dead&&now-(s.at||0)<15000;
   if(!alive){if(g&&!g.dead){g.dead=true;if(NET.host&&g.kind==='a'&&g.type!=='ee58')respawnQ.push({t:20,fn:(t=>()=>spawnAnomNPC(t))(g.type)});}continue;}
   if(g&&g.lid===st.lid&&g.dead)continue;
-  if(!g||g.lid!==st.lid||g.dead){const ng=mkFrom(st);if(!ng)continue;ng.id='p:'+uid;ng.remote=uid;ng.isPlayer=true;ng.lid=st.lid;applyEnt(ng,st,null,false);ng.x=st.x;ng.y=st.y;ng._v=s.v;if(g&&!g.dead)g.dead=true;NET.ghosts.set(uid,ng);ents.push(ng);g=ng;if(NET.host)NET.gpre.set(g,serEnt(g,true));}
+  if(!g||g.lid!==st.lid||g.dead){const ng=mkFrom(st);if(!ng)continue;ng.id='p:'+uid;ng.remote=uid;ng.isPlayer=true;ng.lid=st.lid;applyEnt(ng,st,null,false);ng.x=st.x;ng.y=st.y;ng._v=s.v;if(g&&!g.dead){g.dead=true;if(NET.host&&g.kind==='a'&&g.type!=='ee58'&&g.type!==ng.type)respawnQ.push({t:5,fn:(t=>()=>spawnAnomNPC(t))(g.type)});}NET.ghosts.set(uid,ng);ents.push(ng);g=ng;if(NET.host&&ng.kind==='a'&&AD[ng.type]&&AD[ng.type].idle)for(const e of ents)if(e.type===ng.type&&!e.isPlayer&&!e.remote)e.dead=true;if(NET.host)NET.gpre.set(g,serEnt(g,true));}
   else if(g._v!==s.v){applyEnt(g,st,g._prev,true);g._v=s.v;if(NET.client)g._gb=serEnt(g);if(NET.host)NET.gpre.set(g,serEnt(g,true));}
   g._prev=st;g.name=st.name!==undefined?decV(st.name):g.name;
   if(s.sh&&s.sh.length)for(const sh of s.sh){const key=uid+':'+sh[0];if(NET.seenShots[key])continue;NET.seenShots[key]=1;if(now-sh[6]<1500)bullets.push({x:sh[1],y:sh[2],vx:sh[3],vy:sh[4],kind:sh[5],life:sh[5]==='fire'?.38:.8,fake:true,owner:g,dmg:0});}}
@@ -473,7 +474,7 @@ function addDoor(r,x,y,level,glass,inner){const d={i:doors.length,room:r.id,tile
 const cellDoors=r=>r?[r.door,r.door2].filter(Boolean):[];
 addRoom('hall','Main Hallway',1,27+OY,W-2,31+OY,{floor:'#262b32',hall:true});
 const TOP=[['dblock','D-Class Block',2,13,0,'#3b342a'],['cafe','Cafeteria',15,26,1,'#38322a'],['ee1','EE1 · Mayo House',28,45,2,'#2c382a'],['ee2','EE2 · Orange Stick Man',47,56,3,'#6a3e12'],['ee24','E24 · The Yeast',58,67,3,'#3a3428'],['ee12','E12 · Emmett',69,78,3,'#3a2b2b'],['ee42','E42 · Flesh-Eating Starfish',80,89,3,'#22343a'],['ee9','EE9 · The Prankster',91,100,4,'#2e2638'],['ee88','E88 · Soul Eater',102,108,3,'#271c36'],['ee20','E20 · Twig',110,117,4,'#1d1b22'],['ee96','E96 · Ultra Introvert',120,126,3,'#2c2b31'],['ee6','EE6 · The Unseen',128,134,4,'#060607']];
-const BOT=[['armory','Guard Armory',2,13,1,'#243044'],['lab','Science Lab',15,26,1,'#26353a'],['ee8','EE8 · Glob',28,35,1,'#2d3a33'],['ee27','E27 · Calculator',37,44,1,'#30302e'],['ee4','EE4 · The Egg',46,52,1,'#33302c'],['ee7','EE7 · Banana Phone',54,61,1,'#3a3820'],['ee76','E76 · Steve Blob',63,70,1,'#2b3a2b'],['ee10','E10 · Water Slide',72,79,1,'#1f3340'],['ee3','EE3 · Spikester',81,90,2,'#33343b'],['admin','Admin Room',92,101,5,'#2a1f33'],['closet','Janitor Closet',103,109,0,'#2f2f27'],['exit','SURFACE EXIT',111,117,4,'#1f3a2a'],['ee103','Ě03 · Ground Lurker',120,126,3,'#2e281f'],['cams','Camera Room',128,134,1,'#1a2230']];
+const BOT=[['armory','Guard Armory',2,13,1,'#243044'],['lab','Science Lab',15,26,1,'#26353a'],['ee8','EE8 · Glob',28,35,1,'#2d3a33'],['ee27','E27 · Calculator',37,44,1,'#30302e'],['ee4','EE4 · The Egg',46,52,1,'#33302c'],['ee7','EE7 · Banana Phone',54,61,1,'#3a3820'],['ee76','E76 · Steve Blob',63,70,1,'#2b3a2b'],['ee10','E10 · Water Slide',72,79,1,'#1f3340'],['ee3','EE3 · Spikester',81,90,2,'#33343b'],['admin','Admin Room',92,101,5,'#2a1f33'],['closet','Janitor Closet',103,109,0,'#2f2f27'],['exit','SURFACE EXIT',111,117,4,'#1f3a2a'],['ee103','Ě03 · Spike Maker',120,126,3,'#2e281f'],['cams','Camera Room',128,134,1,'#1a2230']];
 const STILL=['ee4','ee7','ee10','ee27','ee76'];
 function mkCell(id,n,x1,x2,l,f,top){const cx=Math.floor((x1+x2)/2),glass=id==='ee24';
  if(id==='dblock'){addRoom(id,n,x1,10+OY,x2,25+OY,{floor:f,top});return;}
@@ -580,7 +581,7 @@ const isWeapon=k=>k&&['gun','flame','melee','tranq'].includes(ITEMS[k].kind);
 const AD={
  ee1:{name:'EE1 Mayo House',room:'ee1',r:34,hp:1e9,speed:0,inv:1},
  ee2:{name:'EE2 Orange Stick Man',room:'ee2',r:14,hp:300,speed:150},
- ee3:{name:'EE3 Spikester',room:'ee3',r:13,hp:150,speed:150,cage:1,play:1,cost:1,food:['sandwich','pizza','meat','lettuce','bread','breadP','breadC'],desc:'Punch, kick, stab. Earns e-bucks for staying alive. Gets hungry (and grumpy).'},
+ ee3:{name:'EE3 Spikester',room:'ee3',r:13,hp:150,speed:150,cage:1,play:1,idle:1,cost:1,food:['sandwich','pizza','meat','lettuce','bread','breadP','breadC'],desc:'Punch, kick, stab. Earns e-bucks for staying alive. Gets hungry (and grumpy).'},
  ee4:{name:'EE4 The Egg',room:'ee4',r:16,hp:1e9,speed:0,inv:1,stat:1},
  ee7:{name:'EE7 Banana Phone',room:'ee7',r:14,hp:1e9,speed:0,inv:1,stat:1},
  ee8:{name:'EE8 Glob',room:'ee8',r:14,hp:800,speed:60,cage:1,food:['lettuce'],play:1,pnpc:1,cost:1,desc:'Cute. Says "Glob!". Leaves goo, eats lettuce. There\'s also an NPC Glob, so there can be two!'},
@@ -594,7 +595,7 @@ const AD={
  ee76:{name:'E76 Steve Blob',room:'ee76',r:15,hp:1e9,speed:0,inv:1,stat:1},
  ee96:{name:'E96 Ultra Introvert',room:'ee96',r:14,hp:3000,speed:270,state:'calm'},
  ee6:{name:'EE6 The Unseen',room:'ee6',r:13,hp:900,speed:235},
- ee103:{name:'Ě03 Ground Lurker',room:'ee103',r:12,hp:180,speed:120,play:1,cost:3,cage:1,desc:'Invisible underground. Pops up spikes (max 10, the oldest sinks). Auto mode makes one every 3s. Doesn\'t need to eat.'},
+ ee103:{name:'Ě03 Spike Maker',room:'ee103',r:12,hp:180,speed:120,play:1,cost:3,cage:1,desc:'Invisible underground. Pops up spikes (max 10, the oldest sinks). Auto mode makes one every 3s. Doesn\'t need to eat.'},
  ee88:{name:'E88 Soul Eater',room:'ee88',r:13,hp:220,speed:118,play:1,cost:3,cage:1,desc:'Sucks out souls (10–15s cooldown). Souls are the only thing it eats. When it\'s starving it can dent its door.'},
  bsp:{name:'Glass Bread Spider',room:'ee24',r:9,hp:40,speed:55,nospawn:1},
  ee58:{name:'E58 The Creator',room:null,r:18,hp:1e9,speed:460,inv:1}
@@ -639,7 +640,7 @@ function mkHuman(role,x,y,o){const base={dclass:0,janitor:1,scientist:rint(1,3),
  cd:0,cd2:0,cd3:0,sleep:0,cage:0,blind:0,blindCd:0,cageCd:0,revealT:0,aggro:0,emT:0,emCd:0,stabT:0,tcd:0,hurtT:0,pcd:0,card:base[role],speed:role==='guard'?135:120,hp:role==='scientist'?140:100,maxhp:role==='scientist'?140:100,items:role==='guard'?['gun','tranq']:[],sel:0,aim:0,walk:0,face:0,flags:new Set()},o||{});}
 function mkAnom(type,x,y,o){const d=AD[type];return Object.assign({id:nid++,kind:'a',type,x,y,r:d.r,hp:d.hp,maxhp:d.hp,name:d.name,home:d.room?R[d.room]:null,hx:x,hy:y,speed:d.speed,card:-1,cd:0,cd2:0,cd3:0,sleep:0,cage:0,blind:0,blindCd:0,cageCd:0,revealT:0,aggro:0,emT:0,emCd:0,stabT:0,tcd:0,hurtT:0,pcd:0,hunger:100,timer:60,walk:0,face:0,aim:0,ringT:rnd(25,60),flags:new Set()},o||{});}
 function anomHome(type){const r=R[AD[type].room];if(type==='ee1')return{x:MAYO_C.x,y:MAYO_C.y};const c=roomCenter(r);if(type==='ee10')return{x:c.x,y:c.y-T};return c;}
-function spawnAnomNPC(type){const pn=AD[type].pnpc;if((AD[type].play&&!pn)||AD[type].nospawn)return;if(!pn&&P&&!P.dead&&P.type===type)return;if(ents.some(e=>!e.dead&&e.type===type&&!(pn&&e.isPlayer)))return;const h=anomHome(type);const a=mkAnom(type,h.x,h.y);ents.push(a);return a;}
+function spawnAnomNPC(type){const pn=AD[type].pnpc;if((AD[type].play&&!pn&&!AD[type].idle)||AD[type].nospawn)return;if(!pn&&P&&!P.dead&&P.type===type)return;if(ents.some(e=>!e.dead&&e.type===type&&!(pn&&e.isPlayer)))return;const h=anomHome(type);const a=mkAnom(type,h.x,h.y);ents.push(a);return a;}
 function spawnCiv(){const p=randPt(R.town,2);if(hitsSolid(p.x,p.y,13))return spawnCiv();const e=mkHuman('civ',p.x,p.y);e.color=pick(['#e74c3c','#3498db','#f1c40f','#9b59b6','#1abc9c','#e67e22','#ecf0f1','#34495e']);e.card=0;e.name=pick(FIRSTN)+' '+pick(SURN);e.items=[];ents.push(e);return e;}
 function spawnNPC(role){if(role==='civ')return spawnCiv();if(NET.on&&NET.playersIn(role)>=3){respawnQ.push({t:30,fn:()=>spawnNPC(role)});return{};}const r=role==='dclass'?R.dblock:role==='scientist'?R.lab:role==='guard'?R.armory:R.closet;const p=randPt(r,2);const e=mkHuman(role,p.x,p.y);ents.push(e);return e;}
 function initWorld(){for(const k in AD)if(k!=='ee58'&&!AD[k].nospawn)spawnAnomNPC(k);for(let i=0;i<6;i++)spawnNPC('dclass');for(let i=0;i<3;i++)spawnNPC('scientist');for(let i=0;i<4;i++)spawnNPC('guard').card=i<2?4:rint(1,4);for(let i=0;i<2;i++)spawnNPC('janitor');for(let i=0;i<7;i++)spawnCiv();}
@@ -754,7 +755,7 @@ function updTouchUI(){const el=document.getElementById('touch');const show=TOUCH
 cv.addEventListener('contextmenu',ev=>ev.preventDefault());
 cv.addEventListener('wheel',ev=>{if(P&&P.items&&P.items.length){P.sel=(P.sel+(ev.deltaY>0?1:-1)+P.items.length)%P.items.length;}},{passive:true});
 document.addEventListener('click',()=>ac(),{once:true});
-const OVS=['file96','menu','death','shop','calc','calcp','prank','console','testdlg','notedlg','escape'];
+const OVS=['file96','menu','death','shop','calc','calcp','prank','console','testdlg','notedlg','escape','spktalk'];
 const uiOpen=()=>OVS.some(id=>document.getElementById(id).classList.contains('on'));
 function openOv(id){document.getElementById(id).classList.add('on');}
 function closeOv(id){document.getElementById(id).classList.remove('on');}
@@ -993,6 +994,7 @@ function getInteract(e){let best=null,bd=1e9;const ALL=[];const add=(d,label,fn)
  if(e.role==='guard'&&e.test&&e.test.kind==='duty'&&e.test.act&&!e.test.handed){for(const h of ents){if(h.kind!=='h'||h.isPlayer||h.dead||h.role!=='dclass'||h.rogue||h.job||h.duck||h.carried)continue;const d=dist(h,e);if(d<46)add(d-3,'Hand your duty to '+h.name,()=>handDuty(e,h));}}
  if(e.steven){if(e.carry){const h=e.carry;add(-1,'Put down '+h.name,()=>dropCarry(e));if(h.kind==='h'){add(-.5,'SLAM '+h.name+' (Q)',()=>stevenSlam(e));add(-.4,'Eat '+h.name+' (F)',()=>stevenEat(e));}}else for(const h of ents){if(h===e||h.dead||h.inSlide||h.carried||h.ghost)continue;if(h.kind==='a'&&(AD[h.type].stat||['ee1','ee10','ee58'].includes(h.type)))continue;if(h.kind!=='h'&&h.kind!=='a')continue;const d=dist(h,e);if(d<44)add(d+2,'Pick up '+(h.kind==='a'?AD[h.type].name:h.name),()=>{e.carry=h;h.carried=e;h.path=null;h.dragBy=null;say(h,h.kind==='a'?'!!!':'Hey! Put me down!');if(h.kind==='a'&&e===P)msg('Carry it back into its cell to recontain it.','#e9e4da');});}}
  if(e.role==='janitor')for(const d of doors){if(!(d.dents>0))continue;const dd=Math.hypot(d.cx-e.x,d.cy-e.y);if(dd<62)add(dd-8,'Hammer out the dents ('+d.dents+')',()=>{d.dents=0;earn(3,'fixed a dented door');tone(500,.06,'square',.04);});}
+ if(e===P&&e.kind==='h'&&!e.carry)for(const a of ents){if(a.type!=='ee3'||a.dead||a.ghost||a.carried||a===e)continue;const d=dist(a,e);if(d<110)add(d+12,'Talk to Spikester',()=>openSpkTalk(a));}
  for(const tr of TRAYS){const d=Math.hypot(tr.x-e.x,tr.y-e.y),it=e.items[e.sel];if(d<46&&it&&ITEMS[it].kind==='food')add(d-6,'Put '+ITEMS[it].n+' on the feeding tray',()=>trayPut(tr,e,it));}
  if(e.role==='dclass'&&!e.rogue){for(const d of doors){const dd=Math.hypot(d.cx-e.x,d.cy-e.y);if(dd>=58||d.broken||d.open>.5)continue;const esc=e.escort;if(esc&&!esc.dead&&e.testPass&&(e.testPass.has(d.room)||e.outerPass===d.room)&&dist(esc,e)<7*T)add(dd+20,'Ask '+esc.name+' to open the door',()=>{openDoor(d,esc);say(esc,'Okay, in you go.');});else add(dd+30,'You can\'t open doors (D-class)',()=>msg(esc?'Your tester ('+esc.name+') has to be next to you to open it.':'D-class can\'t open doors. Wait for a scientist to take you to a test.'));}}
  else for(const d of doors){const dd=Math.hypot(d.cx-e.x,d.cy-e.y);if(dd>=58)continue;
@@ -1025,6 +1027,19 @@ function openFile96(){const p=document.getElementById('file96P');p.innerHTML=`<h
  <div style="background:#000;border:2px dashed #a33;border-radius:8px;padding:18px;text-align:center;color:#a33;margin:8px 0">[ PHOTO REDACTED ]<br><button class="btn sec" id="f96pic" style="margin-top:8px">Look at the photo anyway</button></div>
  <div class="row"><button class="btn" onclick="closeOv('file96')">Close the file</button></div>`;
  document.getElementById('f96pic').onclick=()=>{if(P&&!P.steven){P.e96=Math.min(100,(P.e96||0)+35);}document.getElementById('f96pic').textContent='...you shouldn\'t have done that.';};openOv('file96');}
+const SPK_Q=[
+ ['why','Why are you here?',a=>pick(["I don't know. I just kind of got here randomly.","A giant mouse cursor picked me up and brought me here.","I don't know. One second I was outside, next second, glass.","Somebody said I was an anomaly. I just think I'm cool."])],
+ ['how','How did you get here?',a=>pick(["A giant mouse cursor picked me up and dropped me in here. True story.","I don't know. I just kind of got here randomly.","I fell asleep on the bus and woke up in this cell.","I followed a snail. Bad idea."])],
+ ['hungry','Are you hungry?',a=>a.hunger>60?"Nah, I'm good for now.":a.hunger>25?'Kinda. A sandwich would be nice. Or pizza. Or a sandwich.':'STARVING. Somebody feed me or I start punching.'],
+ ['ok','Are you okay in there?',a=>a.hp<(a.maxhp||150)*.5?'I got hurt. Not cool.':pick(["I'm fine. It's a bit boring.","Yeah. The guards are kinda mean though.","It's alright. The wall is nice to look at."])],
+ ['like','What do you like doing?',a=>"I like going on nwaos.com. You should try it! Actually... here, do you want a badge?"]];
+function spkLink(){const t=Date.now().toString(36);let h=7;for(const ch of t+'|spikester-says-hi')h=(h*31+ch.charCodeAt(0))>>>0;return 'https://nwaos.com/?sep='+t+'.'+(h%1679616).toString(36);}
+function openSpkTalk(a,ans,badge){const p=document.getElementById('spktalkP');const mad=a.aggro>0||a.hunger<=10;
+ p.innerHTML=`<h2>💬 EE3 · Spikester</h2>`+(ans?`<div style="background:#1b222b;border:1px solid #39434f;border-radius:10px;padding:10px 12px;margin:6px 0 10px;font-size:15px"><b style="color:#ffcf7a">Spikester:</b> ${esc(ans)}`+(badge?`<div style="margin-top:10px"><a id="spkLink" href="${spkLink()}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;color:#7fd0ff;font-weight:700"><img src="../images/badges/sep-badge.png" onerror="this.remove()" style="height:34px">🏅 Get the SEP Badge on nwaos.com</a><div style="color:#9fb0c2;font-size:12px;margin-top:4px">Only Spikester gives this one. The link works for 2 hours.</div></div>`:'')+`</div>`:`<p style="color:#9fb0c2">${mad?'He looks grumpy...':'He looks at you through the glass.'} What do you want to ask?</p>`)
+  +SPK_Q.map(q=>`<button class="btn sec opt" data-q="${q[0]}">${q[1]}</button>`).join('')+`<button class="btn sec opt" data-q="bye">Bye (Esc)</button>`;
+ p.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{const k=b.dataset.q;if(k==='bye'){say(a,pick(['Bye.','See ya.','Bring food next time.']));closeOv('spktalk');return;}
+  const q=SPK_Q.find(x=>x[0]===k);say(P,q[1]);const r=(a.aggro>0&&k!=='like')?pick(['GO AWAY.','Not now. I\'m busy being mad.','Grrr.']):q[2](a);setTimeout(()=>{if(!a.dead)say(a,r);},350);openSpkTalk(a,r,k==='like');});
+ openOv('spktalk');}
 function camRooms(){return rooms.filter(r=>!r.airlock&&!r.hall&&(r.id.startsWith('ee')||['town','exit','dblock','cafe','lab','armory','cams'].includes(r.id)));}
 function startCams(){if(!P)return;const L=camRooms();P.camView=P.camView||L[0].id;msg('📹 Cameras on. ◀ ▶ (A/D) to switch, Esc to stop.','#9cf');}
 function camStep(d){const L=camRooms();let i=L.findIndex(r=>r.id===P.camView);i=(i+d+L.length)%L.length;P.camView=L[i].id;}
