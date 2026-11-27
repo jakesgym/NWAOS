@@ -620,6 +620,8 @@ body.ttt-full{overflow:hidden}
 .lava-pad[hidden],.lava-btns[hidden]{display:none}
 .lava-end{position:absolute;top:24%;left:50%;transform:translateX(-50%) rotate(-1deg);width:min(92%,380px);text-align:center;z-index:5}
 .lava-end[hidden]{display:none}
+.lava-online{text-align:left;margin:18px auto;max-width:520px}
+.lava-room-list{margin:6px 0 10px;padding-left:20px}
 /* leaderboard */
 .lb-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
 .lb-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
@@ -950,6 +952,11 @@ body.ttt-full{overflow:hidden}
         <div class="ttt-chars" id="lavaChars"></div>
         <h3>COMPUTER PLAYERS</h3>
         <div class="lava-bots" id="lavaBots"></div>
+        <div class="quick-box lava-online" id="lavaOnline">
+          <strong>🌐 PLAY WITH FRIENDS (TEST)</strong>
+          <p class="form-note">One person taps HOST. Everyone else taps JOIN on their game. The host picks how many computer players to add, then taps START.</p>
+          <div id="lavaLobby"></div>
+        </div>
         <div class="row" style="justify-content:center">
           <button class="btn red" id="lavaStart">▶ START</button>
           <button class="btn white" id="lavaBack">← BACK TO GAMES</button>
@@ -1140,6 +1147,7 @@ body.ttt-full{overflow:hidden}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
 /* =========================================================
    NWAOS FAN SITE — SETTINGS
@@ -1155,6 +1163,7 @@ const CONFIG = {
     storageBucket: 'nwaos-65265.firebasestorage.app',
     messagingSenderId: '479121092839',
     appId: '1:479121092839:web:c5d09145b026db384db242',
+    databaseURL: 'https://nwaos-65265-default-rtdb.firebaseio.com',   // Realtime Database (live Lava Ball games)
   },
   // Usernames sign in as <username>@fans.nwaos.com behind the scenes (no real emails).
   accountDomain: 'fans.nwaos.com',
@@ -1424,7 +1433,7 @@ const store = {
 /* =========================================================
    SHARED DATABASE + ACCOUNTS (Firebase)
    ========================================================= */
-let db = null, auth = null;
+let db = null, auth = null, rtdb = null;
 // The creator can keep two accounts signed in at once and flip between them:
 // the main one, and "DefinitelyNotAdmin273" (a normal fan account that starts approved).
 const ALT_NAME = 'DefinitelyNotAdmin273';
@@ -1434,6 +1443,7 @@ try {
   const main = firebase.initializeApp(CONFIG.firebase), alt = firebase.initializeApp(CONFIG.firebase, 'alt');
   mainAuth = main.auth(); altAuth = alt.auth();
   auth = altMode ? altAuth : mainAuth; db = (altMode ? alt : main).firestore();
+  try { rtdb = (altMode ? alt : main).database(); } catch (e) { console.warn('live games offline', e); }
 } catch (e) { console.warn('Database offline', e); }
 const FV = () => firebase.firestore.FieldValue;
 const DB = { comments: [], picsApproved: {}, picsMine: {}, posts: [], votes: {}, poll: {}, users: [], profiles: {} };
@@ -2813,11 +2823,11 @@ function renderGamesHub() {
 }
 function lavaRenderSetup() {
   $('#lavaChars').innerHTML = lavaCast().map(c => `<button type="button" data-lava-who="${c.id}" aria-pressed="${c.id === LAVA.pick.who}"><img src="${esc(c.img)}" alt="">${esc(c.name)}</button>`).join('');
-  $('#lavaBots').innerHTML = [1, 2, 3, 5, 7, 9].map(n => `<button type="button" data-lava-bots="${n}" aria-pressed="${n === LAVA.pick.bots}">${n}</button>`).join('');
+  $('#lavaBots').innerHTML = [0, 1, 2, 3, 5, 7, 9].filter(n => n > 0 || lavaNet.room).map(n => `<button type="button" data-lava-bots="${n}" aria-pressed="${n === LAVA.pick.bots}">${n}</button>`).join('');
 }
-$('#lavaOpen').addEventListener('click', () => { if (!lavaCanPlay()) return; $('#gamesHub').hidden = true; $('#lava').hidden = false; $('#lavaSetup').hidden = false; lavaRenderSetup(); });
-$('#lavaBack').addEventListener('click', () => { $('#lava').hidden = true; $('#gamesHub').hidden = false; });
-$('#lavaChars').addEventListener('click', e => { const b = e.target.closest('[data-lava-who]'); if (b) { LAVA.pick.who = b.dataset.lavaWho; lavaRenderSetup(); } });
+$('#lavaOpen').addEventListener('click', () => { if (!lavaCanPlay()) return; $('#gamesHub').hidden = true; $('#lava').hidden = false; $('#lavaSetup').hidden = false; lavaRenderSetup(); lavaWatchLobby(); renderLavaLobby(); });
+$('#lavaBack').addEventListener('click', () => { lavaNetLeave(); $('#lava').hidden = true; $('#gamesHub').hidden = false; });
+$('#lavaChars').addEventListener('click', e => { const b = e.target.closest('[data-lava-who]'); if (b) { LAVA.pick.who = b.dataset.lavaWho; lavaRenderSetup(); lavaNetPick(); } });
 $('#lavaBots').addEventListener('click', e => { const b = e.target.closest('[data-lava-bots]'); if (b) { LAVA.pick.bots = +b.dataset.lavaBots; lavaRenderSetup(); } });
 
 let lava = null;
@@ -2825,11 +2835,12 @@ const lavaImgs = {};
 const lavaImg = src => { if (!lavaImgs[src]) { const i = new Image(); i.src = src; lavaImgs[src] = i; } return lavaImgs[src]; };
 const LK = { up: false, down: false, left: false, right: false, sprint: false, pad: { x: 0, y: 0 } };
 
-function lavaStart() {
+function lavaStart(list) {
   if (!lavaCanPlay()) return;
+  if (!Array.isArray(list) && lavaNet.room) return lavaNet.host ? lavaNetStart() : toast('Waiting for the host to start!');
   const cast = lavaCast(), me = cast.find(c => c.id === LAVA.pick.who) || cast[0];
   const others = cast.filter(c => c.id !== me.id).sort(() => Math.random() - 0.5).slice(0, LAVA.pick.bots);
-  const all = [{ ...me, bot: false, label: ME ? ME.username : 'YOU' }, ...others.map(c => ({ ...c, bot: true, label: c.name }))];
+  const all = Array.isArray(list) ? list : [{ ...me, bot: false, label: ME ? ME.username : 'YOU' }, ...others.map(c => ({ ...c, bot: true, label: c.name }))];
   const n = all.length, R = LAVA.wallStart - 1.6, turn = Math.random() * 6.28;
   const players = all.map((c, i) => {
     const a = turn + i / n * Math.PI * 2, x = Math.cos(a) * R, y = Math.sin(a) * R;
@@ -2838,8 +2849,9 @@ function lavaStart() {
       hitBy: null, hitAt: -9, kills: 0, coins: 0, think: 0, goal: null, sprinting: false, skill: 0.6 + Math.random() * 0.4 };
   });
   lavaImg('images/ttt/coin.png'); lavaImg('images/games/lava-paper.jpg'); lavaImg('images/games/lava-ball-ball.png');
-  lava = { players, me: players[0], wall: LAVA.wallStart, wallTo: LAVA.wallStart, t: 0, nextShrink: LAVA.shrinkEvery, coins: [], coinT: 4,
-    pops: [], state: 'play', watch: players[0], last: performance.now(), msg: 'GO!', msgT: 1.5, flash: 0 };
+  const mine = players.find(p => !p.bot && !p.remote) || players[0];
+  lava = { players, me: mine, wall: LAVA.wallStart, wallTo: LAVA.wallStart, t: 0, nextShrink: LAVA.shrinkEvery, coins: [], coinT: 4,
+    pops: [], state: 'play', watch: mine, last: performance.now(), msg: 'GO!', msgT: 1.5, msgId: 1, flash: 0 };
   $('#lavaSetup').hidden = true; $('#lavaStage').hidden = false; $('#lavaEnd').hidden = true; document.body.classList.add('ttt-full');
   const touch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
   $('#lavaPad').hidden = !touch; $('#lavaBtns').hidden = !touch;
@@ -2857,7 +2869,7 @@ function lavaSize() {
 }
 addEventListener('resize', () => { if (lava) lavaSize(); });
 $('#lavaStart').addEventListener('click', lavaStart);
-$('#lavaQuit').addEventListener('click', lavaClose);
+$('#lavaQuit').addEventListener('click', () => { if (lavaNet.room) lavaBackToLobby(); else lavaClose(); });
 
 // ----- controls -----
 const LAVA_KEYS = { ArrowUp: 'up', w: 'up', W: 'up', ArrowDown: 'down', s: 'down', S: 'down', ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right' };
@@ -2902,7 +2914,11 @@ document.addEventListener('touchend', e => {
   }
   lastTouchEnd = now;
 }, { passive: false });
-function lavaPushPress() { if (lava && lava.me.alive && lava.state === 'play') lavaPush(lava.me); }
+function lavaPushPress() {
+  if (!lava || !lava.me.alive || lava.state !== 'play') return;
+  if (lava.client) { lavaNet.pushN++; lavaSendInput(true); lava.me.swing = 0.18; return; }   // the host does the pushing
+  lavaPush(lava.me);
+}
 
 // ----- the rules -----
 function lavaPush(p) {
@@ -2967,8 +2983,8 @@ function lavaStep(dt) {
   // the wall closes in
   L.nextShrink -= dt;
   const fewLeft = L.players.filter(p => p.alive).length <= 2;
-  if (fewLeft && !L.sudden) { L.sudden = true; L.nextShrink = Math.min(L.nextShrink, 10); L.msg = 'LAST TWO! SUDDEN DEATH!'; L.msgT = 2; }
-  if (L.nextShrink <= 0) { L.nextShrink = fewLeft ? 10 : LAVA.shrinkEvery; L.wallTo = Math.max(0, L.wallTo - LAVA.shrinkBy); L.msg = 'THE WALL CLOSES IN!'; L.msgT = 1.4; L.flash = 0.5; }
+  if (fewLeft && !L.sudden) { L.sudden = true; L.nextShrink = Math.min(L.nextShrink, 10); L.msg = 'LAST TWO! SUDDEN DEATH!'; L.msgT = 2; L.msgId = (L.msgId || 0) + 1; }
+  if (L.nextShrink <= 0) { L.nextShrink = fewLeft ? 10 : LAVA.shrinkEvery; L.wallTo = Math.max(0, L.wallTo - LAVA.shrinkBy); L.msg = 'THE WALL CLOSES IN!'; L.msgT = 1.4; L.flash = 0.5; L.msgId = (L.msgId || 0) + 1; }
   L.wall += (L.wallTo - L.wall) * Math.min(1, dt * 2);
   // coins (just for fun in the test: not saved)
   L.coinT -= dt;
@@ -2980,7 +2996,12 @@ function lavaStep(dt) {
     if (!p.alive) continue;
     let dir;
     if (p.bot) dir = lavaBot(p, dt);
-    else {
+    else if (p.remote) {   // a friend's moves, sent over the internet
+      const i = p.input || {}, m = Math.hypot(i.x || 0, i.y || 0);
+      dir = m > 0.15 ? { x: i.x / Math.max(1, m), y: i.y / Math.max(1, m) } : { x: 0, y: 0 };
+      p.sprinting = !!i.s;
+      if ((i.n || 0) > (p.pushSeen || 0)) { p.pushSeen = i.n; lavaPush(p); }
+    } else {
       let x = (LK.right ? 1 : 0) - (LK.left ? 1 : 0) + LK.pad.x, y = (LK.down ? 1 : 0) - (LK.up ? 1 : 0) + LK.pad.y;
       const m = Math.hypot(x, y); dir = m > 0.15 ? { x: x / Math.max(1, m), y: y / Math.max(1, m) } : { x: 0, y: 0 };
       p.sprinting = LK.sprint;
@@ -3032,8 +3053,8 @@ function lavaShowEnd(kind) {
 }
 $('#lavaEndBtns').addEventListener('click', e => {
   if (e.target.closest('#lavaWatch')) $('#lavaEnd').hidden = true;
-  else if (e.target.closest('#lavaAgain')) lavaStart();
-  else if (e.target.closest('#lavaLeave')) { lavaClose(); $('#lava').hidden = true; $('#gamesHub').hidden = false; }
+  else if (e.target.closest('#lavaAgain')) { if (lavaNet.room) lavaBackToLobby(); else lavaStart(); }
+  else if (e.target.closest('#lavaLeave')) { lavaNetLeave(); lavaClose(); $('#lava').hidden = true; $('#gamesHub').hidden = false; }
 });
 $('#lavaCanvas').addEventListener('pointerdown', () => {   // while spectating, tap to watch someone else
   if (!lava || lava.me.alive) return;
@@ -3045,7 +3066,8 @@ $('#lavaCanvas').addEventListener('pointerdown', () => {   // while spectating, 
 function lavaFrame(now) {
   if (!lava) return;
   const dt = Math.min(0.05, Math.max(0, (now - lava.last) / 1000)); lava.last = Math.max(lava.last, now);
-  if (lava.state === 'play' || lava.pops.length) lavaStep(dt);
+  if (lava.client) lavaFollow(dt);
+  else if (lava.state === 'play' || lava.pops.length) { lavaStep(dt); if (lava.host) lavaBroadcast(now); }
   lavaDraw(now / 1000);
   requestAnimationFrame(lavaFrame);
 }
@@ -3053,6 +3075,7 @@ function lavaDraw(time) {
   const L = lava, c = $('#lavaCanvas'), g = c.getContext('2d');
   if (Math.abs(c.width - Math.round(c.clientWidth * (L.dpr || 1))) > 1 || Math.abs(c.height - Math.round(c.clientHeight * (L.dpr || 1))) > 1) lavaSize();   // screen changed size
   const W = c.clientWidth, H = c.clientHeight;
+  if (!L.watch) { g.fillStyle = '#6e6660'; g.fillRect(0, 0, W, H); g.fillStyle = '#fff'; g.font = '800 20px system-ui, sans-serif'; g.textAlign = 'center'; g.fillText('Joining the game...', W / 2, H / 2); return; }
   const U = Math.min(W, H) / (W < 700 ? 9 : 12);      // pixels per character
   const cam = L.watch, ox = W / 2 - cam.x * U, oy = H / 2 - cam.y * U;
   const P = (x, y) => [ox + x * U, oy + y * U];
@@ -3116,6 +3139,161 @@ function lavaDraw(time) {
   if (!L.me.alive && L.state === 'play') { g.fillStyle = '#ffe14d'; g.fillText(`👀 WATCHING ${L.watch.label}`, tx, ty + 60); }
   if (L.msgT > 0) { g.textAlign = 'center'; g.font = `900 ${Math.min(42, W * 0.07)}px system-ui, sans-serif`; g.lineWidth = 6; g.strokeStyle = '#111';
     g.globalAlpha = Math.min(1, L.msgT * 2); g.strokeText(L.msg, W / 2, H * 0.2); g.fillStyle = '#ffe14d'; g.fillText(L.msg, W / 2, H * 0.2); g.globalAlpha = 1; }
+}
+
+
+/* ---------- LAVA BALL ONLINE (test): one host runs the game, friends send their moves ----------
+   Uses the Realtime Database: lava/lobby/<room> (the list of open games), lava/rooms/<room>/meta|players|inputs|state.
+   The host simulates everything (and the computer players) and sends a snapshot ~14 times a second. */
+const lavaNet = { room: null, host: false, players: {}, subs: [], pushN: 0, lastSend: 0, lastIn: '', snapAt: 0 };
+const rref = path => rtdb.ref('lava/' + path);
+const myLavaPlayer = () => { const c = lavaCast().find(x => x.id === LAVA.pick.who) || lavaCast()[0]; return { name: ME ? ME.username : 'Someone', who: c.id, t: Date.now() }; };
+function lavaNetOff() { lavaNet.subs.forEach(f => f()); lavaNet.subs = []; }
+function lavaOn(ref, ev, fn) { ref.on(ev, fn); lavaNet.subs.push(() => ref.off(ev, fn)); }
+let lobbyList = {};
+function lavaWatchLobby() {
+  if (!rtdb || lavaWatchLobby.on) return; lavaWatchLobby.on = true;
+  rref('lobby').on('value', snap => { lobbyList = snap.val() || {}; renderLavaLobby(); });
+}
+function renderLavaLobby() {
+  const box = $('#lavaLobby'); if (!box) return;
+  if (!rtdb) { box.innerHTML = '<p class="form-note">Live games are offline right now.</p>'; return; }
+  if (!ME) { box.innerHTML = '<p class="form-note">Log in to play with friends.</p>'; return; }
+  if (lavaNet.room) {
+    const ps = Object.entries(lavaNet.players).map(([uid, p]) => `<li>${uid === ME.uid ? '⭐ ' : ''}${esc(p.name)} <small>(${esc((lavaCast().find(c => c.id === p.who) || {}).name || p.who)})</small></li>`).join('');
+    box.innerHTML = `<p><strong>${lavaNet.host ? 'YOUR GAME' : 'IN ' + esc((lobbyList[lavaNet.room] || {}).name || '') + "'S GAME"}</strong> · code ${esc(lavaNet.room)}</p>
+      <ul class="lava-room-list">${ps}</ul>
+      <div class="row">${lavaNet.host ? '<button type="button" class="btn red" id="lavaNetStart">▶ START FOR EVERYONE</button>' : '<span class="form-note">Waiting for the host to start...</span>'}
+      <button type="button" class="btn white" id="lavaNetLeave">LEAVE</button></div>`;
+    return;
+  }
+  const open = Object.entries(lobbyList).filter(([, g]) => g && g.open && Date.now() - (g.t || 0) < 6 * 3600 * 1000);
+  box.innerHTML = `<div class="row"><button type="button" class="btn yellow" id="lavaHost">🏠 HOST A GAME</button></div>
+    ${open.length ? open.map(([code, g]) => `<div class="row" style="align-items:center;margin-top:8px"><span>${esc(g.name)}'s game · ${g.count || 1} player${(g.count || 1) > 1 ? 's' : ''}</span>
+      <button type="button" class="btn small green" data-lava-join="${esc(code)}">JOIN</button></div>`).join('') : '<p class="form-note">No games to join yet.</p>'}`;
+}
+$('#lavaLobby').addEventListener('click', e => {
+  if (e.target.closest('#lavaHost')) lavaHost();
+  const j = e.target.closest('[data-lava-join]'); if (j) lavaJoin(j.dataset.lavaJoin);
+  if (e.target.closest('#lavaNetStart')) lavaNetStart();
+  if (e.target.closest('#lavaNetLeave')) { lavaNetLeave(); renderLavaLobby(); lavaRenderSetup(); }
+});
+function lavaJoinRoom(code, host) {
+  lavaNet.room = code; lavaNet.host = host; lavaNet.players = {}; lavaNet.pushN = 0;
+  const me = rref(`rooms/${code}/players/${ME.uid}`);
+  me.set(myLavaPlayer()); me.onDisconnect().remove(); rref(`rooms/${code}/inputs/${ME.uid}`).onDisconnect().remove();
+  lavaOn(rref(`rooms/${code}/players`), 'value', snap => {
+    lavaNet.players = snap.val() || {};
+    if (lavaNet.host) rref(`lobby/${code}/count`).set(Object.keys(lavaNet.players).length);
+    if (lava && lava.host) for (const p of lava.players) if (p.remote && !lavaNet.players[p.id] && p.alive) { p.alive = false; }   // left the game
+    renderLavaLobby();
+  });
+  if (host) {
+    lavaOn(rref(`rooms/${code}/inputs`), 'value', snap => { lavaNet.inputs = snap.val() || {}; if (lava && lava.host) for (const p of lava.players) if (p.remote) p.input = lavaNet.inputs[p.id] || {}; });
+  } else {
+    lavaOn(rref(`rooms/${code}/meta`), 'value', snap => {
+      const m = snap.val();
+      if (!m) { toast('The host left the game.'); lavaNetLeave(); if (lava) lavaClose(); renderLavaLobby(); return; }
+      if (m.started && m.round !== lavaNet.round) { lavaNet.round = m.round; lavaClientStart(); }
+    });
+    lavaOn(rref(`rooms/${code}/state`), 'value', snap => { const st = snap.val(); if (st && lava && lava.client) lavaNet.snap = st; });
+  }
+  renderLavaLobby(); lavaRenderSetup();
+}
+function lavaHost() {
+  if (!rtdb || !ME) return;
+  const code = Math.random().toString(36).slice(2, 7).toUpperCase();
+  const meta = rref(`rooms/${code}/meta`);
+  meta.set({ host: ME.uid, started: false, round: 0, t: Date.now() }).then(() => {
+    rref(`rooms/${code}`).onDisconnect().remove();
+    rref(`lobby/${code}`).set({ name: ME.username, host: ME.uid, open: true, count: 1, t: Date.now() });
+    rref(`lobby/${code}`).onDisconnect().remove();
+    lavaJoinRoom(code, true);
+  }).catch(e => { console.warn(e); toast("Couldn't start a game. Try again!"); });
+}
+function lavaJoin(code) { if (!rtdb || !ME || lavaNet.room) return; lavaJoinRoom(code, false); }
+function lavaNetLeave() {
+  if (!lavaNet.room || !rtdb) return;
+  const code = lavaNet.room;
+  lavaNetOff();
+  if (lavaNet.host) { rref(`rooms/${code}`).remove(); rref(`lobby/${code}`).remove(); }
+  else { rref(`rooms/${code}/players/${ME.uid}`).remove(); rref(`rooms/${code}/inputs/${ME.uid}`).remove(); }
+  lavaNet.room = null; lavaNet.host = false; lavaNet.players = {}; lavaNet.snap = null;
+}
+// update my character choice while waiting
+function lavaNetPick() { if (lavaNet.room && ME) rref(`rooms/${lavaNet.room}/players/${ME.uid}`).set(myLavaPlayer()); }
+// the host starts a round: humans + computer players
+function lavaNetStart() {
+  if (!lavaNet.host) return;
+  const cast = lavaCast(), humans = Object.entries(lavaNet.players).sort((a, b) => (a[1].t || 0) - (b[1].t || 0));
+  const used = new Set(humans.map(([, p]) => p.who));
+  const bots = cast.filter(c => !used.has(c.id)).sort(() => Math.random() - 0.5).slice(0, Math.min(LAVA.pick.bots, 10 - humans.length));
+  const all = [...humans.map(([uid, p]) => { const c = cast.find(x => x.id === p.who) || cast[0]; return { ...c, id: uid, who: c.id, label: p.name, bot: false, remote: uid !== ME.uid }; }),
+               ...bots.map(c => ({ ...c, id: 'bot-' + c.id, who: c.id, label: c.name, bot: true }))];
+  lavaStart(all);
+  lava.host = true; lavaNet.lastSend = 0;
+  const round = (lavaNet.round || 0) + 1; lavaNet.round = round;
+  rref(`lobby/${lavaNet.room}/open`).set(false);
+  lavaBroadcast(performance.now(), true);
+  rref(`rooms/${lavaNet.room}/meta`).update({ started: true, round, t: Date.now() });
+}
+function lavaBroadcast(now, force) {
+  if (!force && now - lavaNet.lastSend < 70) return; lavaNet.lastSend = now;
+  const L = lava, r2 = v => Math.round(v * 100) / 100;
+  rref(`rooms/${lavaNet.room}/state`).set({
+    t: r2(L.t), wall: r2(L.wall), ns: Math.ceil(L.nextShrink), st: L.state, msg: L.msg || '', mid: L.msgId || 0, fl: L.flash > 0 ? 1 : 0,
+    c: L.coins.map(k => [r2(k.x), r2(k.y)]),
+    p: L.players.map(p => ({ i: p.id, w: p.who || p.id, l: p.label, x: r2(p.x), y: r2(p.y), fx: r2(p.fx), fy: r2(p.fy), a: p.alive ? 1 : 0, k: p.kills, n: p.coins, s: p.swing > 0 ? 1 : 0 })),
+  }).catch(() => {});
+}
+// friends: build the game from the host's first snapshot, then follow it
+function lavaClientStart() {
+  const cast = lavaCast();
+  lavaStart([]);   // empty game screen; players arrive with the snapshots
+  lava.client = true; lava.players = []; lava.me = null; lava.byId = {}; lava.msg = 'GO!'; lava.msgT = 1.5;
+  lavaNet.snap = null;
+}
+function lavaFollow(dt) {
+  const L = lava, st = lavaNet.snap; if (!st) return;
+  const cast = lavaCast();
+  for (const q of st.p || []) {
+    let p = L.byId[q.i];
+    if (!p) { const c = cast.find(x => x.id === q.w) || cast[0]; lavaImg(c.img);
+      p = L.byId[q.i] = { ...c, id: q.i, label: q.l, x: q.x, y: q.y, fx: q.fx, fy: q.fy, alive: true, kills: 0, coins: 0, swing: 0 }; L.players.push(p);
+      if (q.i === ME.uid) { L.me = p; L.watch = p; } }
+    p.x += (q.x - p.x) * Math.min(1, dt * 14); p.y += (q.y - p.y) * Math.min(1, dt * 14); p.fx = q.fx; p.fy = q.fy;
+    p.kills = q.k; p.coins = q.n; if (q.s) p.swing = Math.max(p.swing, 0.12); p.swing = Math.max(0, p.swing - dt);
+    if (p.alive && !q.a) {   // popped!
+      p.alive = false;
+      for (let i = 0; i < 26; i++) { const a = Math.random() * 6.28, v = 2 + Math.random() * 5;
+        L.pops.push({ x: p.x, y: p.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.6 + Math.random() * 0.5, c: ['#ff3b1f', '#ffb000', '#ffe14d', '#fff'][i % 4] }); }
+      L.pops.push({ x: p.x, y: p.y, vx: 0, vy: -1.2, life: 1.1, text: 'POP!' });
+      if (p === L.me) { L.msg = 'YOU POPPED!'; L.msgT = 2; setTimeout(() => { if (lava && lava.state === 'play') lavaShowEnd('popped'); }, 1100); }
+    }
+  }
+  if (!L.me) { L.me = L.players[0]; L.watch = L.watch || L.players[0]; }
+  if (!L.watch || !L.watch.alive) L.watch = L.players.find(p => p.alive) || L.watch;
+  L.wall = st.wall; L.nextShrink = st.ns; L.t = st.t; L.flash = st.fl ? 0.3 : Math.max(0, L.flash - dt);
+  L.coins = (st.c || []).map(([x, y], i) => ({ x, y, spin: i }));
+  if (st.mid && st.mid !== L.msgSeen) { L.msgSeen = st.mid; L.msg = st.msg; L.msgT = 1.6; }
+  for (const f of L.pops) { f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= 0.94; f.vy *= 0.94; f.life -= dt; }
+  L.pops = L.pops.filter(f => f.life > 0); L.msgT -= dt;
+  if (st.st === 'over' && L.state === 'play') { L.state = 'over'; setTimeout(() => lava && lavaShowEnd('over'), 900); }
+  // send my moves
+  lavaSendInput(false);
+}
+function lavaSendInput(force) {
+  if (!lavaNet.room || !ME) return;
+  const x = Math.round(((LK.right ? 1 : 0) - (LK.left ? 1 : 0) + LK.pad.x) * 100) / 100, y = Math.round(((LK.down ? 1 : 0) - (LK.up ? 1 : 0) + LK.pad.y) * 100) / 100;
+  const inp = { x, y, s: LK.sprint ? 1 : 0, n: lavaNet.pushN }, key = JSON.stringify(inp), now = performance.now();
+  if (!force && (key === lavaNet.lastIn ? now - lavaNet.lastSend < 1000 : now - lavaNet.lastSend < 50)) return;
+  lavaNet.lastIn = key; lavaNet.lastSend = now;
+  rref(`rooms/${lavaNet.room}/inputs/${ME.uid}`).set(inp).catch(() => {});
+}
+function lavaBackToLobby() {
+  if (lava) lavaClose();
+  if (lavaNet.host && lavaNet.room) { rref(`rooms/${lavaNet.room}/meta`).update({ started: false }); rref(`lobby/${lavaNet.room}/open`).set(true); }
+  renderLavaLobby();
 }
 
 /* ---------- QUICK SIGN-IN: switch between accounts on one device with a 4-number code ----------
