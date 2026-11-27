@@ -132,6 +132,19 @@ service cloud.firestore {
       }
     }
 
+    // ---------- voice actor badges: the voice actor (or the creator) can give their badge to anyone ----------
+    match /grants/{id} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['badge', 'to', 'by', 't'])
+        && id == request.resource.data.badge + '_' + request.resource.data.to
+        && request.resource.data.by == request.auth.uid
+        && (isAdmin()
+            || (request.resource.data.badge == 'gd-voice' && request.auth.uid == 'KdFwcEPy3RadC3UzGCALIWHLUP53')
+            || (request.resource.data.badge == 'p2763-voice' && request.auth.uid == 'Jw8Q90FYWfWETAzSNZtvkHYNrya2'));
+      allow delete: if isAdmin() || (signedIn() && resource.data.by == request.auth.uid);
+    }
+
     // ---------- gifts: saved progress for a username (when an account has to be remade) ----------
     match /gifts/{name} {
       allow read: if isAdmin() || (hasAccount() && name == me().username.lower());

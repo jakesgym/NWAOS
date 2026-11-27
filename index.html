@@ -1108,6 +1108,7 @@ body.ttt-full{overflow:hidden}
         <button type="button" class="btn small white" id="logShow">SHOW LOGIN LOG</button><ul class="login-log" id="loginLog"></ul></div>
     </div>
     <div id="profRanksWrap"><h4>LEADERBOARD</h4><div class="prof-ranks" id="profRanks"></div></div>
+    <div id="profGive" class="prof-ranks"></div>
     <h4>BADGES</h4>
     <div class="badge-grid" id="profBadges"></div>
     <div class="row">
@@ -1446,7 +1447,7 @@ try {
   try { rtdb = (altMode ? alt : main).database(); } catch (e) { console.warn('live games offline', e); }
 } catch (e) { console.warn('Database offline', e); }
 const FV = () => firebase.firestore.FieldValue;
-const DB = { comments: [], picsApproved: {}, picsMine: {}, posts: [], votes: {}, poll: {}, users: [], profiles: {} };
+const DB = { comments: [], picsApproved: {}, picsMine: {}, posts: [], votes: {}, poll: {}, users: [], profiles: {}, grants: {} };
 let ME = null;   // { uid, username, status, admin } when logged in
 const emailFor = name => name.trim().toLowerCase() + '@' + CONFIG.accountDomain;
 
@@ -1495,6 +1496,10 @@ function startLiveData() {
     if (typeof tttRenderSetup === 'function' && !$('#tttSetup').hidden && !$('#ttt').hidden) tttRenderSetup();
     if (typeof renderGamesHub === 'function') renderGamesHub();
   }, oops('profiles'));
+  db.collection('grants').onSnapshot(q => {   // voice actor badges given to people
+    DB.grants = {}; q.docs.forEach(d => { DB.grants[d.id] = d.data(); });
+    renderComments(); checkNewBadges(); renderLeaderboard();
+  }, oops('grants'));
   db.collection('posts').onSnapshot(q => { DB.posts = q.docs.map(d => ({ id: d.id, ...d.data() })); renderNews(); }, oops('posts'));
   db.collection('polls').doc(String(CONFIG.poll.id)).onSnapshot(d => { DB.poll = d.exists ? d.data() : {}; renderPoll(); }, oops('poll'));
   db.collection('polls').doc(String(CONFIG.poll.id)).collection('votes').onSnapshot(q => {
@@ -3654,6 +3659,9 @@ const BADGES = [
   { id: 'powered-up',         name: 'Powered Up',        how: 'Grab 10 SUPER POWERS orbs in To The Top' },
   { id: 'pole-wrecker',       name: 'Pole Wrecker',      how: 'Knock 100 things off the pole in To The Top' },
   { id: 'perfect-climb',      name: 'Perfect Climb',     how: 'Beat HARD in To The Top without losing a single heart' },
+  // voice actor badges: the voice actor (and the creator) has it, and can give it to as many people as they want
+  { id: 'gd-voice',           name: 'Voice of GD',          how: 'Given by the voice of GD', owner: 'KdFwcEPy3RadC3UzGCALIWHLUP53' },
+  { id: 'p2763-voice',        name: 'Voice of Piece 2763',  how: 'Given by the voice of Piece 2763', owner: 'Jw8Q90FYWfWETAzSNZtvkHYNrya2' },
 ];
 const PFPS = [
   { id: 'shaded-spikester', name: 'Shaded Spikester' }, { id: 'spikester', name: 'Spikester' },
@@ -3666,6 +3674,8 @@ const PFPS = [
   { id: 'cyfatg', name: 'CYFATG Paper', badge: 'master-finder' },
   { id: 'pole-master', name: 'Pole Master', badge: 'pole-master' },
   { id: 'super-powers', name: 'Super Powers', badge: 'powered-up' },
+  { id: 'gd-voice', name: 'GD (voice actor)', badge: 'gd-voice' },
+  { id: 'p2763-voice', name: 'Piece 2763 (voice actor)', badge: 'p2763-voice' },
   { id: 'snail-palooza', name: 'Snail Palooza', creatorOnly: true },
 ];
 const DEFAULT_PFP = 'giant-snail';
@@ -3726,6 +3736,7 @@ function badgesOf(uid, holders = badgeHolders()) {
   if ((s.orbs || 0) >= 10) got.push('powered-up');
   if ((s.knocked || 0) >= 100) got.push('pole-wrecker');
   if (s.perfect) got.push('perfect-climb');
+  for (const b of BADGES) if (b.owner && (b.owner === uid || DB.grants[b.id + '_' + uid])) got.push(b.id);
   return got;
 }
 function pfpUnlocked(p, badges) {
@@ -3814,6 +3825,32 @@ function renderProfileRanks(uid) {
   $('#profRanksWrap').hidden = !out.length; $('#profRanks').innerHTML = out.join('');
 }
 
+/* ---------- giving voice actor badges ---------- */
+const canGive = b => !!ME && (ME.admin || b.owner === ME.uid);
+function renderGiveButtons(uid, own, name) {
+  const box = $('#profGive'), mine = BADGES.filter(b => b.owner && canGive(b));
+  if (!mine.length) { box.innerHTML = ''; return; }
+  if (own) {
+    box.innerHTML = mine.filter(b => b.owner === ME.uid).map(b => { const n = Object.values(DB.grants).filter(g => g.badge === b.id).length;
+      return `<span>🎙️ You can give your ${esc(b.name)} badge: tap someone's picture, then GIVE. (${n} given so far)</span>`; }).join('');
+    return;
+  }
+  box.innerHTML = mine.filter(b => b.owner !== uid).map(b => { const has = !!DB.grants[b.id + '_' + uid];
+    return `<button type="button" class="btn small ${has ? 'white' : 'yellow'}" data-give="${b.id}" data-to="${esc(uid)}">🎙️ ${has ? 'TAKE BACK' : 'GIVE'} ${esc(b.name.toUpperCase())}</button>`; }).join('');
+}
+$('#profGive').addEventListener('click', async e => {
+  const btn = e.target.closest('[data-give]'); if (!btn || !ME) return;
+  const b = badgeById(btn.dataset.give), to = btn.dataset.to, id = b.id + '_' + to, has = !!DB.grants[id];
+  const who = (DB.profiles[to] || {}).username || 'them';
+  try {
+    if (has) await db.collection('grants').doc(id).delete();
+    else await db.collection('grants').doc(id).set({ badge: b.id, to, by: ME.uid, t: Date.now() });
+    toast(has ? `Took back ${b.name} from ${who}.` : `🎙️ Gave ${who} the ${b.name} badge!`);
+    if (has) delete DB.grants[id]; else DB.grants[id] = { badge: b.id, to, by: ME.uid };
+    openProfile(to);
+  } catch (err) { console.warn(err); toast("Couldn't do that. Try again!"); }
+});
+
 /* ---------- account page (tap a profile picture) ---------- */
 function openProfile(uid) {
   const own = ME && uid === ME.uid, prof = DB.profiles[uid] || {};
@@ -3827,6 +3864,7 @@ function openProfile(uid) {
       <img src="${badgeSrc(b.id)}" alt=""><figcaption><strong>${esc(b.name)}</strong>${own && !got.includes(b.id) ? `<small>${esc(b.how)}</small>` : ''}</figcaption></figure>`).join('')
     : '<p class="form-note">No badges yet!</p>';
   renderProfileRanks(uid);
+  renderGiveButtons(uid, own, name);
   $('#profOwn').hidden = !own;
   if (own) {
     const waiting = !ME.admin && ME.status !== 'approved';
@@ -3834,7 +3872,7 @@ function openProfile(uid) {
       : ME.status === 'approved' ? '✅ Approved! You can post, and earn badges.'
       : ME.status === 'banned' ? '🚫 This account can\'t post, like or vote.'
       : '⏳ Waiting for Eli to approve your account. You can still play, like and vote! Badges start once you\'re approved.';
-    $('#profPfps').innerHTML = PFPS.filter(p => !p.creatorOnly || ME.admin).map(p => {
+    $('#profPfps').innerHTML = PFPS.filter(p => (!p.creatorOnly || ME.admin) && (!(badgeById(p.badge) || {}).owner || pfpUnlocked(p, got))).map(p => {   // voice actor pictures only show for people who have them
       const open = pfpUnlocked(p, got), on = myPfp() === p.id;
       return `<button type="button" class="pfp-pick ${open ? '' : 'locked'}" data-pfp="${p.id}" aria-pressed="${on}" title="${esc(p.name)}">
         <img src="${pfpSrc(p.id)}" alt=""><span>${esc(p.name)}</span>${open ? '' : `<small>🔒 ${esc(badgeById(p.badge).name)} badge</small>`}</button>`;
