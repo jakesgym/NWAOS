@@ -1,0 +1,39 @@
+{
+  "rules": {
+    "sep": {
+      "saves": {
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && auth.uid === $uid"
+        }
+      },
+      "rooms": {
+        "$room": {
+          ".read": "auth != null",
+          "meta": {
+            ".write": "auth != null && ($room === 'main' || $room.matches(/^[A-Z0-9]{4,8}$/))"
+          },
+          "snap": {
+            ".write": "auth != null && root.child('sep/rooms/' + $room + '/meta/host').val() === auth.uid"
+          },
+          "players": {
+            "$uid": {
+              ".write": "auth != null && auth.uid === $uid"
+            }
+          },
+          "acts": {
+            ".write": "auth != null"
+          },
+          "inbox": {
+            "$uid": {
+              ".write": "auth != null"
+            }
+          },
+          "ev": {
+            ".write": "auth != null"
+          }
+        }
+      }
+    }
+  }
+}
