@@ -3670,7 +3670,7 @@ const BADGES = [
   { id: 'powered-up',         name: 'Powered Up',        how: 'Grab 10 SUPER POWERS orbs in To The Top' },
   { id: 'pole-wrecker',       name: 'Pole Wrecker',      how: 'Knock 100 things off the pole in To The Top' },
   { id: 'perfect-climb',      name: 'Perfect Climb',     how: 'Beat HARD in To The Top without losing a single heart' },
-  { id: 'sep-foundation',     name: 'SEP Badge',         how: 'In SEP Foundation, ask Spikester what he likes doing, then click his link' },
+  { id: 'sep-foundation',     name: 'SEP-Foundation',            how: 'In SEP Foundation, ask Spikester what he likes doing, then click his link' },
   // voice actor badges: the voice actor (and the creator) has it, and can give it to as many people as they want
   { id: 'gd-voice',           name: 'Voice of GD',          how: 'Given by the voice of GD', owner: 'KdFwcEPy3RadC3UzGCALIWHLUP53' },
   { id: 'p2763-voice',        name: 'Voice of Piece 2763',  how: 'Given by the voice of Piece 2763', owner: 'Jw8Q90FYWfWETAzSNZtvkHYNrya2' },
@@ -3695,7 +3695,7 @@ const PFPS = [
 const DEFAULT_PFP = 'giant-snail';
 const badgeById = id => BADGES.find(b => b.id === id);
 const badgeSrc = id => `images/badges/${id}.png`;
-// The SEP Badge: only from Spikester's link inside SEP Foundation (nwaos.com/?sep=<code>, good for 2 hours)
+// The SEP-Foundation badge: only from Spikester's link inside SEP Foundation (nwaos.com/?sep=<code>, good for 2 hours)
 (function sepBadgeLink() {
   let code = null; try { code = new URLSearchParams(location.search).get('sep'); } catch {}
   if (!code) return;
@@ -3706,8 +3706,8 @@ const badgeSrc = id => `images/badges/${id}.png`;
   setTimeout(() => {
     if (!ok) return toast("That Spikester link is too old. Ask him again in SEP Foundation!");
     const had = store.get('sepBadge', false); store.set('sepBadge', true);
-    if (had) return toast('You already have the SEP Badge! 🏅');
-    toast(ME && (ME.admin || ME.status === 'approved') ? '🏅 Spikester gave you the SEP Badge!' : '🏅 Spikester gave you the SEP Badge! Log in (and get approved) to show it on your profile.');
+    if (had) return toast('You already have the SEP-Foundation badge! 🏅');
+    toast(ME && (ME.admin || ME.status === 'approved') ? '🏅 Spikester gave you the SEP-Foundation badge!' : '🏅 Spikester gave you the SEP-Foundation badge! Log in (and get approved) to show it on your profile.');
     if (ME) { syncProfile(true); checkNewBadges(); }
   }, 1500);
 })();
